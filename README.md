@@ -1,193 +1,174 @@
-# Sabedoria das Escrituras
+# 📚 Cartas de Paulo - Sistema de Cursos Bíblicos
 
-Plataforma digital de leitura de conteúdo bíblico com experiência Kindle e gamificação.
+Sistema completo de cursos bíblicos desenvolvido com Next.js 15, Supabase e TypeScript.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/geisonhoehr/v0-recreate-website-ui)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/098YQSqbYkK)
+## 🚀 Funcionalidades
 
-## Funcionalidades Principais
+### ✅ Sistema Completo
+- **23 cursos bíblicos** organizados por categorias
+- **Sistema de upload** de imagens e PDFs via Supabase Storage
+- **Interface administrativa** completa com CRUD
+- **Sistema de tags** personalizáveis para cursos
+- **Design responsivo** e moderno
+- **Gamificação** e sistema de progresso
 
-### Dois Modos de Leitura
+### 📖 Cursos Incluídos
 
-**1. PDF Original**
-- Visualiza o PDF exatamente como foi criado
-- Layout original preservado
-- Imagens e gráficos nativos
-- Zoom e navegação padrão
+#### Sabedoria das Escrituras (14 cursos)
+- Estudos Bíblicos: Romanos, Coríntios, Apocalipse, Atos
+- Estudos Bíblicos: Coríntios, Filipenses, Hebreus
+- Estudos Bíblicos: Filipenses, Hebreus, João
+- Estudos Bíblicos: Oração, Cantar, Dons
+- Estudos Bíblicos: Pedro, Salmos, Batalha Espiritual
+- Estudos em Eclesiastes
+- Estudos em Provérbios
+- Mapa Mental da Bíblia
+- Mapas Mentais: Cartas Paulinas
+- Mapas Mentais: Os 4 Evangelhos
+- Os 12 Apóstolos de Jesus
+- Os 4 Evangelhos Comparados
+- Panorama das Parábolas de Jesus
+- Profetas Maiores: Ezequiel, Jeremias, Isaías, Daniel
 
-**2. Bíblia Digital (Experiência Kindle)**
-- Texto extraído do PDF sem imagens
-- Interface limpa focada na leitura
-- Controles de personalização avançados
-- Modos de temperatura de leitura (claro, sépia, escuro)
+#### Unção do Leão (1 curso)
+- Unção do Leão - Desenvolvendo Autoridades Espirituais
 
-### Funcionalidades da Bíblia Digital
+#### Kit do Pregador Premium (2 cursos)
+- Kit do Pregador Premium - EBOOK
+- Kit do Pregador Premium - WORKS
 
-- **Modos de Temperatura**: Light, Sepia, Dark com filtros otimizados
-- **Controles de Fonte**: Ajuste de tamanho (12-28px) e altura de linha
-- **Controles Visuais**: Brilho, contraste e alinhamento do texto
-- **Sons de Virar Página**: Efeito sonoro opcional
-- **Auto-scroll**: Rolagem automática configurável
-- **Marcadores**: Salve pontos importantes da leitura
-- **Download TXT**: Baixe o texto extraído do PDF
+#### Ebooks Apocalipse Revelado (2 cursos)
+- Ebooks Apocalipse Revelado - EBOOK
+- Ebooks Apocalipse Revelado - SLIDES
 
-## Como Usar PDFs do Google Drive
+#### Kit da Mulher Cristã (2 cursos)
+- Kit da Mulher Cristã - EBOOK 1
+- Kit da Mulher Cristã - EBOOK 2
 
-### Passo 1: Configurar Permissões
+#### Bônus (1 curso)
+- Bônus - Batalha Espiritual - Guia de Estratégias Espirituais
 
-Para que o sistema consiga acessar e converter PDFs do Google Drive:
+## 🛠️ Tecnologias
 
-1. Abra o arquivo no Google Drive
-2. Clique em "Compartilhar"
-3. Em "Acesso geral", selecione "Qualquer pessoa com o link"
-4. Defina a permissão como "Visualizador"
-5. Copie o link compartilhado
+- **Frontend:** Next.js 15, React, TypeScript
+- **Backend:** Supabase (PostgreSQL, Storage, Auth)
+- **UI:** Tailwind CSS, shadcn/ui
+- **Deploy:** Vercel (recomendado)
 
-### Passo 2: Formatos de Link Aceitos
+## 📦 Instalação
 
-O sistema aceita dois formatos de URL do Google Drive:
-
-```
-https://drive.google.com/file/d/FILE_ID/view
-https://drive.google.com/uc?export=download&id=FILE_ID
-```
-
-A API converte automaticamente o primeiro formato para o segundo.
-
-### Passo 3: Limitações Conhecidas
-
-**PDFs de Imagens (Escaneados)**
-- Se o PDF contém apenas imagens escaneadas, a extração de texto não funcionará
-- Nesses casos, use o modo "PDF Original" para visualização
-- Considere usar ferramentas OCR para converter PDFs escaneados em PDFs com texto
-
-**Tamanho do Arquivo**
-- PDFs muito grandes podem demorar para converter
-- Recomendado: arquivos até 50MB para melhor performance
-
-**Proteção por Senha**
-- PDFs protegidos não podem ser processados
-- Remova a proteção antes de fazer upload
-
-## Solução de Problemas
-
-### "Erro ao converter PDF para texto"
-
-**Possíveis causas e soluções:**
-
-1. **PDF de imagens escaneadas**
-   - Solução: Use o modo "PDF Original" ou converta com OCR
-
-2. **Link do Google Drive não acessível**
-   - Solução: Verifique as permissões de compartilhamento
-   - Certifique-se de que está configurado como "Qualquer pessoa com o link"
-
-3. **PDF protegido por senha**
-   - Solução: Remova a proteção do PDF
-
-4. **Problemas de conectividade**
-   - Solução: Verifique sua conexão e tente novamente
-
-### "Pouco texto extraído"
-
-Se o sistema retorna muito pouco texto (<100 caracteres):
-- O PDF provavelmente contém principalmente imagens
-- Use o modo "PDF Original" para visualizar
-- Considere recriar o PDF com texto real (não escaneado)
-
-### Botão "Trocar Modo"
-
-No modo Bíblia Digital, você pode clicar em "Trocar Modo" para voltar à seleção e escolher o modo "PDF Original" se a conversão não funcionar adequadamente.
-
-## Tecnologias Utilizadas
-
-- **Next.js 15** - Framework React
-- **TypeScript** - Tipagem estática
-- **Tailwind CSS** - Estilização
-- **pdf-parse** - Extração de texto de PDFs
-- **Framer Motion** - Animações
-- **Radix UI** - Componentes acessíveis
-
-## Estrutura do Projeto
-
-```
-app/
-├── api/
-│   └── convert-pdf/
-│       └── route.ts          # API de conversão de PDF
-├── course/
-│   └── [id]/
-│       └── page.tsx          # Página do curso
-components/
-├── bible-digital-reader.tsx   # Leitor Kindle-style
-├── digital-magazine-viewer.tsx # Wrapper do leitor
-├── original-pdf-viewer.tsx    # Visualizador PDF original
-├── view-mode-selector.tsx     # Seletor de modo de leitura
-└── pdf-volume-selector.tsx    # Seletor de volumes
+1. **Clone o repositório:**
+```bash
+git clone https://github.com/wellitonalvesgit/cartasdepaulo.git
+cd cartasdepaulo
 ```
 
-## API de Conversão de PDF
-
-### Endpoint
-
-```
-POST /api/convert-pdf
-```
-
-### Request Body
-
-```json
-{
-  "pdfUrl": "https://drive.google.com/file/d/FILE_ID/view"
-}
+2. **Instale as dependências:**
+```bash
+npm install
+# ou
+pnpm install
 ```
 
-### Response Success
-
-```json
-{
-  "success": true,
-  "text": "Texto extraído do PDF...",
-  "pages": 150,
-  "info": { /* metadados do PDF */ },
-  "downloadUrl": "https://drive.google.com/uc?export=download&id=FILE_ID"
-}
+3. **Configure as variáveis de ambiente:**
+Crie um arquivo `.env.local`:
+```env
+NEXT_PUBLIC_SUPABASE_URL=sua_url_do_supabase
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anonima
+SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role
 ```
 
-### Response Error
-
-```json
-{
-  "success": false,
-  "error": "Mensagem de erro",
-  "details": "Detalhes técnicos do erro"
-}
+4. **Execute o servidor:**
+```bash
+npm run dev
+# ou
+pnpm dev
 ```
 
-## Desenvolvimento
+## 🗄️ Banco de Dados
+
+O sistema usa Supabase com as seguintes tabelas:
+- `courses` - Cursos principais
+- `course_pdfs` - PDFs/volumes dos cursos
+- `users` - Usuários do sistema
+- `user_course_progress` - Progresso dos usuários
+- `reading_sessions` - Sessões de leitura
+- `achievements` - Conquistas
+- `user_achievements` - Conquistas dos usuários
+- `bookmarks` - Favoritos
+
+## 📁 Estrutura do Projeto
+
+```
+├── app/                    # App Router (Next.js 15)
+│   ├── admin/             # Interface administrativa
+│   ├── api/               # API Routes
+│   ├── course/            # Páginas dos cursos
+│   └── page.tsx           # Homepage
+├── components/            # Componentes React
+│   ├── ui/               # Componentes de UI (shadcn/ui)
+│   └── ...               # Outros componentes
+├── lib/                  # Utilitários e configurações
+├── public/               # Arquivos estáticos
+└── types/                # Definições TypeScript
+```
+
+## 🎨 Interface
+
+### Homepage
+- Cards dos cursos organizados por categoria
+- Sistema de tags coloridas
+- Design responsivo
+
+### Admin
+- Gerenciamento completo de cursos
+- Upload de imagens e PDFs
+- CRUD de usuários
+- Estatísticas e relatórios
+
+### Curso Individual
+- Visualizador de PDF com efeito flipbook
+- Sistema de progresso
+- Gamificação
+
+## 🚀 Deploy
+
+### Vercel (Recomendado)
+1. Conecte o repositório ao Vercel
+2. Configure as variáveis de ambiente
+3. Deploy automático
+
+### Outras Plataformas
+- Netlify
+- Railway
+- DigitalOcean App Platform
+
+## 📝 Scripts Disponíveis
 
 ```bash
-# Instalar dependências
-npm install
-
-# Executar em desenvolvimento
-npm run dev
-
-# Build para produção
-npm run build
-
-# Iniciar produção
-npm start
+npm run dev          # Servidor de desenvolvimento
+npm run build        # Build de produção
+npm run start        # Servidor de produção
+npm run lint         # Linting
 ```
 
-## Deployment
+## 🤝 Contribuição
 
-Your project is live at:
+1. Fork o projeto
+2. Crie uma branch para sua feature
+3. Commit suas mudanças
+4. Push para a branch
+5. Abra um Pull Request
 
-**[https://vercel.com/geisonhoehr/v0-recreate-website-ui](https://vercel.com/geisonhoehr/v0-recreate-website-ui)**
+## 📄 Licença
 
-## Build your app
+Este projeto está sob a licença MIT.
 
-Continue building your app on:
+## 📞 Contato
 
-**[https://v0.app/chat/projects/098YQSqbYkK](https://v0.app/chat/projects/098YQSqbYkK)**
+- **Email:** ascartasdepailoo@gmail.com
+- **GitHub:** [wellitonalvesgit](https://github.com/wellitonalvesgit)
+
+---
+
+**Desenvolvido com ❤️ para o estudo das Escrituras Sagradas**
