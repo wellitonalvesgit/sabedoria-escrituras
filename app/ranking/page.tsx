@@ -1,0 +1,423 @@
+"use client"
+
+import { BookOpen, Search, User, Menu, Crown, Medal, Award, TrendingUp, TrendingDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { PointsDisplay } from "@/components/points-display"
+import { useGamification } from "@/contexts/gamification-context"
+import Link from "next/link"
+import { cn } from "@/lib/utils"
+
+interface LeaderboardEntry {
+  userId: string
+  displayName: string
+  photoUrl: string
+  totalDurationSeconds: number
+  totalSessions: number
+}
+
+interface LeaderboardUser {
+  rank: number
+  name: string
+  avatar: string
+  points: number
+  level: number
+  coursesCompleted: number
+  streak: number
+  change: number
+}
+
+const LeaderboardCard = ({ entry, index }: { entry: LeaderboardEntry; index: number }) => {
+  const rank = index + 1
+  const points = Math.floor(entry.totalDurationSeconds / 60)
+  const level = Math.floor(points / 100)
+  const coursesCompleted = entry.totalSessions
+  const streak = Math.floor(Math.random() * 100) + 1 // Mock data for streak
+  const change = Math.floor(Math.random() * 5) - 2 // Mock data for change
+
+  const getRankIcon = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return <Crown className="h-6 w-6 text-yellow-500" />
+      case 2:
+        return <Medal className="h-6 w-6 text-gray-400" />
+      case 3:
+        return <Award className="h-6 w-6 text-amber-600" />
+      default:
+        return null
+    }
+  }
+
+  const getRankBadgeColor = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return "bg-gradient-to-br from-yellow-400 to-yellow-600 text-white"
+      case 2:
+        return "bg-gradient-to-br from-gray-300 to-gray-500 text-white"
+      case 3:
+        return "bg-gradient-to-br from-amber-500 to-amber-700 text-white"
+      default:
+        return "bg-muted text-muted-foreground"
+    }
+  }
+
+  return (
+    <li
+      className={cn(
+        "group flex items-center gap-4 rounded-xl border p-4 transition-all duration-300",
+        rank <= 3
+          ? "border-primary/20 bg-primary/5 hover:bg-primary/10"
+          : "border-border bg-muted/30 hover:bg-muted/50",
+      )}
+    >
+      <div
+        className={cn(
+          "flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl font-bold",
+          getRankBadgeColor(rank),
+        )}
+      >
+        {rank <= 3 ? getRankIcon(rank) : <span className="text-lg">#{rank}</span>}
+      </div>
+
+      <img
+        src={entry.photoUrl || "/placeholder.svg"}
+        alt={entry.displayName}
+        className="h-12 w-12 rounded-full border-2 border-border object-cover"
+      />
+
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-foreground">{entry.displayName}</h3>
+          <span className="text-xs text-muted-foreground">Level {level}</span>
+        </div>
+        <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+          <span>{coursesCompleted} courses</span>
+          <span>•</span>
+          <span>{streak} day streak</span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="text-right">
+          <div className="font-bold text-foreground">{points.toLocaleString()}</div>
+          <div className="text-xs text-muted-foreground">XP</div>
+        </div>
+        {change !== 0 && (
+          <div
+            className={cn(
+              "flex items-center gap-1 rounded-full px-2 py-1",
+              change > 0 ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600",
+            )}
+          >
+            {change > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            <span className="text-xs font-medium">{Math.abs(change)}</span>
+          </div>
+        )}
+      </div>
+    </li>
+  )
+}
+
+export default function RankingPage() {
+  const { stats } = useGamification()
+
+  const currentUser = {
+    rank: 47,
+    name: "You",
+    avatar: "/placeholder.svg?height=40&width=40",
+    points: stats.totalPoints,
+    level: stats.level,
+    coursesCompleted: stats.coursesCompleted,
+    streak: stats.currentStreak,
+    change: 5,
+  }
+
+  const leaderboard: LeaderboardEntry[] = [
+    {
+      userId: "1",
+      displayName: "Alexandra Chen",
+      photoUrl: "/professional-woman-diverse.png",
+      totalDurationSeconds: 15420 * 60,
+      totalSessions: 28,
+    },
+    {
+      userId: "2",
+      displayName: "Marcus Johnson",
+      photoUrl: "/professional-man.jpg",
+      totalDurationSeconds: 14890 * 60,
+      totalSessions: 26,
+    },
+    {
+      userId: "3",
+      displayName: "Sofia Rodriguez",
+      photoUrl: "/professional-woman-diverse.png",
+      totalDurationSeconds: 13750 * 60,
+      totalSessions: 24,
+    },
+    {
+      userId: "4",
+      displayName: "David Kim",
+      photoUrl: "/professional-man.jpg",
+      totalDurationSeconds: 12340 * 60,
+      totalSessions: 22,
+    },
+    {
+      userId: "5",
+      displayName: "Emma Wilson",
+      photoUrl: "/professional-woman-diverse.png",
+      totalDurationSeconds: 11890 * 60,
+      totalSessions: 21,
+    },
+    {
+      userId: "6",
+      displayName: "James Anderson",
+      photoUrl: "/professional-man.jpg",
+      totalDurationSeconds: 10950 * 60,
+      totalSessions: 19,
+    },
+    {
+      userId: "7",
+      displayName: "Olivia Martinez",
+      photoUrl: "/professional-woman-diverse.png",
+      totalDurationSeconds: 10120 * 60,
+      totalSessions: 18,
+    },
+    {
+      userId: "8",
+      displayName: "Michael Brown",
+      photoUrl: "/professional-man.jpg",
+      totalDurationSeconds: 9780 * 60,
+      totalSessions: 17,
+    },
+    {
+      userId: "9",
+      displayName: "Isabella Garcia",
+      photoUrl: "/professional-woman-diverse.png",
+      totalDurationSeconds: 9340 * 60,
+      totalSessions: 16,
+    },
+    {
+      userId: "10",
+      displayName: "William Taylor",
+      photoUrl: "/professional-man.jpg",
+      totalDurationSeconds: 8920 * 60,
+      totalSessions: 15,
+    },
+  ]
+
+  const nextLevelXP = stats.level * 100
+  const xpNeeded = nextLevelXP - stats.totalPoints
+
+  return (
+    <div className="min-h-screen bg-background">
+      <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center gap-8">
+              <Link href="/" className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+                  <BookOpen className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <span className="text-xl font-semibold tracking-tight">Academy</span>
+              </Link>
+
+              <div className="hidden md:flex items-center gap-6">
+                <Link
+                  href="/"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Courses
+                </Link>
+                <Link
+                  href="/ranking"
+                  className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                >
+                  Ranking
+                </Link>
+                <Link
+                  href="/my-learning"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  My Learning
+                </Link>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" className="h-9 w-9 hidden md:flex">
+                <Search className="h-5 w-5" />
+              </Button>
+              <ThemeToggle />
+              <PointsDisplay />
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <User className="h-5 w-5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">Global Leaderboard</h1>
+          <p className="mt-2 text-lg text-muted-foreground">Compete with learners worldwide</p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          {/* Main Leaderboard */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Top 3 Podium */}
+            <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-background to-accent/5 p-8">
+              <h2 className="mb-6 text-2xl font-bold text-foreground flex items-center gap-2">
+                <Crown className="h-6 w-6 text-primary" />
+                Top Performers
+              </h2>
+              <div className="flex items-end justify-center gap-4">
+                {/* 2nd Place */}
+                <div className="flex flex-col items-center">
+                  <div className="relative mb-3">
+                    <img
+                      src={leaderboard[1].photoUrl || "/placeholder.svg"}
+                      alt={leaderboard[1].displayName}
+                      className="h-20 w-20 rounded-full border-4 border-gray-400 object-cover"
+                    />
+                    <div className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-gray-300 to-gray-500 shadow-lg">
+                      <span className="text-sm font-bold text-white">2</span>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-border bg-card p-4 text-center w-32">
+                    <p className="font-semibold text-foreground text-sm truncate">{leaderboard[1].displayName}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {Math.floor(leaderboard[1].totalDurationSeconds / 60).toLocaleString()} XP
+                    </p>
+                  </div>
+                </div>
+
+                {/* 1st Place */}
+                <div className="flex flex-col items-center -mt-8">
+                  <div className="relative mb-3">
+                    <img
+                      src={leaderboard[0].photoUrl || "/placeholder.svg"}
+                      alt={leaderboard[0].displayName}
+                      className="h-24 w-24 rounded-full border-4 border-yellow-500 object-cover shadow-xl shadow-yellow-500/20"
+                    />
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <Crown className="h-8 w-8 text-yellow-500 drop-shadow-lg" />
+                    </div>
+                    <div className="absolute -bottom-2 -right-2 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg">
+                      <span className="text-base font-bold text-white">1</span>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border-2 border-yellow-500/30 bg-card p-4 text-center w-36 shadow-lg">
+                    <p className="font-bold text-foreground truncate">{leaderboard[0].displayName}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {Math.floor(leaderboard[0].totalDurationSeconds / 60).toLocaleString()} XP
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3rd Place */}
+                <div className="flex flex-col items-center">
+                  <div className="relative mb-3">
+                    <img
+                      src={leaderboard[2].photoUrl || "/placeholder.svg"}
+                      alt={leaderboard[2].displayName}
+                      className="h-20 w-20 rounded-full border-4 border-amber-600 object-cover"
+                    />
+                    <div className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-amber-700 shadow-lg">
+                      <span className="text-sm font-bold text-white">3</span>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-border bg-card p-4 text-center w-32">
+                    <p className="font-semibold text-foreground text-sm truncate">{leaderboard[2].displayName}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {Math.floor(leaderboard[2].totalDurationSeconds / 60).toLocaleString()} XP
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Full Rankings */}
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h2 className="mb-4 text-xl font-bold text-foreground">All Rankings</h2>
+              <ul className="space-y-2">
+                {leaderboard.map((entry, index) => (
+                  <LeaderboardCard key={entry.userId} entry={entry} index={index} />
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Sidebar - Your Rank */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-24 space-y-6">
+              <div className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-accent/10 p-6">
+                <h3 className="mb-4 text-xl font-bold text-foreground">Your Rank</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Current Position</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-3xl font-bold text-foreground">#{currentUser.rank}</span>
+                      {currentUser.change > 0 && (
+                        <div className="flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-1 text-green-600">
+                          <TrendingUp className="h-3 w-3" />
+                          <span className="text-xs font-medium">{currentUser.change}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 rounded-xl bg-background/50 p-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Total XP</span>
+                      <span className="font-bold text-foreground">{currentUser.points.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Level</span>
+                      <span className="font-bold text-foreground">{currentUser.level}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Courses</span>
+                      <span className="font-bold text-foreground">{currentUser.coursesCompleted}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Streak</span>
+                      <span className="font-bold text-foreground">{currentUser.streak} days</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl bg-muted/50 p-4">
+                    <p className="text-xs text-muted-foreground mb-2">Next Milestone</p>
+                    <p className="text-sm font-medium text-foreground">
+                      Earn <span className="text-primary font-bold">{xpNeeded} more XP</span> to reach Level{" "}
+                      {stats.level + 1}
+                    </p>
+                  </div>
+
+                  <Link href="/my-learning">
+                    <Button className="w-full" size="lg">
+                      Continue Learning
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-6">
+                <h3 className="mb-4 text-lg font-bold text-foreground">Leaderboard Info</h3>
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <p>Rankings are updated in real-time based on your learning activity.</p>
+                  <p>Earn XP by completing courses, maintaining streaks, and unlocking achievements.</p>
+                  <p className="text-xs pt-2 border-t border-border">Last updated: Just now</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
