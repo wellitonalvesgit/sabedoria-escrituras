@@ -80,8 +80,17 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
     try {
       setLoading(true)
       console.log('Buscando curso com ID:', courseId)
-      const response = await fetch(`/api/courses/${courseId}`)
-      console.log('Response status:', response.status)
+      
+      // Tentar primeiro a API dinâmica
+      let response = await fetch(`/api/courses/${courseId}`)
+      console.log('Response status (API dinâmica):', response.status)
+      
+      // Se falhar, tentar a API alternativa
+      if (!response.ok) {
+        console.log('API dinâmica falhou, tentando API alternativa...')
+        response = await fetch(`/api/course-by-id?id=${courseId}`)
+        console.log('Response status (API alternativa):', response.status)
+      }
       
       if (!response.ok) {
         const errorData = await response.json()
