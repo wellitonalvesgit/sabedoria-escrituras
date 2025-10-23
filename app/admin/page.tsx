@@ -209,7 +209,7 @@ export default function AdminPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-foreground">{course.title}</h3>
-                      <p className="text-sm text-muted-foreground">{course.pdfs.length} volumes</p>
+                      <p className="text-sm text-muted-foreground">{course.course_pdfs?.length || 0} volumes</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
