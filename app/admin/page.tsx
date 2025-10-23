@@ -5,11 +5,39 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { courses } from "@/lib/courses-data"
+import { useState, useEffect } from "react"
+
+interface Course {
+  id: string
+  title: string
+  pages?: number
+  course_pdfs: any[]
+}
 
 export default function AdminPage() {
+  const [courses, setCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchCourses()
+  }, [])
+
+  const fetchCourses = async () => {
+    try {
+      const response = await fetch('/api/courses')
+      if (response.ok) {
+        const data = await response.json()
+        setCourses(data.courses || [])
+      }
+    } catch (error) {
+      console.error('Erro ao carregar cursos:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const totalCourses = courses.length
-  const totalPDFs = courses.reduce((acc, course) => acc + course.pdfs.length, 0)
+  const totalPDFs = courses.reduce((acc, course) => acc + course.course_pdfs.length, 0)
   const totalPages = courses.reduce((acc, course) => acc + (course.pages || 0), 0)
 
   return (

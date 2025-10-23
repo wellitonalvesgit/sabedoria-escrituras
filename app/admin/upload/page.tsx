@@ -11,9 +11,15 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileUpload } from "@/components/file-upload"
 import Link from "next/link"
-import { courses } from "@/lib/courses-data"
+import { useState, useEffect } from "react"
+
+interface Course {
+  id: string
+  title: string
+}
 
 export default function AdminUploadPage() {
+  const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourse, setSelectedCourse] = useState<string>("")
   const [coverUrl, setCoverUrl] = useState<string>("")
   const [newVolume, setNewVolume] = useState({
@@ -23,6 +29,21 @@ export default function AdminUploadPage() {
     pdfUrl: ""
   })
 
+  useEffect(() => {
+    fetchCourses()
+  }, [])
+
+  const fetchCourses = async () => {
+    try {
+      const response = await fetch('/api/courses')
+      if (response.ok) {
+        const data = await response.json()
+        setCourses(data.courses || [])
+      }
+    } catch (error) {
+      console.error('Erro ao carregar cursos:', error)
+    }
+  }
 
   const handleCoverUpload = (fileUrl: string, fileName: string) => {
     setCoverUrl(fileUrl)
