@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, supabase } from '@/lib/supabase'
 
 // GET /api/courses - Listar todos os cursos
 export async function GET(request: NextRequest) {
   try {
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not configured')
+    // Usar admin se disponível, senão usar cliente público
+    const client = supabaseAdmin || supabase
+    
+    if (!client) {
+      throw new Error('Supabase client not configured')
     }
     
+    console.log('Using Supabase client:', supabaseAdmin ? 'admin' : 'public')
+    
     // Buscar cursos com seus PDFs
-    const { data: courses, error } = await supabaseAdmin
+    const { data: courses, error } = await client
       .from('courses')
       .select(`
         *,
@@ -43,15 +48,18 @@ export async function GET(request: NextRequest) {
 // POST /api/courses - Criar novo curso
 export async function POST(request: NextRequest) {
   try {
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not configured')
+    // Usar admin se disponível, senão usar cliente público
+    const client = supabaseAdmin || supabase
+    
+    if (!client) {
+      throw new Error('Supabase client not configured')
     }
     const body = await request.json()
     
     const { title, description, author, category, pages, reading_time_minutes, cover_url, pdfs } = body
 
     // Inserir curso
-    const { data: course, error: courseError } = await supabaseAdmin
+    const { data: course, error: courseError } = await client
       .from('courses')
       .insert({
         title,
@@ -85,7 +93,7 @@ export async function POST(request: NextRequest) {
         display_order: index
       }))
 
-      const { error: pdfsError } = await supabaseAdmin
+      const { error: pdfsError } = await client
         .from('course_pdfs')
         .insert(pdfsToInsert)
 
