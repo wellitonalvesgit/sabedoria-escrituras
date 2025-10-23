@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, supabase } from '@/lib/supabase'
 
 // GET /api/users - Listar todos os usuários
 export async function GET(request: NextRequest) {
   try {
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not configured')
+    // Usar admin se disponível, senão usar cliente público
+    const client = supabaseAdmin || supabase
+    
+    if (!client) {
+      throw new Error('Supabase client not configured')
     }
     const { searchParams } = new URL(request.url)
     
@@ -13,7 +16,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const search = searchParams.get('search')
 
-    let query = supabaseAdmin
+    let query = client
       .from('users')
       .select(`
         *,
@@ -56,14 +59,17 @@ export async function GET(request: NextRequest) {
 // POST /api/users - Criar novo usuário
 export async function POST(request: NextRequest) {
   try {
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not configured')
+    // Usar admin se disponível, senão usar cliente público
+    const client = supabaseAdmin || supabase
+    
+    if (!client) {
+      throw new Error('Supabase client not configured')
     }
     const body = await request.json()
     
     const { name, email, role = 'student', status = 'active' } = body
 
-    const { data: user, error } = await supabaseAdmin
+    const { data: user, error } = await client
       .from('users')
       .insert({
         name,
