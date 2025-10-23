@@ -150,7 +150,7 @@ export default function AdminUsersPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
+      <div className="border-b border-border/40 bg-background/95 backdrop-blur-xl fixed top-0 left-0 right-0 z-50">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-8">
@@ -176,7 +176,7 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 pt-24 pb-8 lg:px-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>

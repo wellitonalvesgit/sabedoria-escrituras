@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { PointsDisplay } from "@/components/points-display"
 import { LogoutButton } from "@/components/logout-button"
+import { MobileDrawer } from "@/components/mobile-drawer"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
 import { CourseCard } from "@/components/course-card"
@@ -111,7 +112,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/95">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-8">
@@ -153,15 +154,16 @@ export default function DashboardPage() {
                 </Button>
               </Link>
               <LogoutButton user={user ? { name: user.name, email: user.email, role: user.role } : undefined} />
-              <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden hover:bg-primary/10 hover:text-primary">
-                <Menu className="h-5 w-5" />
-              </Button>
+              <MobileDrawer 
+                user={user ? { name: user.name, email: user.email, role: user.role } : undefined}
+                currentPath="/dashboard"
+              />
             </div>
           </div>
         </div>
       </nav>
 
-      <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 pt-24 pb-8 lg:px-8">
         <HeroSection />
 
         {/* Alertas de Acesso */}

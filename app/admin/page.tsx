@@ -77,7 +77,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 pt-24 pb-8 lg:px-8">
         {/* Dashboard Stats */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Dashboard Administrativo</h1>
