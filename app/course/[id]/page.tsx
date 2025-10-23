@@ -116,13 +116,14 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
 
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
         <div className="mb-6">
-          <Link
-            href="/"
+          <Button
+            variant="ghost"
+            onClick={() => window.history.back()}
             className="inline-flex items-center gap-2 text-sm text-[#F3C77A] hover:text-[#FFD88A] transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
             Voltar
-          </Link>
+          </Button>
         </div>
 
         {!showPDFReader ? (
