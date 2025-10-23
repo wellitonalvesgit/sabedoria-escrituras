@@ -3,6 +3,7 @@
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { LogoutButton } from "@/components/logout-button"
 import Link from "next/link"
 
 interface AdminHeaderProps {
@@ -11,6 +12,11 @@ interface AdminHeaderProps {
   showBackButton?: boolean
   backHref?: string
   backLabel?: string
+  user?: {
+    name: string
+    email: string
+    role: string
+  }
 }
 
 export function AdminHeader({ 
@@ -18,7 +24,8 @@ export function AdminHeader({
   icon, 
   showBackButton = true, 
   backHref = "/admin", 
-  backLabel = "Voltar ao Dashboard" 
+  backLabel = "Voltar ao Dashboard",
+  user
 }: AdminHeaderProps) {
   return (
     <div className="border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
@@ -50,6 +57,7 @@ export function AdminHeader({
                 Ver Site
               </Button>
             </Link>
+            <LogoutButton user={user} />
           </div>
         </div>
       </div>

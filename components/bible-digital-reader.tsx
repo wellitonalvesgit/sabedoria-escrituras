@@ -112,7 +112,15 @@ export const BibleDigitalReader = ({
           return
         }
 
-        // Prioridade 3: Tentar conversão automática (padrão)
+        // Prioridade 3: Conversão automática DESABILITADA por padrão
+        console.log('Conversão automática desabilitada por padrão - usando texto pré-configurado')
+        setExtractedText('Este conteúdo está sendo preparado pelo administrador.\n\nPor favor, volte mais tarde ou entre em contato com o responsável pelo curso.')
+        setIsLoading(false)
+        return
+
+        // CÓDIGO DE CONVERSÃO AUTOMÁTICA COMENTADO
+        // Descomente apenas se necessário ativar conversão automática
+        /*
         console.log('Tentando conversão automática do PDF:', pdfUrl)
 
         const response = await fetch('/api/convert-pdf', {
@@ -148,6 +156,7 @@ export const BibleDigitalReader = ({
             throw new Error(data.error || data.details || 'Erro na conversão')
           }
         }
+        */
 
       } catch (error) {
         console.error('Erro ao carregar texto:', error)

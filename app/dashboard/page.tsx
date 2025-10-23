@@ -5,6 +5,7 @@ import { BookOpen, Search, User, Menu, Loader2, Shield, Clock } from "lucide-rea
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { PointsDisplay } from "@/components/points-display"
+import { LogoutButton } from "@/components/logout-button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
 import { CourseCard } from "@/components/course-card"
@@ -151,6 +152,7 @@ export default function DashboardPage() {
                   <User className="h-5 w-5" />
                 </Button>
               </Link>
+              <LogoutButton user={user ? { name: user.name, email: user.email, role: user.role } : undefined} />
               <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden hover:bg-primary/10 hover:text-primary">
                 <Menu className="h-5 w-5" />
               </Button>
