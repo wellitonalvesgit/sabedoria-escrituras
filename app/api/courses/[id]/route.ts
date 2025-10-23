@@ -7,13 +7,18 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log('API: Buscando curso com ID:', params.id)
+    
     // Usar admin se disponível, senão usar cliente público
     const client = supabaseAdmin || supabase
     
     if (!client) {
+      console.error('API: Supabase client not configured')
       throw new Error('Supabase client not configured')
     }
+    
     const { id } = params
+    console.log('API: ID extraído dos params:', id)
 
     const { data: course, error } = await client
       .from('courses')
@@ -35,13 +40,14 @@ export async function GET(
       .single()
 
     if (error) {
-      console.error('Erro ao buscar curso:', error)
+      console.error('API: Erro ao buscar curso:', error)
       return NextResponse.json({ error: 'Curso não encontrado' }, { status: 404 })
     }
 
+    console.log('API: Curso encontrado:', course)
     return NextResponse.json({ course })
   } catch (error) {
-    console.error('Erro na API de busca de curso:', error)
+    console.error('API: Erro na API de busca de curso:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

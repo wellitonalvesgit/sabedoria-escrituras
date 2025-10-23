@@ -79,11 +79,23 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
   const fetchCourse = async () => {
     try {
       setLoading(true)
+      console.log('Buscando curso com ID:', courseId)
       const response = await fetch(`/api/courses/${courseId}`)
+      console.log('Response status:', response.status)
+      
       if (!response.ok) {
-        throw new Error('Curso não encontrado')
+        const errorData = await response.json()
+        console.error('Erro na resposta:', errorData)
+        throw new Error(errorData.error || 'Curso não encontrado')
       }
+      
       const data = await response.json()
+      console.log('Dados do curso recebidos:', data)
+      
+      if (!data.course) {
+        throw new Error('Dados do curso não encontrados na resposta')
+      }
+      
       setCourse(data.course)
       setEditedCourse({
         title: data.course.title,
@@ -95,6 +107,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         cover_url: data.course.cover_url || ""
       })
     } catch (err) {
+      console.error('Erro ao buscar curso:', err)
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
     } finally {
       setLoading(false)
@@ -392,7 +405,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-border/40 bg-background/80 backdrop-blur-xl">
+      <div className="border-b border-border/40 bg-background/95 backdrop-blur-xl fixed top-0 left-0 right-0 z-50">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-8">
@@ -425,7 +438,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 pt-24 pb-8 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">Editar Curso</h1>
           <p className="text-muted-foreground">Modifique as informações do curso e gerencie os PDFs</p>
