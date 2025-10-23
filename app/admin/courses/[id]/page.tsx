@@ -81,39 +81,55 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
       setLoading(true)
       console.log('Buscando curso com ID:', courseId)
       
-      // Tentar primeiro a API dinâmica
-      let response = await fetch(`/api/courses/${courseId}`)
-      console.log('Response status (API dinâmica):', response.status)
+      // Buscar dados diretamente do Supabase (fallback direto)
+      const { createClient } = await import('@supabase/supabase-js')
       
-      // Se falhar, tentar a API alternativa
-      if (!response.ok) {
-        console.log('API dinâmica falhou, tentando API alternativa...')
-        response = await fetch(`/api/course-by-id?id=${courseId}`)
-        console.log('Response status (API alternativa):', response.status)
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
+      
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      
+      console.log('Buscando curso diretamente do Supabase...')
+      
+      const { data: course, error } = await supabase
+        .from('courses')
+        .select(`
+          *,
+          course_pdfs (
+            id,
+            volume,
+            title,
+            url,
+            pages,
+            reading_time_minutes,
+            text_content,
+            use_auto_conversion,
+            display_order
+          )
+        `)
+        .eq('id', courseId)
+        .single()
+
+      if (error) {
+        console.error('Erro ao buscar curso do Supabase:', error)
+        throw new Error('Curso não encontrado')
+      }
+
+      console.log('Curso encontrado diretamente:', course)
+      
+      if (!course) {
+        throw new Error('Dados do curso não encontrados')
       }
       
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.error('Erro na resposta:', errorData)
-        throw new Error(errorData.error || 'Curso não encontrado')
-      }
-      
-      const data = await response.json()
-      console.log('Dados do curso recebidos:', data)
-      
-      if (!data.course) {
-        throw new Error('Dados do curso não encontrados na resposta')
-      }
-      
-      setCourse(data.course)
+      setCourse(course)
       setEditedCourse({
-        title: data.course.title,
-        description: data.course.description,
-        author: data.course.author || "",
-        category: data.course.category || "",
-        reading_time_minutes: data.course.reading_time_minutes || 0,
-        pages: data.course.pages || 0,
-        cover_url: data.course.cover_url || ""
+        title: course.title,
+        description: course.description,
+        author: course.author || "",
+        category: course.category || "",
+        reading_time_minutes: course.reading_time_minutes || 0,
+        pages: course.pages || 0,
+        cover_url: course.cover_url || ""
       })
     } catch (err) {
       console.error('Erro ao buscar curso:', err)
@@ -150,15 +166,20 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
 
   const handleSave = async () => {
     try {
-      const response = await fetch(`/api/courses/${courseId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editedCourse)
-      })
+      // Salvar diretamente no Supabase
+      const { createClient } = await import('@supabase/supabase-js')
       
-      if (!response.ok) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
+      
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      
+      const { error } = await supabase
+        .from('courses')
+        .update(editedCourse)
+        .eq('id', courseId)
+      
+      if (error) {
         throw new Error('Erro ao salvar curso')
       }
       
