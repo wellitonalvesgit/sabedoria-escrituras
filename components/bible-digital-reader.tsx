@@ -10,7 +10,7 @@ import { CoursePDF } from "@/lib/courses-data"
 interface BibleDigitalReaderProps {
   pdfUrl: string
   courseId: string
-  pdfData?: CoursePDF  // Dados completos do PDF incluindo textContent pré-carregado
+  pdfData?: CoursePDF  // Dados completos do PDF incluindo text_content pré-carregado
   onSessionUpdate?: (durationSeconds: number, currentPage: number) => void
   readingMode?: 'light' | 'sepia' | 'dark'
   onBackToModeSelection?: () => void
@@ -97,15 +97,15 @@ export const BibleDigitalReader = ({
         setIsLoading(true)
 
         // Prioridade 1: Verificar se há texto pré-carregado pelo admin
-        if (pdfData?.textContent && pdfData.textContent.trim().length > 0) {
+        if (pdfData?.text_content && pdfData.text_content.trim().length > 0) {
           console.log('Usando texto pré-carregado pelo administrador')
-          setExtractedText(pdfData.textContent)
+          setExtractedText(pdfData.text_content)
           setIsLoading(false)
           return
         }
 
         // Prioridade 2: Verificar se conversão automática está habilitada
-        if (pdfData?.useAutoConversion === false) {
+        if (pdfData?.use_auto_conversion === false) {
           console.log('Conversão automática desabilitada - aguardando configuração do admin')
           setExtractedText('Este conteúdo está sendo preparado pelo administrador.\n\nPor favor, volte mais tarde ou entre em contato com o responsável pelo curso.')
           setIsLoading(false)
