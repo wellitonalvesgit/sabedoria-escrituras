@@ -4,14 +4,14 @@ import { supabaseAdmin, supabase } from '@/lib/supabase'
 // GET /api/courses - Listar todos os cursos
 export async function GET(request: NextRequest) {
   try {
-    // Usar admin se disponível, senão usar cliente público
-    const client = supabaseAdmin || supabase
+    // Para leitura de cursos, sempre usar cliente público (não precisa de autenticação)
+    const client = supabase
     
     if (!client) {
       throw new Error('Supabase client not configured')
     }
     
-    console.log('Using Supabase client:', supabaseAdmin ? 'admin' : 'public')
+    console.log('Using Supabase public client for courses')
     
     // Buscar cursos com seus PDFs
     const { data: courses, error } = await client
