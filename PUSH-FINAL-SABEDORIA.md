@@ -48,3 +48,4 @@ git push -u origin main
 
 **Repositório:** https://github.com/wellitonalvesgit/sabedoria-escrituras.git
 
+
