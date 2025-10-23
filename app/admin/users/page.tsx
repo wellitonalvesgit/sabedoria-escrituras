@@ -29,6 +29,12 @@ interface User {
   role: string
   status: string
   avatar_url?: string
+  access_days?: number
+  access_expires_at?: string
+  allowed_categories?: string[]
+  blocked_categories?: string[]
+  allowed_courses?: string[]
+  blocked_courses?: string[]
   total_points: number
   total_reading_minutes: number
   courses_enrolled: number
@@ -273,10 +279,10 @@ export default function AdminUsersPage() {
                     <th className="px-6 py-3 text-left font-medium">Usuário</th>
                     <th className="px-6 py-3 text-left font-medium">Role</th>
                     <th className="px-6 py-3 text-left font-medium">Status</th>
+                    <th className="px-6 py-3 text-left font-medium">Acesso</th>
                     <th className="px-6 py-3 text-left font-medium">Cursos</th>
                     <th className="px-6 py-3 text-left font-medium">Pontos</th>
                     <th className="px-6 py-3 text-left font-medium">Cadastro</th>
-                    <th className="px-6 py-3 text-left font-medium">Último acesso</th>
                     <th className="px-6 py-3 text-right font-medium">Ações</th>
                   </tr>
                 </thead>
@@ -303,6 +309,14 @@ export default function AdminUsersPage() {
                       <td className="px-6 py-4">{getStatusBadge(user.status)}</td>
                       <td className="px-6 py-4">
                         <div className="text-sm">
+                          <div className="font-medium text-foreground">{user.access_days || 30} dias</div>
+                          <div className="text-muted-foreground">
+                            {user.access_expires_at ? new Date(user.access_expires_at).toLocaleDateString('pt-BR') : 'Não definido'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm">
                           <div className="font-medium text-foreground">{user.courses_enrolled} inscritos</div>
                           <div className="text-muted-foreground">{user.courses_completed} concluídos</div>
                         </div>
@@ -316,11 +330,6 @@ export default function AdminUsersPage() {
                           {new Date(user.created_at).toLocaleDateString('pt-BR')}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(user.last_active_at).toLocaleDateString('pt-BR')}
-                        </div>
-                      </td>
                       <td className="px-6 py-4 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -329,13 +338,11 @@ export default function AdminUsersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Shield className="mr-2 h-4 w-4" />
-                              Alterar Role
+                            <DropdownMenuItem asChild>
+                              <Link href={`/admin/users/${user.id}`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Editar
+                              </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-destructive"

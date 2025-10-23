@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, supabase } from '@/lib/supabase'
 
 // GET /api/users/[id] - Buscar usuário específico
 export async function GET(
@@ -7,22 +7,17 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not configured')
+    // Usar admin se disponível, senão usar cliente público
+    const client = supabaseAdmin || supabase
+
+    if (!client) {
+      throw new Error('Supabase client not configured')
     }
     const { id } = params
 
-    const { data: user, error } = await supabaseAdmin
+    const { data: user, error } = await client
       .from('users')
-      .select(`
-        *,
-        user_course_progress (
-          course_id,
-          status,
-          progress_percentage,
-          total_reading_minutes
-        )
-      `)
+      .select('*')
       .eq('id', id)
       .single()
 
@@ -44,22 +39,34 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not configured')
+    // Usar admin se disponível, senão usar cliente público
+    const client = supabaseAdmin || supabase
+
+    if (!client) {
+      throw new Error('Supabase client not configured')
     }
     const { id } = params
     const body = await request.json()
-    
-    const { name, email, role, status, avatar_url } = body
 
-    const { data: user, error } = await supabaseAdmin
+    const { name, email, role, status, access_days, allowed_categories, blocked_categories, allowed_courses, blocked_courses } = body
+
+    // Calcular data de expiração
+    const accessExpiresAt = new Date()
+    accessExpiresAt.setDate(accessExpiresAt.getDate() + (access_days || 30))
+
+    const { data: user, error } = await client
       .from('users')
       .update({
         name,
         email,
         role,
         status,
-        avatar_url
+        access_days: access_days || 30,
+        access_expires_at: accessExpiresAt.toISOString(),
+        allowed_categories: allowed_categories || [],
+        blocked_categories: blocked_categories || [],
+        allowed_courses: allowed_courses || [],
+        blocked_courses: blocked_courses || []
       })
       .eq('id', id)
       .select()
@@ -83,12 +90,15 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not configured')
+    // Usar admin se disponível, senão usar cliente público
+    const client = supabaseAdmin || supabase
+
+    if (!client) {
+      throw new Error('Supabase client not configured')
     }
     const { id } = params
 
-    const { error } = await supabaseAdmin
+    const { error } = await client
       .from('users')
       .delete()
       .eq('id', id)
@@ -104,4 +114,3 @@ export async function DELETE(
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }
-
