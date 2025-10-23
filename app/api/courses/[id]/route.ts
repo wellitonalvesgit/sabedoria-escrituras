@@ -4,10 +4,11 @@ import { supabaseAdmin, supabase } from '@/lib/supabase'
 // GET /api/courses/[id] - Buscar curso específico
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('API: Buscando curso com ID:', params.id)
+    const { id } = await params
+    console.log('API: Buscando curso com ID:', id)
     
     // Usar admin se disponível, senão usar cliente público
     const client = supabaseAdmin || supabase
@@ -17,7 +18,6 @@ export async function GET(
       throw new Error('Supabase client not configured')
     }
     
-    const { id } = params
     console.log('API: ID extraído dos params:', id)
 
     const { data: course, error } = await client
@@ -55,7 +55,7 @@ export async function GET(
 // PUT /api/courses/[id] - Atualizar curso
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Usar admin se disponível, senão usar cliente público
@@ -64,7 +64,7 @@ export async function PUT(
     if (!client) {
       throw new Error('Supabase client not configured')
     }
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     
     const { title, description, author, category, pages, reading_time_minutes, cover_url, status, pdfs } = body
@@ -133,7 +133,7 @@ export async function PUT(
 // DELETE /api/courses/[id] - Deletar curso
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Usar admin se disponível, senão usar cliente público
@@ -142,7 +142,7 @@ export async function DELETE(
     if (!client) {
       throw new Error('Supabase client not configured')
     }
-    const { id } = params
+    const { id } = await params
 
     // Deletar curso (PDFs serão deletados automaticamente por CASCADE)
     const { error } = await client
