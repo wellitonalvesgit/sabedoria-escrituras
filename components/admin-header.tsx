@@ -39,14 +39,14 @@ export function AdminHeader({
           <div className="flex items-center gap-4">
             {showBackButton && (
               <Link href={backHref}>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="hover:bg-primary/10 hover:border-primary">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   {backLabel}
                 </Button>
               </Link>
             )}
             <Link href="/">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="hover:bg-primary/10 hover:text-primary">
                 Ver Site
               </Button>
             </Link>

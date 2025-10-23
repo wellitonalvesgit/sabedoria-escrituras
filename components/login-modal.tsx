@@ -92,7 +92,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-0 h-full px-3"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-primary/10 hover:text-primary"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
@@ -104,7 +104,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full hover:bg-primary/90" disabled={loading}>
               {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
@@ -119,7 +119,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
 
           <Button
             variant="ghost"
-            className="w-full mt-4"
+            className="w-full mt-4 hover:bg-primary/10 hover:text-primary"
             onClick={onClose}
           >
             Fechar

@@ -5,6 +5,7 @@ import { BookOpen, Check, Star, Users, Award, Clock, Shield, ArrowRight, Eye, Ta
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
 import { LoginModal } from "@/components/login-modal"
 
@@ -75,7 +76,8 @@ export default function LandingPage() {
               <span className="text-xl font-semibold tracking-tight">Sabedoria das Escrituras</span>
             </div>
             <div className="flex items-center gap-4">
-              <Button variant="ghost" onClick={() => setShowLogin(true)}>
+              <ThemeToggle />
+              <Button variant="ghost" className="hover:bg-primary/10 hover:text-primary" onClick={() => setShowLogin(true)}>
                 Entrar
               </Button>
               <Button onClick={() => setShowLogin(true)}>
@@ -101,11 +103,11 @@ export default function LandingPage() {
               Entenda as Cartas de Paulo com explicações simples, contexto histórico e aplicações práticas — mesmo que você nunca tenha feito teologia.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="text-lg px-8 py-4" onClick={() => setShowLogin(true)}>
+              <Button size="lg" className="text-lg px-8 py-4 hover:bg-primary/90" onClick={() => setShowLogin(true)}>
                 QUERO AS CARTAS DE PAULO AGORA MESMO!
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-4" onClick={() => setShowLogin(true)}>
+              <Button size="lg" variant="outline" className="text-lg px-8 py-4 hover:bg-primary hover:text-primary-foreground" onClick={() => setShowLogin(true)}>
                 QUERO AS CARTAS DE PAULO AGORA MESMO!
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -124,7 +126,7 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="p-6 hover:shadow-lg transition-shadow">
+              <Card key={index} className="p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-300">
                 <CardContent className="p-0">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -167,7 +169,7 @@ export default function LandingPage() {
               { title: "1 Pedro", description: "Liderança que inspira e serve." },
               { title: "2 Pedro", description: "Perseverança até o fim da caminhada." }
             ].map((course, index) => (
-              <Card key={index} className="p-6 hover:shadow-lg transition-shadow">
+              <Card key={index} className="p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-300">
                 <CardContent className="p-0">
                   <h3 className="text-lg font-semibold text-foreground mb-2">{course.title}</h3>
                   <p className="text-muted-foreground">{course.description}</p>
@@ -195,7 +197,7 @@ export default function LandingPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="p-6">
+              <Card key={index} className="p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-300">
                 <CardContent className="p-0">
                   <div className="flex items-center gap-1 mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
@@ -239,7 +241,7 @@ export default function LandingPage() {
             <p className="text-xl text-muted-foreground mb-8">
               Comece seus estudos ainda hoje — sem esperas, sem complicação.
             </p>
-            <Button size="lg" className="text-lg px-8 py-4" onClick={() => setShowLogin(true)}>
+            <Button size="lg" className="text-lg px-8 py-4 hover:bg-primary/90" onClick={() => setShowLogin(true)}>
               QUERO AS CARTAS DE PAULO AGORA MESMO!
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>

@@ -118,17 +118,17 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="h-9 w-9 hidden md:flex">
+              <Button variant="ghost" size="icon" className="h-9 w-9 hidden md:flex hover:bg-primary/10 hover:text-primary">
                 <Search className="h-5 w-5" />
               </Button>
               <ThemeToggle />
               <PointsDisplay />
               <Link href="/settings">
-                <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-primary/10 hover:text-primary">
                   <User className="h-5 w-5" />
                 </Button>
               </Link>
-              <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden">
+              <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden hover:bg-primary/10 hover:text-primary">
                 <Menu className="h-5 w-5" />
               </Button>
             </div>
