@@ -1,4 +1,4 @@
-# 📚 Cartas de Paulo - Sistema de Cursos Bíblicos
+# 📚 Sabedoria das Escrituras - Sistema de Cursos Bíblicos
 
 Sistema completo de cursos bíblicos desenvolvido com Next.js 15, Supabase e TypeScript.
 
@@ -59,8 +59,8 @@ Sistema completo de cursos bíblicos desenvolvido com Next.js 15, Supabase e Typ
 
 1. **Clone o repositório:**
 ```bash
-git clone https://github.com/wellitonalvesgit/cartasdepaulo.git
-cd cartasdepaulo
+git clone https://github.com/wellitonalvesgit/sabedoria-escrituras.git
+cd sabedoria-escrituras
 ```
 
 2. **Instale as dependências:**
