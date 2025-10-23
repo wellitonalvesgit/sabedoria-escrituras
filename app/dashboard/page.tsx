@@ -123,9 +123,11 @@ export default function DashboardPage() {
               </Button>
               <ThemeToggle />
               <PointsDisplay />
-              <Button variant="ghost" size="icon" className="h-9 w-9">
-                <User className="h-5 w-5" />
-              </Button>
+              <Link href="/settings">
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
               <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden">
                 <Menu className="h-5 w-5" />
               </Button>
