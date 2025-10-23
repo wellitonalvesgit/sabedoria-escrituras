@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, supabase } from '@/lib/supabase'
 
 // GET /api/courses/[id] - Buscar curso específico
 export async function GET(
@@ -7,12 +7,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not configured')
+    // Usar admin se disponível, senão usar cliente público
+    const client = supabaseAdmin || supabase
+    
+    if (!client) {
+      throw new Error('Supabase client not configured')
     }
     const { id } = params
 
-    const { data: course, error } = await supabaseAdmin
+    const { data: course, error } = await client
       .from('courses')
       .select(`
         *,
@@ -49,8 +52,11 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not configured')
+    // Usar admin se disponível, senão usar cliente público
+    const client = supabaseAdmin || supabase
+    
+    if (!client) {
+      throw new Error('Supabase client not configured')
     }
     const { id } = params
     const body = await request.json()
@@ -58,7 +64,7 @@ export async function PUT(
     const { title, description, author, category, pages, reading_time_minutes, cover_url, status, pdfs } = body
 
     // Atualizar curso
-    const { data: course, error: courseError } = await supabaseAdmin
+    const { data: course, error: courseError } = await client
       .from('courses')
       .update({
         title,
@@ -82,7 +88,7 @@ export async function PUT(
     // Se PDFs foram fornecidos, atualizar
     if (pdfs) {
       // Primeiro, remover PDFs existentes
-      await supabaseAdmin
+      await client
         .from('course_pdfs')
         .delete()
         .eq('course_id', id)
@@ -101,7 +107,7 @@ export async function PUT(
           display_order: index
         }))
 
-        const { error: pdfsError } = await supabaseAdmin
+        const { error: pdfsError } = await client
           .from('course_pdfs')
           .insert(pdfsToInsert)
 
@@ -124,13 +130,16 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    if (!supabaseAdmin) {
-      throw new Error('Supabase admin client not configured')
+    // Usar admin se disponível, senão usar cliente público
+    const client = supabaseAdmin || supabase
+    
+    if (!client) {
+      throw new Error('Supabase client not configured')
     }
     const { id } = params
 
     // Deletar curso (PDFs serão deletados automaticamente por CASCADE)
-    const { error } = await supabaseAdmin
+    const { error } = await client
       .from('courses')
       .delete()
       .eq('id', id)
