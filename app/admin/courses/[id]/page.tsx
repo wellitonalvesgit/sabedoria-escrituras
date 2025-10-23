@@ -192,31 +192,38 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
 
   const handleAddPDF = async () => {
     try {
-      const response = await fetch(`/api/courses/${courseId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...editedCourse,
-          pdfs: [...course.course_pdfs, {
-            ...newPDF,
-            id: 'temp-' + Date.now(), // ID temporário
-            display_order: course.course_pdfs.length
-          }]
-        })
-      })
+      // Adicionar PDF diretamente no Supabase
+      const { createClient } = await import('@supabase/supabase-js')
       
-      if (!response.ok) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
+      
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      
+      const { error } = await supabase
+        .from('course_pdfs')
+        .insert({
+          course_id: courseId,
+          volume: newPDF.volume,
+          title: newPDF.title,
+          url: newPDF.url,
+          pages: newPDF.pages,
+          reading_time_minutes: newPDF.reading_time_minutes,
+          text_content: newPDF.text_content,
+          use_auto_conversion: newPDF.use_auto_conversion,
+          display_order: course.course_pdfs.length
+        })
+      
+      if (error) {
         throw new Error('Erro ao adicionar PDF')
       }
       
       alert("PDF adicionado com sucesso!")
-    setNewPDF({
-      volume: "",
-      title: "",
-      url: "",
-      pages: 0,
+      setNewPDF({
+        volume: "",
+        title: "",
+        url: "",
+        pages: 0,
         reading_time_minutes: 0,
         text_content: "",
         use_auto_conversion: true
@@ -236,23 +243,28 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
     if (!editingPDFData) return
 
     try {
-      // Atualizar PDF na lista
-      const updatedPDFs = course.course_pdfs.map(pdf => 
-        pdf.id === editingPDF ? editingPDFData : pdf
-      )
-
-      const response = await fetch(`/api/courses/${courseId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...editedCourse,
-          pdfs: updatedPDFs
-        })
-      })
+      // Atualizar PDF diretamente no Supabase
+      const { createClient } = await import('@supabase/supabase-js')
       
-      if (!response.ok) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
+      
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      
+      const { error } = await supabase
+        .from('course_pdfs')
+        .update({
+          volume: editingPDFData.volume,
+          title: editingPDFData.title,
+          url: editingPDFData.url,
+          pages: editingPDFData.pages,
+          reading_time_minutes: editingPDFData.reading_time_minutes,
+          text_content: editingPDFData.text_content,
+          use_auto_conversion: editingPDFData.use_auto_conversion
+        })
+        .eq('id', editingPDF)
+      
+      if (error) {
         throw new Error('Erro ao salvar PDF')
       }
       
@@ -282,16 +294,40 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
 
       const updatedPDFs = [...course.course_pdfs, duplicatedPDF]
 
-      const response = await fetch(`/api/courses/${courseId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...editedCourse,
-          pdfs: updatedPDFs
-        })
-      })
+      // Atualizar PDFs diretamente no Supabase
+      const { createClient } = await import('@supabase/supabase-js')
+      
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
+      
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      
+      // Primeiro, remover PDFs existentes
+      await supabase
+        .from('course_pdfs')
+        .delete()
+        .eq('course_id', courseId)
+      
+      // Inserir novos PDFs
+      if (updatedPDFs.length > 0) {
+        const { error } = await supabase
+          .from('course_pdfs')
+          .insert(updatedPDFs.map((pdf, index) => ({
+            course_id: courseId,
+            volume: pdf.volume,
+            title: pdf.title,
+            url: pdf.url,
+            pages: pdf.pages,
+            reading_time_minutes: pdf.reading_time_minutes,
+            text_content: pdf.text_content,
+            use_auto_conversion: pdf.use_auto_conversion,
+            display_order: index
+          })))
+        
+        if (error) throw error
+      }
+      
+      const response = { ok: true }
       
       if (!response.ok) {
         throw new Error('Erro ao duplicar PDF')
@@ -322,16 +358,25 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         display_order: index
       }))
 
-      const response = await fetch(`/api/courses/${courseId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...editedCourse,
-          pdfs: reorderedPDFs
-        })
-      })
+      // Atualizar ordem diretamente no Supabase
+      const { createClient } = await import('@supabase/supabase-js')
+      
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
+      
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      
+      // Atualizar display_order de cada PDF
+      for (const pdf of reorderedPDFs) {
+        const { error } = await supabase
+          .from('course_pdfs')
+          .update({ display_order: pdf.display_order })
+          .eq('id', pdf.id)
+        
+        if (error) throw error
+      }
+      
+      const response = { ok: true }
       
       if (!response.ok) {
         throw new Error('Erro ao reordenar PDF')
@@ -350,16 +395,24 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
     try {
         // Remover PDF da lista e atualizar curso
         const updatedPDFs = course.course_pdfs.filter(pdf => pdf.id !== pdfId)
-        const response = await fetch(`/api/courses/${courseId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...editedCourse,
-            pdfs: updatedPDFs
-          })
-        })
+        // Remover PDF diretamente do Supabase
+        const { createClient } = await import('@supabase/supabase-js')
+        
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
+        
+        const supabase = createClient(supabaseUrl, supabaseKey)
+        
+        const { error } = await supabase
+          .from('course_pdfs')
+          .delete()
+          .eq('id', pdfId)
+        
+        if (error) {
+          throw new Error('Erro ao remover PDF')
+        }
+        
+        const response = { ok: true }
         
         if (!response.ok) {
           throw new Error('Erro ao remover PDF')
@@ -409,16 +462,24 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
       setEditedCourse(prev => ({ ...prev, cover_url: result.fileUrl }))
       
       // Salvar automaticamente
-      const saveResponse = await fetch(`/api/courses/${courseId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...editedCourse,
-          cover_url: result.fileUrl
-        })
-      })
+      // Salvar capa diretamente no Supabase
+      const { createClient } = await import('@supabase/supabase-js')
+      
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
+      
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      
+      const { error } = await supabase
+        .from('courses')
+        .update({ cover_url: result.fileUrl })
+        .eq('id', courseId)
+      
+      if (error) {
+        throw new Error('Erro ao salvar capa')
+      }
+      
+      const saveResponse = { ok: true }
       
       if (!saveResponse.ok) {
         throw new Error('Erro ao salvar capa')
@@ -778,16 +839,24 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                       p.id === pdf.id ? { ...p, use_auto_conversion: checked } : p
                                     )
 
-                                    const response = await fetch(`/api/courses/${courseId}`, {
-                                      method: 'PUT',
-                                      headers: {
-                                        'Content-Type': 'application/json',
-                                      },
-                                      body: JSON.stringify({
-                                        ...editedCourse,
-                                        pdfs: updatedPDFs
-                                      })
-                                    })
+                                    // Atualizar configuração diretamente no Supabase
+                                    const { createClient } = await import('@supabase/supabase-js')
+                                    
+                                    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
+                                    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
+                                    
+                                    const supabase = createClient(supabaseUrl, supabaseKey)
+                                    
+                                    const { error } = await supabase
+                                      .from('course_pdfs')
+                                      .update({ use_auto_conversion: checked })
+                                      .eq('id', pdf.id)
+                                    
+                                    if (error) {
+                                      throw new Error('Erro ao atualizar configuração')
+                                    }
+                                    
+                                    const response = { ok: true }
                                     
                                     if (!response.ok) {
                                       throw new Error('Erro ao atualizar configuração')
@@ -822,16 +891,24 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                       p.id === pdf.id ? { ...p, text_content: e.target.value } : p
                                     )
 
-                                    const response = await fetch(`/api/courses/${courseId}`, {
-                                      method: 'PUT',
-                                      headers: {
-                                        'Content-Type': 'application/json',
-                                      },
-                                      body: JSON.stringify({
-                                        ...editedCourse,
-                                        pdfs: updatedPDFs
-                                      })
-                                    })
+                                    // Atualizar texto diretamente no Supabase
+                                    const { createClient } = await import('@supabase/supabase-js')
+                                    
+                                    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
+                                    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
+                                    
+                                    const supabase = createClient(supabaseUrl, supabaseKey)
+                                    
+                                    const { error } = await supabase
+                                      .from('course_pdfs')
+                                      .update({ text_content: e.target.value })
+                                      .eq('id', pdf.id)
+                                    
+                                    if (error) {
+                                      throw new Error('Erro ao salvar texto')
+                                    }
+                                    
+                                    const response = { ok: true }
                                     
                                     if (!response.ok) {
                                       throw new Error('Erro ao salvar texto')
@@ -885,16 +962,24 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                       p.id === pdf.id ? { ...p, text_content: null } : p
                                     )
 
-                                    const response = await fetch(`/api/courses/${courseId}`, {
-                                      method: 'PUT',
-                                      headers: {
-                                        'Content-Type': 'application/json',
-                                      },
-                                      body: JSON.stringify({
-                                        ...editedCourse,
-                                        pdfs: updatedPDFs
-                                      })
-                                    })
+                                    // Limpar texto diretamente no Supabase
+                                    const { createClient } = await import('@supabase/supabase-js')
+                                    
+                                    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
+                                    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
+                                    
+                                    const supabase = createClient(supabaseUrl, supabaseKey)
+                                    
+                                    const { error } = await supabase
+                                      .from('course_pdfs')
+                                      .update({ text_content: null })
+                                      .eq('id', pdf.id)
+                                    
+                                    if (error) {
+                                      throw new Error('Erro ao limpar texto')
+                                    }
+                                    
+                                    const response = { ok: true }
                                     
                                     if (!response.ok) {
                                       throw new Error('Erro ao limpar texto')
