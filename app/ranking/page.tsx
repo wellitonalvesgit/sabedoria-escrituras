@@ -32,8 +32,8 @@ const LeaderboardCard = ({ entry, index }: { entry: LeaderboardEntry; index: num
   const points = Math.floor(entry.totalDurationSeconds / 60)
   const level = Math.floor(points / 100)
   const coursesCompleted = entry.totalSessions
-  const streak = Math.floor(Math.random() * 100) + 1 // Mock data for streak
-  const change = Math.floor(Math.random() * 5) - 2 // Mock data for change
+  const streak = 0 // TODO: Implementar dados reais de streak
+  const change = 0 // TODO: Implementar dados reais de mudança
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -344,11 +344,18 @@ export default function RankingPage() {
             {/* Full Rankings */}
             <div className="rounded-2xl border border-border bg-card p-6">
               <h2 className="mb-4 text-xl font-bold text-foreground">Todos os Rankings</h2>
-              <ul className="space-y-2">
-                {leaderboard.map((entry, index) => (
-                  <LeaderboardCard key={entry.userId} entry={entry} index={index} />
-                ))}
-              </ul>
+              {leaderboard.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">Nenhum usuário no ranking ainda.</p>
+                  <p className="text-sm text-muted-foreground">Comece a estudar para aparecer no ranking!</p>
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {leaderboard.map((entry, index) => (
+                    <LeaderboardCard key={entry.userId} entry={entry} index={index} />
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
 
