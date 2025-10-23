@@ -45,7 +45,7 @@ export default function MyLearningPage() {
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
                   <BookOpen className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <span className="text-xl font-semibold tracking-tight">Academy</span>
+                <span className="text-xl font-semibold tracking-tight">Sabedoria das Escrituras</span>
               </Link>
 
               <div className="hidden md:flex items-center gap-6">
@@ -53,7 +53,7 @@ export default function MyLearningPage() {
                   href="/"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Courses
+                  Cursos
                 </Link>
                 <Link
                   href="/ranking"
@@ -65,7 +65,7 @@ export default function MyLearningPage() {
                   href="/my-learning"
                   className="text-sm font-medium text-foreground hover:text-primary transition-colors"
                 >
-                  My Learning
+                  Meu Aprendizado
                 </Link>
               </div>
             </div>
@@ -89,15 +89,15 @@ export default function MyLearningPage() {
 
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">My Learning</h1>
-          <p className="mt-2 text-lg text-muted-foreground">Track your progress and achievements</p>
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">Meu Aprendizado</h1>
+          <p className="mt-2 text-lg text-muted-foreground">Acompanhe seu progresso e conquistas</p>
         </div>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             <div className="rounded-2xl border border-border bg-card p-6">
-              <h2 className="mb-4 text-2xl font-bold text-foreground">Continue Learning</h2>
+              <h2 className="mb-4 text-2xl font-bold text-foreground">Continue Estudando</h2>
               <div className="space-y-4">
                 {enrolledCourses.map((course) => (
                   <Link

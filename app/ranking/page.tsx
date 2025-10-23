@@ -91,9 +91,9 @@ const LeaderboardCard = ({ entry, index }: { entry: LeaderboardEntry; index: num
           <span className="text-xs text-muted-foreground">Level {level}</span>
         </div>
         <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-          <span>{coursesCompleted} courses</span>
+          <span>{coursesCompleted} cursos</span>
           <span>•</span>
-          <span>{streak} day streak</span>
+          <span>{streak} dias seguidos</span>
         </div>
       </div>
 
@@ -218,7 +218,7 @@ export default function RankingPage() {
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
                   <BookOpen className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <span className="text-xl font-semibold tracking-tight">Academy</span>
+                <span className="text-xl font-semibold tracking-tight">Sabedoria das Escrituras</span>
               </Link>
 
               <div className="hidden md:flex items-center gap-6">
@@ -226,7 +226,7 @@ export default function RankingPage() {
                   href="/"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Courses
+                  Cursos
                 </Link>
                 <Link
                   href="/ranking"
@@ -238,7 +238,7 @@ export default function RankingPage() {
                   href="/my-learning"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  My Learning
+                  Meu Aprendizado
                 </Link>
               </div>
             </div>
@@ -262,8 +262,8 @@ export default function RankingPage() {
 
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">Global Leaderboard</h1>
-          <p className="mt-2 text-lg text-muted-foreground">Compete with learners worldwide</p>
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">Ranking Global</h1>
+          <p className="mt-2 text-lg text-muted-foreground">Compita com estudantes de todo o mundo</p>
         </div>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
@@ -273,7 +273,7 @@ export default function RankingPage() {
             <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-background to-accent/5 p-8">
               <h2 className="mb-6 text-2xl font-bold text-foreground flex items-center gap-2">
                 <Crown className="h-6 w-6 text-primary" />
-                Top Performers
+                Melhores Desempenhos
               </h2>
               <div className="flex items-end justify-center gap-4">
                 {/* 2nd Place */}
@@ -343,7 +343,7 @@ export default function RankingPage() {
 
             {/* Full Rankings */}
             <div className="rounded-2xl border border-border bg-card p-6">
-              <h2 className="mb-4 text-xl font-bold text-foreground">All Rankings</h2>
+              <h2 className="mb-4 text-xl font-bold text-foreground">Todos os Rankings</h2>
               <ul className="space-y-2">
                 {leaderboard.map((entry, index) => (
                   <LeaderboardCard key={entry.userId} entry={entry} index={index} />
@@ -356,10 +356,10 @@ export default function RankingPage() {
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
               <div className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 to-accent/10 p-6">
-                <h3 className="mb-4 text-xl font-bold text-foreground">Your Rank</h3>
+                <h3 className="mb-4 text-xl font-bold text-foreground">Seu Ranking</h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Current Position</span>
+                    <span className="text-sm text-muted-foreground">Posição Atual</span>
                     <div className="flex items-center gap-2">
                       <span className="text-3xl font-bold text-foreground">#{currentUser.rank}</span>
                       {currentUser.change > 0 && (
@@ -373,45 +373,45 @@ export default function RankingPage() {
 
                   <div className="space-y-3 rounded-xl bg-background/50 p-4">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Total XP</span>
+                      <span className="text-muted-foreground">XP Total</span>
                       <span className="font-bold text-foreground">{currentUser.points.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Level</span>
+                      <span className="text-muted-foreground">Nível</span>
                       <span className="font-bold text-foreground">{currentUser.level}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Courses</span>
+                      <span className="text-muted-foreground">Cursos</span>
                       <span className="font-bold text-foreground">{currentUser.coursesCompleted}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Streak</span>
-                      <span className="font-bold text-foreground">{currentUser.streak} days</span>
+                      <span className="text-muted-foreground">Sequência</span>
+                      <span className="font-bold text-foreground">{currentUser.streak} dias</span>
                     </div>
                   </div>
 
                   <div className="rounded-xl bg-muted/50 p-4">
-                    <p className="text-xs text-muted-foreground mb-2">Next Milestone</p>
+                    <p className="text-xs text-muted-foreground mb-2">Próximo Marco</p>
                     <p className="text-sm font-medium text-foreground">
-                      Earn <span className="text-primary font-bold">{xpNeeded} more XP</span> to reach Level{" "}
+                      Ganhe <span className="text-primary font-bold">{xpNeeded} XP a mais</span> para alcançar o Nível{" "}
                       {stats.level + 1}
                     </p>
                   </div>
 
                   <Link href="/my-learning">
                     <Button className="w-full" size="lg">
-                      Continue Learning
+                      Continue Estudando
                     </Button>
                   </Link>
                 </div>
               </div>
 
               <div className="rounded-2xl border border-border bg-card p-6">
-                <h3 className="mb-4 text-lg font-bold text-foreground">Leaderboard Info</h3>
+                <h3 className="mb-4 text-lg font-bold text-foreground">Informações do Ranking</h3>
                 <div className="space-y-3 text-sm text-muted-foreground">
-                  <p>Rankings are updated in real-time based on your learning activity.</p>
-                  <p>Earn XP by completing courses, maintaining streaks, and unlocking achievements.</p>
-                  <p className="text-xs pt-2 border-t border-border">Last updated: Just now</p>
+                  <p>Os rankings são atualizados em tempo real com base na sua atividade de aprendizado.</p>
+                  <p>Ganhe XP completando cursos, mantendo sequências e desbloqueando conquistas.</p>
+                  <p className="text-xs pt-2 border-t border-border">Última atualização: Agora mesmo</p>
                 </div>
               </div>
             </div>
