@@ -55,6 +55,7 @@ export default function DashboardPage() {
         throw new Error('Erro ao carregar cursos')
       }
       const data = await response.json()
+      console.log('Dashboard - courses data:', data.courses)
       setCourses(data.courses || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
@@ -162,7 +163,18 @@ export default function DashboardPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((course) => (
-              <CourseCard key={course.id} course={course} />
+              <CourseCard 
+                key={course.id} 
+                course={{
+                  id: course.id,
+                  slug: course.slug,
+                  title: course.title,
+                  description: course.description,
+                  readingTimeMinutes: course.reading_time_minutes || 0,
+                  coverUrl: course.cover_url,
+                  tags: course.tags
+                }} 
+              />
             ))}
           </div>
         )}

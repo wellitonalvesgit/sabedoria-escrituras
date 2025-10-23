@@ -20,6 +20,9 @@ interface CourseCardProps {
 
 export const CourseCard = ({ course, index }: CourseCardProps) => {
   const coverUrl = course.coverUrl || "/placeholder.svg?height=600&width=400"
+  
+  // Debug: log para verificar se a URL está chegando
+  console.log('CourseCard - course:', course.title, 'coverUrl:', course.coverUrl)
 
   // Função para obter a cor da tag
   const getTagColor = (tag: string) => {
@@ -66,10 +69,21 @@ export const CourseCard = ({ course, index }: CourseCardProps) => {
       )}
 
       <div className="relative overflow-hidden rounded-2xl">
-        <div
-          className="aspect-[4/5] w-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-          style={{ backgroundImage: `url(${coverUrl})` }}
-        />
+        {course.coverUrl ? (
+          <div
+            className="aspect-[4/5] w-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+            style={{ backgroundImage: `url(${coverUrl})` }}
+          />
+        ) : (
+          <div className="aspect-[4/5] w-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
+            <div className="text-center text-primary/60">
+              <div className="w-16 h-16 mx-auto mb-2 bg-primary/20 rounded-full flex items-center justify-center">
+                <span className="text-2xl">📚</span>
+              </div>
+              <p className="text-sm font-medium">Sem capa</p>
+            </div>
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white">
           <div>
