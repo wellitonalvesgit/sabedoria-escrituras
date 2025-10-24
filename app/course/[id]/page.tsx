@@ -11,18 +11,7 @@ import { OriginalPDFViewer } from "@/components/original-pdf-viewer"
 import { DigitalMagazineViewer } from "@/components/digital-magazine-viewer"
 import { useGamification } from "@/contexts/gamification-context"
 import { useState, use, useEffect } from "react"
-
-interface CoursePDF {
-  id: string
-  volume: string
-  title: string
-  url: string
-  pages?: number
-  reading_time_minutes?: number
-  text_content?: string
-  use_auto_conversion?: boolean
-  display_order: number
-}
+import { CoursePDF } from "@/lib/courses-data"
 
 interface Course {
   id: string
@@ -58,7 +47,18 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   const fetchCourse = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/courses/${courseId}`)
+      // Verificar se é um UUID (ID) ou slug
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(courseId)
+      
+      let response
+      if (isUUID) {
+        // Se for UUID, buscar por ID
+        response = await fetch(`/api/courses/${courseId}`)
+      } else {
+        // Se não for UUID, buscar por slug
+        response = await fetch(`/api/courses/by-slug/${courseId}`)
+      }
+      
       if (response.ok) {
         const data = await response.json()
         setCourse(data.course)
@@ -197,7 +197,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
             <PDFVolumeSelector
               pdfs={course.course_pdfs || []}
               onSelectPDF={handleSelectPDF}
-              selectedPDF={selectedPDF}
+              selectedPDF={selectedPDF || undefined}
             />
           </div>
         ) : selectedPDF && !viewMode ? (
