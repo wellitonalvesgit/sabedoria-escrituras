@@ -18,6 +18,7 @@ yarn-error.log*
 
 # env files
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -26,4 +27,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
+# arquivos temporários de documentação
+*-FINAL*.md
+*-PUSH*.md
+*-IMPLEMENTADAS*.md
+CRIAR-*.md
+EXECUTE-*.md

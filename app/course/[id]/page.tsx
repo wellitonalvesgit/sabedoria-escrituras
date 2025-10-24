@@ -10,20 +10,76 @@ import { ViewModeSelector } from "@/components/view-mode-selector"
 import { OriginalPDFViewer } from "@/components/original-pdf-viewer"
 import { DigitalMagazineViewer } from "@/components/digital-magazine-viewer"
 import { useGamification } from "@/contexts/gamification-context"
-import { useState, use } from "react"
-import { getCourseById, CoursePDF } from "@/lib/courses-data"
+import { useState, use, useEffect } from "react"
+
+interface CoursePDF {
+  id: string
+  volume: string
+  title: string
+  url: string
+  pages?: number
+  reading_time_minutes?: number
+  text_content?: string
+  use_auto_conversion?: boolean
+  display_order: number
+}
+
+interface Course {
+  id: string
+  slug: string
+  title: string
+  description: string
+  author?: string
+  category?: string
+  pages?: number
+  reading_time_minutes?: number
+  cover_url?: string
+  status: string
+  created_at: string
+  course_pdfs: CoursePDF[]
+}
 
 export default function CoursePage({ params }: { params: Promise<{ id: string }> }) {
   const { id: courseId } = use(params)
   const [showPDFReader, setShowPDFReader] = useState(false)
   const [selectedPDF, setSelectedPDF] = useState<CoursePDF | null>(null)
-  const [viewMode, setViewMode] = useState<'original' | 'digital-magazine' | null>(null)
+  const [viewMode, setViewMode] = useState<'original' | 'digital-magazine' | undefined>(undefined)
   const [readingMode, setReadingMode] = useState<'light' | 'sepia' | 'dark'>('light')
   const { addPoints } = useGamification()
   const [sessionDuration, setSessionDuration] = useState(0)
   const [lastPage, setLastPage] = useState(1)
+  const [course, setCourse] = useState<Course | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const course = getCourseById(courseId)
+  useEffect(() => {
+    fetchCourse()
+  }, [courseId])
+
+  const fetchCourse = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/courses/${courseId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setCourse(data.course)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar curso:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          <span>Carregando curso...</span>
+        </div>
+      </div>
+    )
+  }
 
   if (!course) {
     return (
@@ -36,7 +92,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   const handleSessionUpdate = (durationSeconds: number, currentPage: number) => {
     setSessionDuration(durationSeconds)
     if (currentPage > lastPage) {
-      addPoints(5)
+      addPoints(5, `Leu até a página ${currentPage}`)
       setLastPage(currentPage)
     }
   }
@@ -62,7 +118,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   }
 
   const handleBackToModeSelection = () => {
-    setViewMode(null)
+    setViewMode(undefined)
   }
 
   return (
@@ -139,7 +195,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
             <p className="text-base leading-relaxed text-[#CABFAF] max-w-3xl mb-8">{course.description}</p>
 
             <PDFVolumeSelector
-              pdfs={course.pdfs}
+              pdfs={course.course_pdfs || []}
               onSelectPDF={handleSelectPDF}
               selectedPDF={selectedPDF}
             />
@@ -188,7 +244,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
               <div className="flex gap-3">
                 <Button
                   onClick={() => {
-                    setViewMode(null)
+                    setViewMode(undefined)
                     setShowPDFReader(false)
                     setSelectedPDF(null)
                   }}
@@ -200,7 +256,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                 </Button>
                 <button
                   onClick={() => {
-                    addPoints(sessionDuration)
+                    addPoints(sessionDuration, `Sessão de leitura de ${Math.round(sessionDuration / 60)} minutos`)
                     alert("Progresso salvo no ranking!")
                   }}
                   disabled={sessionDuration < 60}

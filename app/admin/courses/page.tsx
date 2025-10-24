@@ -5,6 +5,7 @@ import { BookOpen, Plus, Edit, Trash2, Eye, ArrowLeft, Loader2 } from "lucide-re
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import Link from "next/link"
 
 interface CoursePDF {
@@ -36,12 +37,36 @@ interface Course {
 
 export default function AdminCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([])
+  const [filteredCourses, setFilteredCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
 
   useEffect(() => {
     fetchCourses()
   }, [])
+
+  // Filtrar cursos quando search ou filtro mudar
+  useEffect(() => {
+    let filtered = courses
+
+    // Filtro de busca
+    if (searchTerm) {
+      filtered = filtered.filter(course =>
+        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.author?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.description.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+
+    // Filtro de status
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(course => course.status === statusFilter)
+    }
+
+    setFilteredCourses(filtered)
+  }, [courses, searchTerm, statusFilter])
 
   const fetchCourses = async () => {
     try {
@@ -120,10 +145,12 @@ export default function AdminCoursesPage() {
                   Voltar ao Dashboard
                 </Button>
               </Link>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Curso
-              </Button>
+              <Link href="/admin/courses/new">
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Novo Curso
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -135,13 +162,41 @@ export default function AdminCoursesPage() {
           <p className="text-muted-foreground">Adicione, edite ou remova cursos da plataforma</p>
         </div>
 
+        {/* Search and Filters */}
+        <div className="mb-6 flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <Input
+              type="search"
+              placeholder="Buscar cursos por título, autor ou descrição..."
+              value={searchTerm}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-border rounded-md bg-background min-w-[150px]"
+          >
+            <option value="all">Todos os Status</option>
+            <option value="published">Publicado</option>
+            <option value="draft">Rascunho</option>
+            <option value="archived">Arquivado</option>
+          </select>
+        </div>
+
+        {/* Results count */}
+        <div className="mb-4 text-sm text-muted-foreground">
+          Mostrando {filteredCourses.length} de {courses.length} cursos
+        </div>
+
         {/* Courses Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => (
+          {filteredCourses.map((course) => (
             <Card key={course.id} className="group hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1">
                     <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                       <BookOpen className="h-6 w-6 text-primary" />
                     </div>
@@ -150,9 +205,20 @@ export default function AdminCoursesPage() {
                       <p className="text-sm text-muted-foreground">{course.author}</p>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    Ativo
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      Ativo
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => handleDeleteCourse(course.id, course.title)}
+                      title="Deletar curso"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -195,10 +261,12 @@ export default function AdminCoursesPage() {
             <p className="text-sm text-muted-foreground mb-4 text-center">
               Crie um novo curso com múltiplos volumes de PDF
             </p>
-            <Button size="lg">
-              <Plus className="mr-2 h-5 w-5" />
-              Criar Novo Curso
-            </Button>
+            <Link href="/admin/courses/new">
+              <Button size="lg">
+                <Plus className="mr-2 h-5 w-5" />
+                Criar Novo Curso
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       </div>

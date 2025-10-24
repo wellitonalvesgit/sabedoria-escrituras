@@ -1,20 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-
-interface User {
-  id: string
-  name: string
-  email: string
-  role: string
-  status: string
-  access_days?: number
-  access_expires_at?: string
-  allowed_categories?: string[]
-  blocked_categories?: string[]
-  allowed_courses?: string[]
-  blocked_courses?: string[]
-}
+import { getCurrentUser, User } from "@/lib/auth"
 
 export function useCurrentUser() {
   const [user, setUser] = useState<User | null>(null)
@@ -27,12 +14,12 @@ export function useCurrentUser() {
   const fetchCurrentUser = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/user/current')
-      if (response.ok) {
-        const data = await response.json()
-        setUser(data.user)
+      const currentUser = await getCurrentUser()
+      
+      if (currentUser) {
+        setUser(currentUser)
       } else {
-        // Fallback para usuário mock se a API falhar
+        // Fallback para usuário mock se não houver autenticação
         const mockUser: User = {
           id: "43f29360-cfff-4f67-8c6e-70503e4194b9",
           name: "Aluno Teste",
@@ -44,7 +31,15 @@ export function useCurrentUser() {
           allowed_categories: [],
           blocked_categories: [],
           allowed_courses: [],
-          blocked_courses: []
+          blocked_courses: [],
+          total_points: 0,
+          total_reading_minutes: 0,
+          courses_enrolled: 0,
+          courses_completed: 0,
+          current_level: 1,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_active_at: new Date().toISOString()
         }
         setUser(mockUser)
       }
@@ -62,7 +57,15 @@ export function useCurrentUser() {
         allowed_categories: [],
         blocked_categories: [],
         allowed_courses: [],
-        blocked_courses: []
+        blocked_courses: [],
+        total_points: 0,
+        total_reading_minutes: 0,
+        courses_enrolled: 0,
+        courses_completed: 0,
+        current_level: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        last_active_at: new Date().toISOString()
       }
       setUser(mockUser)
     } finally {

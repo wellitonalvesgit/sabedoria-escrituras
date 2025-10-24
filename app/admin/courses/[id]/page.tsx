@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { PDFUpload } from "@/components/pdf-upload"
 import { GoogleDriveLink } from "@/components/google-drive-link"
 import { ImageUpload } from "@/components/image-upload"
+import { CategorySelector } from "@/components/category-selector"
 import Link from "next/link"
 
 interface CoursePDF {
@@ -71,6 +72,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
   })
 
   const [showTextConfig, setShowTextConfig] = useState<number | null>(null)
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 
   useEffect(() => {
     fetchCourse()
@@ -80,14 +82,10 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
     try {
       setLoading(true)
       console.log('Buscando curso com ID:', courseId)
-      
-      // Buscar dados diretamente do Supabase (fallback direto)
-      const { createClient } = await import('@supabase/supabase-js')
-      
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
-      
-      const supabase = createClient(supabaseUrl, supabaseKey)
+
+      // Buscar dados diretamente do Supabase
+      const { getSupabaseClient } = await import('@/lib/supabase-admin')
+      const supabase = getSupabaseClient()
       
       console.log('Buscando curso diretamente do Supabase...')
       
@@ -105,6 +103,9 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
             text_content,
             use_auto_conversion,
             display_order
+          ),
+          course_categories (
+            category_id
           )
         `)
         .eq('id', courseId)
@@ -131,6 +132,11 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         pages: course.pages || 0,
         cover_url: course.cover_url || ""
       })
+      
+      // Carregar categorias do curso
+      if (course.course_categories) {
+        setSelectedCategories(course.course_categories.map((cc: any) => cc.category_id))
+      }
     } catch (err) {
       console.error('Erro ao buscar curso:', err)
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
@@ -167,12 +173,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
   const handleSave = async () => {
     try {
       // Salvar diretamente no Supabase
-      const { createClient } = await import('@supabase/supabase-js')
-      
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
-      
-      const supabase = createClient(supabaseUrl, supabaseKey)
+      const { getSupabaseClient } = await import('@/lib/supabase-admin')
+      const supabase = getSupabaseClient()
       
       const { error } = await supabase
         .from('courses')
@@ -181,6 +183,30 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
       
       if (error) {
         throw new Error('Erro ao salvar curso')
+      }
+
+      // Atualizar categorias do curso
+      // Primeiro, remover todas as categorias existentes
+      await supabase
+        .from('course_categories')
+        .delete()
+        .eq('course_id', courseId)
+
+      // Adicionar novas categorias
+      if (selectedCategories.length > 0) {
+        const categoryRelations = selectedCategories.map(categoryId => ({
+          course_id: courseId,
+          category_id: categoryId
+        }))
+
+        const { error: categoriesError } = await supabase
+          .from('course_categories')
+          .insert(categoryRelations)
+
+        if (categoriesError) {
+          console.error('Erro ao atualizar categorias:', categoriesError)
+          // Não bloqueia o salvamento do curso
+        }
       }
       
       alert("Curso salvo com sucesso!")
@@ -193,12 +219,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
   const handleAddPDF = async () => {
     try {
       // Adicionar PDF diretamente no Supabase
-      const { createClient } = await import('@supabase/supabase-js')
-      
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
-      
-      const supabase = createClient(supabaseUrl, supabaseKey)
+      const { getSupabaseClient } = await import('@/lib/supabase-admin')
+      const supabase = getSupabaseClient()
       
       const { error } = await supabase
         .from('course_pdfs')
@@ -244,12 +266,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
 
     try {
       // Atualizar PDF diretamente no Supabase
-      const { createClient } = await import('@supabase/supabase-js')
-      
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
-      
-      const supabase = createClient(supabaseUrl, supabaseKey)
+      const { getSupabaseClient } = await import('@/lib/supabase-admin')
+      const supabase = getSupabaseClient()
       
       const { error } = await supabase
         .from('course_pdfs')
@@ -295,12 +313,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
       const updatedPDFs = [...course.course_pdfs, duplicatedPDF]
 
       // Atualizar PDFs diretamente no Supabase
-      const { createClient } = await import('@supabase/supabase-js')
-      
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
-      
-      const supabase = createClient(supabaseUrl, supabaseKey)
+      const { getSupabaseClient } = await import('@/lib/supabase-admin')
+      const supabase = getSupabaseClient()
       
       // Primeiro, remover PDFs existentes
       await supabase
@@ -359,12 +373,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
       }))
 
       // Atualizar ordem diretamente no Supabase
-      const { createClient } = await import('@supabase/supabase-js')
-      
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
-      
-      const supabase = createClient(supabaseUrl, supabaseKey)
+      const { getSupabaseClient } = await import('@/lib/supabase-admin')
+      const supabase = getSupabaseClient()
       
       // Atualizar display_order de cada PDF
       for (const pdf of reorderedPDFs) {
@@ -396,12 +406,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         // Remover PDF da lista e atualizar curso
         const updatedPDFs = course.course_pdfs.filter(pdf => pdf.id !== pdfId)
         // Remover PDF diretamente do Supabase
-        const { createClient } = await import('@supabase/supabase-js')
-        
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
-        
-        const supabase = createClient(supabaseUrl, supabaseKey)
+        const { getSupabaseClient } = await import('@/lib/supabase-admin')
+        const supabase = getSupabaseClient()
         
         const { error } = await supabase
           .from('course_pdfs')
@@ -463,12 +469,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
       
       // Salvar automaticamente
       // Salvar capa diretamente no Supabase
-      const { createClient } = await import('@supabase/supabase-js')
-      
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
-      
-      const supabase = createClient(supabaseUrl, supabaseKey)
+      const { getSupabaseClient } = await import('@/lib/supabase-admin')
+      const supabase = getSupabaseClient()
       
       const { error } = await supabase
         .from('courses')
@@ -562,12 +564,15 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                 </div>
 
                 <div>
-                  <Label htmlFor="category">Categoria</Label>
-                  <Input
-                    id="category"
-                    value={editedCourse.category}
-                    onChange={(e) => setEditedCourse(prev => ({ ...prev, category: e.target.value }))}
+                  <Label>Categorias</Label>
+                  <CategorySelector
+                    selectedCategories={selectedCategories}
+                    onChange={setSelectedCategories}
+                    multiple={true}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Selecione uma ou mais categorias para este curso
+                  </p>
                 </div>
 
                 <div>
@@ -840,12 +845,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                     )
 
                                     // Atualizar configuração diretamente no Supabase
-                                    const { createClient } = await import('@supabase/supabase-js')
-                                    
-                                    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-                                    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
-                                    
-                                    const supabase = createClient(supabaseUrl, supabaseKey)
+                                    const { getSupabaseClient } = await import('@/lib/supabase-admin')
+                                    const supabase = getSupabaseClient()
                                     
                                     const { error } = await supabase
                                       .from('course_pdfs')
@@ -892,12 +893,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                     )
 
                                     // Atualizar texto diretamente no Supabase
-                                    const { createClient } = await import('@supabase/supabase-js')
-                                    
-                                    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-                                    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
-                                    
-                                    const supabase = createClient(supabaseUrl, supabaseKey)
+                                    const { getSupabaseClient } = await import('@/lib/supabase-admin')
+                                    const supabase = getSupabaseClient()
                                     
                                     const { error } = await supabase
                                       .from('course_pdfs')
@@ -963,12 +960,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                     )
 
                                     // Limpar texto diretamente no Supabase
-                                    const { createClient } = await import('@supabase/supabase-js')
-                                    
-                                    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-                                    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDQ5NzIsImV4cCI6MjA0NzcyMDk3Mn0.8K8vQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQrJvQ'
-                                    
-                                    const supabase = createClient(supabaseUrl, supabaseKey)
+                                    const { getSupabaseClient } = await import('@/lib/supabase-admin')
+                                    const supabase = getSupabaseClient()
                                     
                                     const { error } = await supabase
                                       .from('course_pdfs')

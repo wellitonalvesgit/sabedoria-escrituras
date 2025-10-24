@@ -1,6 +1,6 @@
 "use client"
 
-import { BookOpen, Plus, Edit, Trash2, Upload, FileText, Users, BarChart3 } from "lucide-react"
+import { BookOpen, Plus, Edit, Trash2, Upload, FileText, Users, BarChart3, Tag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -17,9 +17,15 @@ interface Course {
 export default function AdminPage() {
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    totalCategories: 0
+  })
 
   useEffect(() => {
     fetchCourses()
+    fetchStats()
   }, [])
 
   const fetchCourses = async () => {
@@ -33,6 +39,40 @@ export default function AdminPage() {
       console.error('Erro ao carregar cursos:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchStats = async () => {
+    try {
+      const { getSupabaseClient } = await import('@/lib/supabase-admin')
+      const supabase = getSupabaseClient()
+
+      // Buscar usuários
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('status')
+
+      if (!usersError && users) {
+        setStats(prev => ({
+          ...prev,
+          totalUsers: users.length,
+          activeUsers: users.filter(u => u.status === 'active').length
+        }))
+      }
+
+      // Buscar categorias
+      const { data: categories, error: categoriesError } = await supabase
+        .from('categories')
+        .select('id')
+
+      if (!categoriesError && categories) {
+        setStats(prev => ({
+          ...prev,
+          totalCategories: categories.length
+        }))
+      }
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas:', error)
     }
   }
 
@@ -85,7 +125,7 @@ export default function AdminPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total de Cursos</CardTitle>
@@ -125,8 +165,19 @@ export default function AdminPage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Em desenvolvimento</p>
+              <div className="text-2xl font-bold">{stats.activeUsers}</div>
+              <p className="text-xs text-muted-foreground">de {stats.totalUsers} usuários</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Categorias</CardTitle>
+              <Tag className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalCategories}</div>
+              <p className="text-xs text-muted-foreground">Categorias criadas</p>
             </CardContent>
           </Card>
         </div>
@@ -176,18 +227,18 @@ export default function AdminPage() {
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5 text-[#F3C77A]" />
-                Upload de PDFs
+                <Tag className="h-5 w-5 text-[#F3C77A]" />
+                Gerenciar Categorias
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Faça upload de novos PDFs para os cursos
+                Organize cursos em categorias e subcategorias
               </p>
-              <Link href="/admin/upload" className="w-full">
+              <Link href="/admin/categories" className="w-full">
                 <Button className="w-full bg-[#F3C77A] text-black hover:bg-[#FFD88A]">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload PDFs
+                  <Tag className="mr-2 h-4 w-4" />
+                  Acessar Categorias
                 </Button>
               </Link>
             </CardContent>

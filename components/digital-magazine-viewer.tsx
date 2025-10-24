@@ -89,87 +89,71 @@ export const DigitalMagazineViewer = ({
 
   const currentTemp = readingTemperatures[readingMode]
 
-  // Simular extração de texto com conteúdo mais realista
+  // Carregar texto real do banco de dados
   useEffect(() => {
-    const simulateTextExtraction = async () => {
+    const loadTextContent = async () => {
       setIsLoading(true)
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Conteúdo simulado mais realista baseado no curso
-      const mockText = [
-        "PANORAMA BÍBLICO - DESVENDANDO AS PARÁBOLAS DE JESUS",
-        "PARTE 01 - INTRODUÇÃO ÀS PARÁBOLAS",
-        "",
-        "As parábolas de Jesus são uma das formas mais poderosas de ensino encontradas nos evangelhos. Através de histórias simples e cotidianas, Jesus transmitia verdades profundas sobre o Reino de Deus.",
-        "",
-        "Cada parábola carrega em si múltiplas camadas de significado, permitindo que diferentes audiências compreendam a mensagem de acordo com seu nível de maturidade espiritual.",
-        "",
-        "Neste estudo, exploraremos as principais parábolas de Jesus, analisando seu contexto histórico, significado original e aplicações práticas para nossa vida cristã contemporânea.",
-        "",
-        "CAPÍTULO 1: O QUE SÃO PARÁBOLAS?",
-        "",
-        "A palavra 'parábola' vem do grego 'parabole', que significa 'colocar ao lado'. Jesus usava comparações entre situações conhecidas e verdades espirituais desconhecidas.",
-        "",
-        "As parábolas serviam como:",
-        "• Ferramentas de ensino para revelar verdades",
-        "• Meios de ocultar verdades dos incrédulos", 
-        "• Instrumentos de memorização",
-        "• Pontes entre o natural e o sobrenatural",
-        "",
-        "CAPÍTULO 2: A PARÁBOLA DO SEMEADOR",
-        "",
-        "Esta parábola, registrada em Mateus 13:1-23, Marcos 4:1-20 e Lucas 8:4-15, é fundamental para compreender como a Palavra de Deus é recebida pelos diferentes tipos de coração.",
-        "",
-        "Jesus conta a história de um semeador que saiu a semear, e as sementes caíram em diferentes tipos de solo:",
-        "",
-        "1. À BEIRA DO CAMINHO - Representa corações endurecidos",
-        "2. EM TERRENO PEDREGOSO - Representa corações superficiais", 
-        "3. ENTRE ESPINHOS - Representa corações divididos",
-        "4. EM BOA TERRA - Representa corações receptivos",
-        "",
-        "Cada tipo de solo representa um tipo diferente de receptividade à Palavra de Deus, ensinando-nos sobre a importância de preparar nosso coração para receber a verdade divina.",
-        "",
-        "APLICAÇÃO PRÁTICA:",
-        "",
-        "Como podemos preparar nosso coração para ser 'boa terra'?",
-        "",
-        "• Arrependimento regular",
-        "• Estudo constante da Palavra",
-        "• Oração e comunhão com Deus",
-        "• Obediência aos mandamentos",
-        "• Comunhão com outros crentes",
-        "",
-        "CAPÍTULO 3: A PARÁBOLA DO TRIGO E DO JOIO",
-        "",
-        "Esta parábola, encontrada em Mateus 13:24-30, ensina sobre a coexistência do bem e do mal no mundo até o juízo final.",
-        "",
-        "O fazendeiro semeou boa semente, mas o inimigo veio de noite e semeou joio no meio do trigo. Os servos queriam arrancar o joio, mas o fazendeiro disse para esperar até a colheita.",
-        "",
-        "LIÇÕES IMPORTANTES:",
-        "",
-        "1. O mal existe no mundo",
-        "2. Deus permite a coexistência temporária",
-        "3. O julgamento final está reservado a Deus",
-        "4. Devemos focar em crescer como trigo",
-        "",
-        "Esta parábola nos ensina sobre paciência, discernimento e confiança no plano de Deus.",
-        "",
-        "CONCLUSÃO DA PARTE 01",
-        "",
-        "As parábolas de Jesus são tesouros inesgotáveis de sabedoria. Cada estudo nos revela novas camadas de significado e aplicação prática.",
-        "",
-        "Continue estudando com dedicação, e permita que o Espírito Santo ilumine sua compreensão das verdades eternas contidas nestas histórias simples, mas profundas.",
-        "",
-        "Na próxima parte, exploraremos mais parábolas e suas aplicações práticas para nossa vida cristã."
-      ]
-      
-      setExtractedText(mockText)
-      setTotalPages(mockText.length)
-      setIsLoading(false)
+
+      try {
+        // 1. Verificar se há textContent no pdfData do banco
+        if (pdfData?.textContent) {
+          console.log('Usando textContent do banco de dados')
+          // Dividir o texto em parágrafos/páginas
+          const paragraphs = pdfData.textContent
+            .split('\n\n')
+            .filter((p: string) => p.trim().length > 0)
+
+          setExtractedText(paragraphs)
+          setTotalPages(paragraphs.length)
+        }
+        // 2. Se useAutoConversion estiver habilitado, tentar extrair do PDF
+        else if (pdfData?.useAutoConversion !== false) {
+          console.log('Tentando extração automática do PDF...')
+          // TODO: Implementar extração real com pdf.js
+          // Por enquanto, mostrar mensagem informativa
+          setExtractedText([
+            'Modo de Leitura Digital',
+            '',
+            'Extração automática de PDF em desenvolvimento.',
+            '',
+            'Para usar o Modo Kindle, o administrador deve:',
+            '1. Ir em Admin → Cursos → Editar Curso',
+            '2. Encontrar o PDF desejado',
+            '3. Clicar em "Texto Kindle"',
+            '4. Colar o texto extraído manualmente ou fazer upload de arquivo TXT',
+            '',
+            'Alternativamente, aguarde a implementação da extração automática com pdf.js.'
+          ])
+          setTotalPages(11)
+        }
+        // 3. Fallback: mensagem de texto não disponível
+        else {
+          console.log('Texto não disponível para este PDF')
+          setExtractedText([
+            'Texto Não Disponível',
+            '',
+            'O modo de leitura digital não está disponível para este PDF.',
+            '',
+            'Entre em contato com o administrador para solicitar a configuração do texto.'
+          ])
+          setTotalPages(5)
+        }
+      } catch (error) {
+        console.error('Erro ao carregar texto:', error)
+        setExtractedText([
+          'Erro ao Carregar Texto',
+          '',
+          'Ocorreu um erro ao tentar carregar o conteúdo.',
+          'Por favor, tente novamente mais tarde.'
+        ])
+        setTotalPages(4)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    simulateTextExtraction()
-  }, [pdfUrl])
+    loadTextContent()
+  }, [pdfData, pdfUrl])
 
   useEffect(() => {
     pageFlipAudioRef.current = new Audio()

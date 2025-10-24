@@ -6,7 +6,9 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "seed": "node scripts/seed-database.js",
+    "migrate": "node scripts/migrate-courses-to-supabase.js"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",

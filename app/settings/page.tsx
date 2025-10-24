@@ -86,40 +86,44 @@ export default function SettingsPage() {
   const fetchUserProfile = async () => {
     try {
       setLoading(true)
-      // Simular busca do usuário atual (em produção, viria da autenticação)
-      const mockUser: UserProfile = {
-        id: "current-user",
-        name: "Usuário Teste",
-        email: "usuario@teste.com",
-        cpf: "123.456.789-00",
-        phone: "(11) 99999-9999",
-        bio: "Estudante dedicado das Escrituras",
-        birth_date: "1990-01-01",
-        address: "Rua das Flores, 123",
-        city: "São Paulo",
-        state: "SP",
-        zip_code: "01234-567",
-        role: "student",
-        status: "active",
-        access_days: 30,
-        access_expires_at: "2024-12-31T23:59:59Z",
-        preferences: {},
-        notification_settings: {},
-        created_at: "2024-01-01T00:00:00Z"
+
+      // Buscar usuário autenticado real do Supabase
+      const { getCurrentUser } = await import('@/lib/auth')
+      const currentUser = await getCurrentUser()
+
+      if (!currentUser) {
+        setError("Usuário não autenticado")
+        setLoading(false)
+        return
       }
-      
-      setUser(mockUser)
+
+      // Converter para UserProfile (adicionar campos extras se necessário)
+      const userProfile: UserProfile = {
+        ...currentUser,
+        cpf: "",
+        phone: "",
+        bio: "",
+        birth_date: "",
+        address: "",
+        city: "",
+        state: "",
+        zip_code: "",
+        preferences: {},
+        notification_settings: {}
+      }
+
+      setUser(userProfile)
       setProfileData({
-        name: mockUser.name,
-        email: mockUser.email,
-        cpf: mockUser.cpf || "",
-        phone: mockUser.phone || "",
-        bio: mockUser.bio || "",
-        birth_date: mockUser.birth_date || "",
-        address: mockUser.address || "",
-        city: mockUser.city || "",
-        state: mockUser.state || "",
-        zip_code: mockUser.zip_code || ""
+        name: userProfile.name,
+        email: userProfile.email,
+        cpf: userProfile.cpf || "",
+        phone: userProfile.phone || "",
+        bio: userProfile.bio || "",
+        birth_date: userProfile.birth_date || "",
+        address: userProfile.address || "",
+        city: userProfile.city || "",
+        state: userProfile.state || "",
+        zip_code: userProfile.zip_code || ""
       })
     } catch (err) {
       setError("Erro ao carregar perfil do usuário")
@@ -132,13 +136,28 @@ export default function SettingsPage() {
     try {
       setSaving(true)
       setError(null)
-      
-      // Simular salvamento
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
+      if (!user) {
+        setError("Usuário não autenticado")
+        return
+      }
+
+      // Atualizar perfil no banco
+      const { updateUserProfile } = await import('@/lib/auth')
+      const { error } = await updateUserProfile(user.id, {
+        name: profileData.name,
+        email: profileData.email,
+        // Nota: cpf, phone, bio, etc precisam ser adicionados na tabela users
+      })
+
+      if (error) {
+        throw error
+      }
+
       setSuccess("Perfil atualizado com sucesso!")
+      await fetchUserProfile() // Recarregar dados
     } catch (err) {
-      setError("Erro ao salvar perfil")
+      setError("Erro ao salvar perfil: " + (err as Error).message)
     } finally {
       setSaving(false)
     }
@@ -148,20 +167,27 @@ export default function SettingsPage() {
     try {
       setSaving(true)
       setError(null)
-      
+
       if (passwordData.new_password !== passwordData.confirm_password) {
         setError("As senhas não coincidem")
+        setSaving(false)
         return
       }
-      
+
       if (passwordData.new_password.length < 6) {
         setError("A senha deve ter pelo menos 6 caracteres")
+        setSaving(false)
         return
       }
-      
-      // Simular mudança de senha
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
+      // Alterar senha no Supabase
+      const { updatePassword } = await import('@/lib/auth')
+      const { error } = await updatePassword(passwordData.new_password)
+
+      if (error) {
+        throw error
+      }
+
       setSuccess("Senha alterada com sucesso!")
       setPasswordData({
         current_password: "",
@@ -169,7 +195,7 @@ export default function SettingsPage() {
         confirm_password: ""
       })
     } catch (err) {
-      setError("Erro ao alterar senha")
+      setError("Erro ao alterar senha: " + (err as Error).message)
     } finally {
       setSaving(false)
     }
@@ -179,13 +205,24 @@ export default function SettingsPage() {
     try {
       setSaving(true)
       setError(null)
-      
-      // Simular envio de email de recuperação
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
+      if (!user?.email) {
+        setError("Email do usuário não encontrado")
+        setSaving(false)
+        return
+      }
+
+      // Enviar email de recuperação real
+      const { resetPassword } = await import('@/lib/auth')
+      const { error } = await resetPassword(user.email)
+
+      if (error) {
+        throw error
+      }
+
       setSuccess("Email de recuperação enviado! Verifique sua caixa de entrada.")
     } catch (err) {
-      setError("Erro ao enviar email de recuperação")
+      setError("Erro ao enviar email de recuperação: " + (err as Error).message)
     } finally {
       setSaving(false)
     }
@@ -195,13 +232,24 @@ export default function SettingsPage() {
     try {
       setSaving(true)
       setError(null)
-      
-      // Simular geração de link mágico
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      setSuccess("Link mágico gerado! Verifique sua caixa de entrada.")
+
+      if (!user?.email) {
+        setError("Email do usuário não encontrado")
+        setSaving(false)
+        return
+      }
+
+      // Gerar magic link real
+      const { sendMagicLink } = await import('@/lib/auth')
+      const { error } = await sendMagicLink(user.email)
+
+      if (error) {
+        throw error
+      }
+
+      setSuccess("Link mágico enviado! Verifique sua caixa de entrada.")
     } catch (err) {
-      setError("Erro ao gerar link mágico")
+      setError("Erro ao gerar link mágico: " + (err as Error).message)
     } finally {
       setSaving(false)
     }

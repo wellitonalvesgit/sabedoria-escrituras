@@ -133,11 +133,36 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     localStorage.setItem("gamification-stats", JSON.stringify(stats))
   }, [stats])
 
+  // Carregar dados do banco quando o componente monta
+  useEffect(() => {
+    loadStatsFromDatabase()
+  }, [])
+
+  const loadStatsFromDatabase = async () => {
+    try {
+      const response = await fetch('/api/gamification')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.stats) {
+          setStats(prev => ({
+            ...prev,
+            totalPoints: data.stats.total_points || 0,
+            level: data.stats.current_level || 1,
+            coursesCompleted: data.stats.courses_completed || 0,
+            pagesRead: Math.floor((data.stats.total_reading_minutes || 0) / 2), // Estimativa
+          }))
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar stats do banco:', error)
+    }
+  }
+
   const calculateLevel = (points: number) => {
     return Math.floor(points / 100) + 1
   }
 
-  const addPoints = (points: number, reason: string) => {
+  const addPoints = async (points: number, reason: string) => {
     setStats((prev) => {
       const newPoints = prev.totalPoints + points
       const newLevel = calculateLevel(newPoints)
@@ -155,12 +180,37 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
         description: reason,
       })
 
-      return {
+      const newStats = {
         ...prev,
         totalPoints: newPoints,
         level: newLevel,
       }
+
+      // Sincronizar com o banco de dados
+      syncWithDatabase(newStats)
+
+      return newStats
     })
+  }
+
+  const syncWithDatabase = async (stats: UserStats) => {
+    try {
+      await fetch('/api/gamification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          totalPoints: stats.totalPoints,
+          level: stats.level,
+          coursesCompleted: stats.coursesCompleted,
+          pagesRead: stats.pagesRead,
+          currentStreak: stats.currentStreak
+        }),
+      })
+    } catch (error) {
+      console.error('Erro ao sincronizar com banco:', error)
+    }
   }
 
   const unlockAchievement = (achievementId: string) => {

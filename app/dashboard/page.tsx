@@ -1,17 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { BookOpen, Search, User, Menu, Loader2, Shield, Clock } from "lucide-react"
+import { BookOpen, Search, User, Menu, Loader2, Shield, Clock, Filter, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { PointsDisplay } from "@/components/points-display"
 import { LogoutButton } from "@/components/logout-button"
 import { MobileDrawer } from "@/components/mobile-drawer"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import { CourseCard } from "@/components/course-card"
 import { HeroSection } from "@/components/hero-section"
 import { CourseStats } from "@/components/course-stats"
+import { CategorySelector } from "@/components/category-selector"
 import { useCurrentUser } from "@/hooks/use-current-user"
 
 interface CoursePDF {
@@ -44,8 +47,11 @@ interface Course {
 
 export default function DashboardPage() {
   const [courses, setCourses] = useState<Course[]>([])
+  const [allCourses, setAllCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
   const { user, loading: userLoading, hasAccessToCategory, hasAccessToCourse, isAccessExpired } = useCurrentUser()
 
   useEffect(() => {
@@ -53,6 +59,36 @@ export default function DashboardPage() {
       fetchCourses()
     }
   }, [userLoading])
+
+  // Aplicar filtros
+  useEffect(() => {
+    let filtered = allCourses
+
+    // Filtro por categorias
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter(course => {
+        // Verificar se o curso tem alguma das categorias selecionadas
+        // Por enquanto, vamos usar o campo category simples
+        // TODO: Implementar busca por course_categories quando disponível
+        return selectedCategories.some(catId => 
+          course.category === catId || 
+          course.tags?.includes(catId)
+        )
+      })
+    }
+
+    // Filtro por termo de busca
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(course => 
+        course.title.toLowerCase().includes(term) ||
+        course.description.toLowerCase().includes(term) ||
+        course.author?.toLowerCase().includes(term)
+      )
+    }
+
+    setCourses(filtered)
+  }, [allCourses, selectedCategories, searchTerm])
 
   const fetchCourses = async () => {
     try {
@@ -80,6 +116,7 @@ export default function DashboardPage() {
       })
       
       console.log('Dashboard - filtered courses:', filteredCourses)
+      setAllCourses(filteredCourses)
       setCourses(filteredCourses)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
@@ -196,6 +233,77 @@ export default function DashboardPage() {
             Acesse conteúdos em PDF, leitura responsiva com efeito de revista, progresso gamificado e desafios semanais.
           </p>
         </div>
+
+        {/* Filtros */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Buscar cursos..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  {searchTerm && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                      onClick={() => setSearchTerm("")}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="flex-1">
+                <CategorySelector
+                  selectedCategories={selectedCategories}
+                  onChange={setSelectedCategories}
+                  multiple={true}
+                />
+              </div>
+            </div>
+            
+            {/* Filtros ativos */}
+            {(selectedCategories.length > 0 || searchTerm) && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {selectedCategories.length > 0 && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <Filter className="h-3 w-3" />
+                    {selectedCategories.length} categoria(s)
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 ml-1"
+                      onClick={() => setSelectedCategories([])}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                {searchTerm && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <Search className="h-3 w-3" />
+                    "{searchTerm}"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 ml-1"
+                      onClick={() => setSearchTerm("")}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {courses.length === 0 ? (
           <div className="text-center py-12">

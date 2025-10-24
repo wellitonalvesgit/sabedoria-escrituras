@@ -25,15 +25,25 @@ export function LoginModal({ onClose }: LoginModalProps) {
     setError("")
 
     try {
-      // Simular autenticação
-      if (email === "aluno@teste.com" && password === "123456") {
-        // Redirecionar para área do aluno
-        window.location.href = "/dashboard"
-      } else if (email === "admin@teste.com" && password === "123456") {
-        // Redirecionar para área admin
-        window.location.href = "/admin"
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Redirecionar baseado no role do usuário
+        if (data.user.role === 'admin') {
+          window.location.href = "/admin"
+        } else {
+          window.location.href = "/dashboard"
+        }
       } else {
-        setError("Email ou senha incorretos")
+        setError(data.error || "Email ou senha incorretos")
       }
     } catch (err) {
       setError("Erro ao fazer login")

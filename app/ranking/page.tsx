@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { BookOpen, Search, User, Menu, Crown, Medal, Award, TrendingUp, TrendingDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -120,93 +121,63 @@ const LeaderboardCard = ({ entry, index }: { entry: LeaderboardEntry; index: num
 
 export default function RankingPage() {
   const { stats } = useGamification()
-
-  const currentUser = {
-    rank: 47,
-    name: "You",
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [currentUser, setCurrentUser] = useState({
+    rank: 0,
+    name: "Você",
     avatar: "/placeholder.svg?height=40&width=40",
     points: stats.totalPoints,
     level: stats.level,
     coursesCompleted: stats.coursesCompleted,
     streak: stats.currentStreak,
-    change: 5,
-  }
+    change: 0,
+  })
+  const [loading, setLoading] = useState(true)
 
-  const leaderboard: LeaderboardEntry[] = [
-    {
-      userId: "1",
-      displayName: "Alexandra Chen",
-      photoUrl: "/professional-woman-diverse.png",
-      totalDurationSeconds: 15420 * 60,
-      totalSessions: 28,
-    },
-    {
-      userId: "2",
-      displayName: "Marcus Johnson",
-      photoUrl: "/professional-man.jpg",
-      totalDurationSeconds: 14890 * 60,
-      totalSessions: 26,
-    },
-    {
-      userId: "3",
-      displayName: "Sofia Rodriguez",
-      photoUrl: "/professional-woman-diverse.png",
-      totalDurationSeconds: 13750 * 60,
-      totalSessions: 24,
-    },
-    {
-      userId: "4",
-      displayName: "David Kim",
-      photoUrl: "/professional-man.jpg",
-      totalDurationSeconds: 12340 * 60,
-      totalSessions: 22,
-    },
-    {
-      userId: "5",
-      displayName: "Emma Wilson",
-      photoUrl: "/professional-woman-diverse.png",
-      totalDurationSeconds: 11890 * 60,
-      totalSessions: 21,
-    },
-    {
-      userId: "6",
-      displayName: "James Anderson",
-      photoUrl: "/professional-man.jpg",
-      totalDurationSeconds: 10950 * 60,
-      totalSessions: 19,
-    },
-    {
-      userId: "7",
-      displayName: "Olivia Martinez",
-      photoUrl: "/professional-woman-diverse.png",
-      totalDurationSeconds: 10120 * 60,
-      totalSessions: 18,
-    },
-    {
-      userId: "8",
-      displayName: "Michael Brown",
-      photoUrl: "/professional-man.jpg",
-      totalDurationSeconds: 9780 * 60,
-      totalSessions: 17,
-    },
-    {
-      userId: "9",
-      displayName: "Isabella Garcia",
-      photoUrl: "/professional-woman-diverse.png",
-      totalDurationSeconds: 9340 * 60,
-      totalSessions: 16,
-    },
-    {
-      userId: "10",
-      displayName: "William Taylor",
-      photoUrl: "/professional-man.jpg",
-      totalDurationSeconds: 8920 * 60,
-      totalSessions: 15,
-    },
-  ]
+  useEffect(() => {
+    fetchRanking()
+  }, [])
+
+  const fetchRanking = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/ranking')
+      if (response.ok) {
+        const data = await response.json()
+        setLeaderboard(data.leaderboard || [])
+        
+        // Encontrar posição do usuário atual
+        const userIndex = data.leaderboard.findIndex((entry: any) => entry.userId === 'current-user')
+        if (userIndex !== -1) {
+          setCurrentUser(prev => ({
+            ...prev,
+            rank: userIndex + 1,
+            points: data.leaderboard[userIndex].totalPoints,
+            level: data.leaderboard[userIndex].level,
+            coursesCompleted: data.leaderboard[userIndex].totalSessions
+          }))
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar ranking:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const nextLevelXP = stats.level * 100
   const xpNeeded = nextLevelXP - stats.totalPoints
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          <span>Carregando ranking...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -270,76 +241,78 @@ export default function RankingPage() {
           {/* Main Leaderboard */}
           <div className="lg:col-span-2 space-y-6">
             {/* Top 3 Podium */}
-            <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-background to-accent/5 p-8">
-              <h2 className="mb-6 text-2xl font-bold text-foreground flex items-center gap-2">
-                <Crown className="h-6 w-6 text-primary" />
-                Melhores Desempenhos
-              </h2>
-              <div className="flex items-end justify-center gap-4">
-                {/* 2nd Place */}
-                <div className="flex flex-col items-center">
-                  <div className="relative mb-3">
-                    <img
-                      src={leaderboard[1].photoUrl || "/placeholder.svg"}
-                      alt={leaderboard[1].displayName}
-                      className="h-20 w-20 rounded-full border-4 border-gray-400 object-cover"
-                    />
-                    <div className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-gray-300 to-gray-500 shadow-lg">
-                      <span className="text-sm font-bold text-white">2</span>
+            {leaderboard.length >= 3 && (
+              <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-background to-accent/5 p-8">
+                <h2 className="mb-6 text-2xl font-bold text-foreground flex items-center gap-2">
+                  <Crown className="h-6 w-6 text-primary" />
+                  Melhores Desempenhos
+                </h2>
+                <div className="flex items-end justify-center gap-4">
+                  {/* 2nd Place */}
+                  <div className="flex flex-col items-center">
+                    <div className="relative mb-3">
+                      <img
+                        src={leaderboard[1].photoUrl || "/placeholder.svg"}
+                        alt={leaderboard[1].displayName}
+                        className="h-20 w-20 rounded-full border-4 border-gray-400 object-cover"
+                      />
+                      <div className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-gray-300 to-gray-500 shadow-lg">
+                        <span className="text-sm font-bold text-white">2</span>
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-border bg-card p-4 text-center w-32">
+                      <p className="font-semibold text-foreground text-sm truncate">{leaderboard[1].displayName}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {Math.floor(leaderboard[1].totalDurationSeconds / 60).toLocaleString()} XP
+                      </p>
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-border bg-card p-4 text-center w-32">
-                    <p className="font-semibold text-foreground text-sm truncate">{leaderboard[1].displayName}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {Math.floor(leaderboard[1].totalDurationSeconds / 60).toLocaleString()} XP
-                    </p>
-                  </div>
-                </div>
 
-                {/* 1st Place */}
-                <div className="flex flex-col items-center -mt-8">
-                  <div className="relative mb-3">
-                    <img
-                      src={leaderboard[0].photoUrl || "/placeholder.svg"}
-                      alt={leaderboard[0].displayName}
-                      className="h-24 w-24 rounded-full border-4 border-yellow-500 object-cover shadow-xl shadow-yellow-500/20"
-                    />
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Crown className="h-8 w-8 text-yellow-500 drop-shadow-lg" />
+                  {/* 1st Place */}
+                  <div className="flex flex-col items-center -mt-8">
+                    <div className="relative mb-3">
+                      <img
+                        src={leaderboard[0].photoUrl || "/placeholder.svg"}
+                        alt={leaderboard[0].displayName}
+                        className="h-24 w-24 rounded-full border-4 border-yellow-500 object-cover shadow-xl shadow-yellow-500/20"
+                      />
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <Crown className="h-8 w-8 text-yellow-500 drop-shadow-lg" />
+                      </div>
+                      <div className="absolute -bottom-2 -right-2 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg">
+                        <span className="text-base font-bold text-white">1</span>
+                      </div>
                     </div>
-                    <div className="absolute -bottom-2 -right-2 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg">
-                      <span className="text-base font-bold text-white">1</span>
+                    <div className="rounded-2xl border-2 border-yellow-500/30 bg-card p-4 text-center w-36 shadow-lg">
+                      <p className="font-bold text-foreground truncate">{leaderboard[0].displayName}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {Math.floor(leaderboard[0].totalDurationSeconds / 60).toLocaleString()} XP
+                      </p>
                     </div>
                   </div>
-                  <div className="rounded-2xl border-2 border-yellow-500/30 bg-card p-4 text-center w-36 shadow-lg">
-                    <p className="font-bold text-foreground truncate">{leaderboard[0].displayName}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {Math.floor(leaderboard[0].totalDurationSeconds / 60).toLocaleString()} XP
-                    </p>
-                  </div>
-                </div>
 
-                {/* 3rd Place */}
-                <div className="flex flex-col items-center">
-                  <div className="relative mb-3">
-                    <img
-                      src={leaderboard[2].photoUrl || "/placeholder.svg"}
-                      alt={leaderboard[2].displayName}
-                      className="h-20 w-20 rounded-full border-4 border-amber-600 object-cover"
-                    />
-                    <div className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-amber-700 shadow-lg">
-                      <span className="text-sm font-bold text-white">3</span>
+                  {/* 3rd Place */}
+                  <div className="flex flex-col items-center">
+                    <div className="relative mb-3">
+                      <img
+                        src={leaderboard[2].photoUrl || "/placeholder.svg"}
+                        alt={leaderboard[2].displayName}
+                        className="h-20 w-20 rounded-full border-4 border-amber-600 object-cover"
+                      />
+                      <div className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-amber-700 shadow-lg">
+                        <span className="text-sm font-bold text-white">3</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="rounded-2xl border border-border bg-card p-4 text-center w-32">
-                    <p className="font-semibold text-foreground text-sm truncate">{leaderboard[2].displayName}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {Math.floor(leaderboard[2].totalDurationSeconds / 60).toLocaleString()} XP
-                    </p>
+                    <div className="rounded-2xl border border-border bg-card p-4 text-center w-32">
+                      <p className="font-semibold text-foreground text-sm truncate">{leaderboard[2].displayName}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {Math.floor(leaderboard[2].totalDurationSeconds / 60).toLocaleString()} XP
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Full Rankings */}
             <div className="rounded-2xl border border-border bg-card p-6">
