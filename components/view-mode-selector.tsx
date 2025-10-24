@@ -20,10 +20,17 @@ interface ViewModeSelectorProps {
   onSelectMode: (mode: 'original' | 'digital-magazine') => void
   selectedMode?: 'original' | 'digital-magazine'
   onDownload: () => void
+  readingMode?: 'light' | 'sepia' | 'dark'
+  onReadingModeChange?: (mode: 'light' | 'sepia' | 'dark') => void
 }
 
-export const ViewModeSelector = ({ onSelectMode, selectedMode, onDownload }: ViewModeSelectorProps) => {
-  const [readingMode, setReadingMode] = useState<'light' | 'sepia' | 'dark'>('light')
+export const ViewModeSelector = ({ 
+  onSelectMode, 
+  selectedMode, 
+  onDownload, 
+  readingMode = 'light', 
+  onReadingModeChange 
+}: ViewModeSelectorProps) => {
 
   return (
     <div className="space-y-6">
@@ -166,7 +173,7 @@ export const ViewModeSelector = ({ onSelectMode, selectedMode, onDownload }: Vie
               <Button
                 variant={readingMode === 'light' ? "default" : "outline"}
                 size="sm"
-                onClick={() => setReadingMode('light')}
+                onClick={() => onReadingModeChange?.('light')}
                 className={readingMode === 'light' ? "bg-[#F3C77A] text-black" : ""}
               >
                 <Sun className="h-4 w-4 mr-2" />
@@ -175,7 +182,7 @@ export const ViewModeSelector = ({ onSelectMode, selectedMode, onDownload }: Vie
               <Button
                 variant={readingMode === 'sepia' ? "default" : "outline"}
                 size="sm"
-                onClick={() => setReadingMode('sepia')}
+                onClick={() => onReadingModeChange?.('sepia')}
                 className={readingMode === 'sepia' ? "bg-[#F3C77A] text-black" : ""}
               >
                 <Palette className="h-4 w-4 mr-2" />
@@ -184,7 +191,7 @@ export const ViewModeSelector = ({ onSelectMode, selectedMode, onDownload }: Vie
               <Button
                 variant={readingMode === 'dark' ? "default" : "outline"}
                 size="sm"
-                onClick={() => setReadingMode('dark')}
+                onClick={() => onReadingModeChange?.('dark')}
                 className={readingMode === 'dark' ? "bg-[#F3C77A] text-black" : ""}
               >
                 <Moon className="h-4 w-4 mr-2" />

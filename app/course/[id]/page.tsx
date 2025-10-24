@@ -206,6 +206,8 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
               onSelectMode={handleSelectViewMode}
               selectedMode={viewMode}
               onDownload={handleDownload}
+              readingMode={readingMode}
+              onReadingModeChange={setReadingMode}
             />
           </div>
         ) : selectedPDF && viewMode ? (
