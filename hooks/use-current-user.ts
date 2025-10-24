@@ -14,11 +14,22 @@ export function useCurrentUser() {
   const fetchCurrentUser = async () => {
     try {
       setLoading(true)
+      console.log('🔍 Buscando usuário atual...')
+      
       const currentUser = await getCurrentUser()
+      console.log('👤 Usuário encontrado:', currentUser ? {
+        id: currentUser.id,
+        email: currentUser.email,
+        name: currentUser.name,
+        role: currentUser.role,
+        status: currentUser.status
+      } : 'Nenhum usuário')
       
       if (currentUser) {
         setUser(currentUser)
+        console.log('✅ Usuário definido:', currentUser.role)
       } else {
+        console.log('⚠️ Nenhum usuário autenticado, usando fallback')
         // Fallback para usuário mock se não houver autenticação
         const mockUser: User = {
           id: "43f29360-cfff-4f67-8c6e-70503e4194b9",
@@ -44,7 +55,7 @@ export function useCurrentUser() {
         setUser(mockUser)
       }
     } catch (error) {
-      console.error('Erro ao buscar usuário atual:', error)
+      console.error('❌ Erro ao buscar usuário atual:', error)
       // Fallback para usuário mock
       const mockUser: User = {
         id: "43f29360-cfff-4f67-8c6e-70503e4194b9",

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { signIn } from '@/lib/auth'
+import { signIn, getCurrentUser } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,12 +19,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 401 })
     }
 
+    // Buscar dados completos do usuário da tabela users
+    const fullUser = await getCurrentUser()
+
+    if (!fullUser) {
+      return NextResponse.json({ error: 'Erro ao buscar dados do usuário' }, { status: 500 })
+    }
+
     return NextResponse.json({ 
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.user_metadata?.role || 'student'
-      },
+      user: fullUser,
       message: 'Login realizado com sucesso'
     })
 

@@ -13,7 +13,13 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Cliente público (usar em componentes client-side e server-side)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+})
 
 // Cliente admin (APENAS para uso server-side - API routes, server components)
 // Bypassa Row Level Security

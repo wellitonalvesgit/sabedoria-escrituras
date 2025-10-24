@@ -28,7 +28,6 @@ export async function getCurrentUser(): Promise<User | null> {
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !authUser) {
-      console.log('Nenhum usuário autenticado')
       return null
     }
 
