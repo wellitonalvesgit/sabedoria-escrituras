@@ -134,3 +134,4 @@ async function seedDatabase() {
 // Executar seed
 seedDatabase().catch(console.error)
 
+

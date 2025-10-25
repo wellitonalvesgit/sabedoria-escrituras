@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-// PUT /api/highlights/[id] - Atualizar marcação
+// PUT /api/summaries/[id] - Atualizar resumo
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -45,39 +45,51 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { text_content, highlight_color, note } = body
+    const { title, content, highlight_ids } = body
 
-    // Atualizar apenas se a marcação pertence ao usuário (RLS vai garantir isso)
-    const { data: highlight, error } = await supabase
-      .from('highlights')
+    // Atualizar apenas se o resumo pertence ao usuário (RLS vai garantir isso)
+    const { data: summary, error } = await supabase
+      .from('summaries')
       .update({
-        text_content,
-        highlight_color,
-        note
+        title,
+        content,
+        highlight_ids
         // updated_at será atualizado automaticamente pelo trigger
       })
       .eq('id', id)
       .eq('user_id', user.id) // Garantir que apenas o dono pode atualizar
-      .select()
+      .select(`
+        *,
+        courses (
+          id,
+          title,
+          slug
+        ),
+        course_pdfs (
+          id,
+          title,
+          volume
+        )
+      `)
       .single()
 
     if (error) {
-      console.error('Erro ao atualizar marcação:', error)
-      return NextResponse.json({ error: 'Erro ao atualizar marcação' }, { status: 500 })
+      console.error('Erro ao atualizar resumo:', error)
+      return NextResponse.json({ error: 'Erro ao atualizar resumo' }, { status: 500 })
     }
 
-    if (!highlight) {
-      return NextResponse.json({ error: 'Marcação não encontrada ou sem permissão' }, { status: 404 })
+    if (!summary) {
+      return NextResponse.json({ error: 'Resumo não encontrado ou sem permissão' }, { status: 404 })
     }
 
-    return NextResponse.json({ highlight })
+    return NextResponse.json({ summary })
   } catch (error) {
-    console.error('Erro na API de atualização de marcação:', error)
+    console.error('Erro na API de atualização de resumo:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }
 
-// DELETE /api/highlights/[id] - Deletar marcação
+// DELETE /api/summaries/[id] - Deletar resumo
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -120,21 +132,21 @@ export async function DELETE(
 
     const { id } = await params
 
-    // Deletar apenas se a marcação pertence ao usuário (RLS vai garantir isso)
+    // Deletar apenas se o resumo pertence ao usuário (RLS vai garantir isso)
     const { error } = await supabase
-      .from('highlights')
+      .from('summaries')
       .delete()
       .eq('id', id)
       .eq('user_id', user.id) // Garantir que apenas o dono pode deletar
 
     if (error) {
-      console.error('Erro ao deletar marcação:', error)
-      return NextResponse.json({ error: 'Erro ao deletar marcação' }, { status: 500 })
+      console.error('Erro ao deletar resumo:', error)
+      return NextResponse.json({ error: 'Erro ao deletar resumo' }, { status: 500 })
     }
 
-    return NextResponse.json({ message: 'Marcação deletada com sucesso' })
+    return NextResponse.json({ message: 'Resumo deletado com sucesso' })
   } catch (error) {
-    console.error('Erro na API de exclusão de marcação:', error)
+    console.error('Erro na API de exclusão de resumo:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }

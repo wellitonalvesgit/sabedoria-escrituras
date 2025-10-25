@@ -102,3 +102,4 @@ async function migrateCourses() {
 // Executar migração
 migrateCourses().catch(console.error)
 
+

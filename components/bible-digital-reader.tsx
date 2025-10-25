@@ -1,15 +1,18 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { ChevronLeft, ChevronRight, Volume2, VolumeX, Sun, Moon, Palette, RotateCcw, Settings, BookOpen, Eye, EyeOff, Type, AlignLeft, AlignCenter, AlignJustify, Minus, Plus, Bookmark, BookmarkCheck, Zap, ZapOff, Download, FileText } from "lucide-react"
+import { ChevronLeft, ChevronRight, Volume2, VolumeX, Sun, Moon, Palette, RotateCcw, Settings, BookOpen, Eye, EyeOff, Type, AlignLeft, AlignCenter, AlignJustify, Minus, Plus, Bookmark, BookmarkCheck, Zap, ZapOff, Download, FileText, Highlighter } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
 import { Slider } from "@/components/ui/slider"
 import { CoursePDF } from "@/lib/courses-data"
+import { HighlightToolbar } from "@/components/highlight-toolbar"
+import { SummariesPanel } from "@/components/summaries-panel"
 
 interface BibleDigitalReaderProps {
   pdfUrl: string
   courseId: string
+  pdfId?: string  // ID do PDF no banco de dados (necessário para highlights)
   pdfData?: CoursePDF  // Dados completos do PDF incluindo text_content pré-carregado
   onSessionUpdate?: (durationSeconds: number, currentPage: number) => void
   readingMode?: 'light' | 'sepia' | 'dark'
@@ -19,6 +22,7 @@ interface BibleDigitalReaderProps {
 export const BibleDigitalReader = ({
   pdfUrl,
   courseId,
+  pdfId,
   pdfData,
   onSessionUpdate,
   readingMode = 'light',
@@ -43,6 +47,12 @@ export const BibleDigitalReader = ({
   const [scrollSpeed, setScrollSpeed] = useState(1)
   const [showChapterNumbers, setShowChapterNumbers] = useState(true)
   const [showVerseNumbers, setShowVerseNumbers] = useState(true)
+  const [selectedText, setSelectedText] = useState('')
+  const [showHighlightToolbar, setShowHighlightToolbar] = useState(false)
+  const [showSummariesPanel, setShowSummariesPanel] = useState(false)
+  const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null)
+  const [highlights, setHighlights] = useState<any[]>([])
+  const [isLoadingHighlights, setIsLoadingHighlights] = useState(false)
 
   const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const pageFlipAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -246,6 +256,164 @@ export const BibleDigitalReader = ({
     document.body.removeChild(element)
   }
 
+  // Handler para captura de seleção de texto
+  const handleTextSelection = () => {
+    const selection = window.getSelection()
+    const text = selection?.toString().trim()
+
+    if (text && text.length > 0) {
+      setSelectedText(text)
+
+      // Calcular posição do texto no conteúdo completo
+      const range = selection?.getRangeAt(0)
+      if (range && textContainerRef.current) {
+        const preSelectionRange = range.cloneRange()
+        preSelectionRange.selectNodeContents(textContainerRef.current)
+        preSelectionRange.setEnd(range.startContainer, range.startOffset)
+        const start = preSelectionRange.toString().length
+        const end = start + text.length
+
+        setSelectionRange({ start, end })
+      }
+
+      setShowHighlightToolbar(true)
+    } else {
+      setShowHighlightToolbar(false)
+    }
+  }
+
+  // Carregar highlights do servidor
+  const loadHighlights = async () => {
+    if (!pdfId) return
+
+    setIsLoadingHighlights(true)
+    try {
+      const response = await fetch(`/api/highlights?course_id=${courseId}&pdf_id=${pdfId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setHighlights(data.highlights || [])
+      } else {
+        console.error('Erro ao carregar highlights')
+      }
+    } catch (error) {
+      console.error('Erro ao carregar highlights:', error)
+    } finally {
+      setIsLoadingHighlights(false)
+    }
+  }
+
+  // Handler para criar highlight
+  const handleCreateHighlight = async (color: string, note?: string) => {
+    if (!selectedText || !pdfId || !selectionRange) {
+      console.warn('Faltam dados para criar highlight:', { selectedText, pdfId, selectionRange })
+      return
+    }
+
+    try {
+      const response = await fetch('/api/highlights', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          course_id: courseId,
+          pdf_id: pdfId,
+          page_number: 1, // Para texto corrido, usar página 1
+          text_content: selectedText,
+          start_position: selectionRange.start,
+          end_position: selectionRange.end,
+          highlight_color: color,
+          note: note || undefined,
+        }),
+      })
+
+      if (response.ok) {
+        console.log('Marcação criada com sucesso')
+        setShowHighlightToolbar(false)
+        setSelectedText('')
+        setSelectionRange(null)
+
+        // Limpar seleção
+        window.getSelection()?.removeAllRanges()
+
+        // Recarregar highlights
+        await loadHighlights()
+      } else {
+        const error = await response.json()
+        console.error('Erro ao criar marcação:', error)
+        alert('Erro ao criar marcação: ' + (error.error || 'Erro desconhecido'))
+      }
+    } catch (error) {
+      console.error('Erro ao criar marcação:', error)
+      alert('Erro ao criar marcação. Por favor, tente novamente.')
+    }
+  }
+
+  // Handler para deletar highlight
+  const handleDeleteHighlight = async (id: string) => {
+    try {
+      const response = await fetch(`/api/highlights/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        console.log('Marcação deletada com sucesso')
+        await loadHighlights()
+      } else {
+        const error = await response.json()
+        console.error('Erro ao deletar marcação:', error)
+        alert('Erro ao deletar marcação: ' + (error.error || 'Erro desconhecido'))
+      }
+    } catch (error) {
+      console.error('Erro ao deletar marcação:', error)
+      alert('Erro ao deletar marcação. Por favor, tente novamente.')
+    }
+  }
+
+  // Handler para atualizar nota do highlight
+  const handleUpdateHighlight = async (id: string, note: string) => {
+    try {
+      const response = await fetch(`/api/highlights/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ note }),
+      })
+
+      if (response.ok) {
+        console.log('Marcação atualizada com sucesso')
+        await loadHighlights()
+      } else {
+        const error = await response.json()
+        console.error('Erro ao atualizar marcação:', error)
+        alert('Erro ao atualizar marcação: ' + (error.error || 'Erro desconhecido'))
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar marcação:', error)
+      alert('Erro ao atualizar marcação. Por favor, tente novamente.')
+    }
+  }
+
+  // Carregar highlights quando o componente montar ou pdfId mudar
+  useEffect(() => {
+    loadHighlights()
+  }, [pdfId, courseId])
+
+  // Adicionar listener para seleção de texto
+  useEffect(() => {
+    const container = textContainerRef.current
+    if (container) {
+      container.addEventListener('mouseup', handleTextSelection)
+      container.addEventListener('touchend', handleTextSelection)
+
+      return () => {
+        container.removeEventListener('mouseup', handleTextSelection)
+        container.removeEventListener('touchend', handleTextSelection)
+      }
+    }
+  }, [extractedText])
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[600px] space-y-6">
@@ -332,6 +500,16 @@ export const BibleDigitalReader = ({
             Baixar TXT
           </button>
 
+          {pdfId && (
+            <button
+              onClick={() => setShowSummariesPanel(true)}
+              className="flex items-center gap-2 rounded-full border border-[#2E261D] px-3 py-1 text-xs text-[#BCB19F] transition-colors hover:border-[#F3C77A]"
+            >
+              <Highlighter className="h-3 w-3" />
+              Marcações e Resumos
+            </button>
+          )}
+
           <Button
             onClick={() => setShowSettings(!showSettings)}
             variant="ghost"
@@ -347,6 +525,34 @@ export const BibleDigitalReader = ({
           <span>Texto corrido • {extractedText.length} caracteres</span>
         </div>
       </div>
+
+      {/* HighlightToolbar - aparece quando o usuário seleciona texto */}
+      {showHighlightToolbar && selectedText && pdfId && (
+        <HighlightToolbar
+          selectedText={selectedText}
+          pageNumber={1}
+          onHighlight={handleCreateHighlight}
+          onCancel={() => {
+            setShowHighlightToolbar(false)
+            setSelectedText('')
+            setSelectionRange(null)
+            window.getSelection()?.removeAllRanges()
+          }}
+          existingHighlights={highlights.filter(h => h.page_number === 1)}
+          onDeleteHighlight={handleDeleteHighlight}
+          onUpdateHighlight={handleUpdateHighlight}
+        />
+      )}
+
+      {/* SummariesPanel - painel para visualizar e gerenciar resumos */}
+      {showSummariesPanel && pdfId && (
+        <SummariesPanel
+          courseId={courseId}
+          pdfId={pdfId}
+          highlights={highlights}
+          onClose={() => setShowSummariesPanel(false)}
+        />
+      )}
 
       {/* Painel de Configurações Avançadas */}
       {showSettings && (
