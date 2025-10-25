@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Tag, Plus, Edit, Trash2, ArrowLeft, Loader2, Save, X } from "lucide-react"
+import { Tag, Plus, Edit, Trash2, ArrowLeft, Loader2, Save, X, LayoutGrid } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ interface Category {
   color: string
   display_order: number
   parent_id: string | null
+  display_as_carousel: boolean
   created_at: string
   updated_at: string
 }
@@ -43,6 +45,7 @@ export default function AdminCategoriesPage() {
     description: "",
     icon: "BookOpen",
     color: "#F3C77A",
+    display_as_carousel: false,
   })
 
   useEffect(() => {
@@ -77,6 +80,7 @@ export default function AdminCategoriesPage() {
       description: "",
       icon: "BookOpen",
       color: "#F3C77A",
+      display_as_carousel: false,
     })
     setShowDialog(true)
   }
@@ -88,6 +92,7 @@ export default function AdminCategoriesPage() {
       description: category.description || "",
       icon: category.icon,
       color: category.color,
+      display_as_carousel: category.display_as_carousel || false,
     })
     setShowDialog(true)
   }
@@ -123,6 +128,7 @@ export default function AdminCategoriesPage() {
             description: formData.description || null,
             icon: formData.icon,
             color: formData.color,
+            display_as_carousel: formData.display_as_carousel,
           })
           .eq('id', editingCategory.id)
 
@@ -138,6 +144,7 @@ export default function AdminCategoriesPage() {
             icon: formData.icon,
             color: formData.color,
             display_order: categories.length,
+            display_as_carousel: formData.display_as_carousel,
           })
 
         if (error) throw error
@@ -258,6 +265,13 @@ export default function AdminCategoriesPage() {
                   {category.description || "Sem descrição"}
                 </p>
 
+                {category.display_as_carousel && (
+                  <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-primary/10 rounded-md">
+                    <LayoutGrid className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-medium text-primary">Exibição em Carrossel</span>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -325,6 +339,27 @@ export default function AdminCategoriesPage() {
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Descreva esta categoria..."
                 rows={3}
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <LayoutGrid className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <Label htmlFor="carousel" className="text-sm font-medium cursor-pointer">
+                    Exibir como Carrossel
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Ideal para categorias com muitos cursos
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="carousel"
+                checked={formData.display_as_carousel}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, display_as_carousel: checked }))}
               />
             </div>
 

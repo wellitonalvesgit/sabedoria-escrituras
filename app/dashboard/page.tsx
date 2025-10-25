@@ -15,6 +15,7 @@ import { CourseCard } from "@/components/course-card"
 import { HeroSection } from "@/components/hero-section"
 import { CourseStats } from "@/components/course-stats"
 import { CategorySelector } from "@/components/category-selector"
+import { CategoryCarousel } from "@/components/category-carousel"
 import { useCurrentUser } from "@/hooks/use-current-user"
 
 interface CoursePDF {
@@ -43,11 +44,21 @@ interface Course {
   created_at: string
   course_pdfs: CoursePDF[]
   tags?: string[]
+  category_id?: string
+}
+
+interface Category {
+  id: string
+  name: string
+  slug: string
+  display_as_carousel: boolean
+  display_order: number
 }
 
 export default function DashboardPage() {
   const [courses, setCourses] = useState<Course[]>([])
   const [allCourses, setAllCourses] = useState<Course[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -57,6 +68,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!userLoading) {
       fetchCourses()
+      fetchCategories()
     }
   }, [userLoading])
 
@@ -124,6 +136,37 @@ export default function DashboardPage() {
       setLoading(false)
     }
   }
+
+  const fetchCategories = async () => {
+    try {
+      const { createClient } = await import('@/lib/supabase')
+      const supabase = createClient()
+
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, slug, display_as_carousel, display_order')
+        .order('display_order', { ascending: true })
+
+      if (error) throw error
+      setCategories(data || [])
+    } catch (err) {
+      console.error('Erro ao carregar categorias:', err)
+    }
+  }
+
+  // Agrupar cursos por categoria
+  const getCoursesByCategory = (categoryId: string) => {
+    return courses.filter(course => course.category_id === categoryId)
+  }
+
+  // Categorias que devem ser exibidas como carrossel
+  const carouselCategories = categories.filter(cat => cat.display_as_carousel)
+
+  // Cursos que não estão em nenhuma categoria com carrossel
+  const standaloneCourses = courses.filter(course =>
+    !course.category_id ||
+    !carouselCategories.some(cat => cat.id === course.category_id)
+  )
 
   if (loading || userLoading) {
     return (
@@ -309,13 +352,13 @@ export default function DashboardPage() {
           <div className="text-center py-12">
             <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              {user?.allowed_categories?.length || user?.allowed_courses?.length 
-                ? "Nenhum curso disponível para seu acesso" 
+              {user?.allowed_categories?.length || user?.allowed_courses?.length
+                ? "Nenhum curso disponível para seu acesso"
                 : "Nenhum curso disponível"
               }
             </h3>
             <p className="text-muted-foreground mb-4">
-              {user?.allowed_categories?.length || user?.allowed_courses?.length 
+              {user?.allowed_categories?.length || user?.allowed_courses?.length
                 ? "Você não tem acesso aos cursos disponíveis ou não há conteúdo liberado para seu perfil."
                 : "Os cursos estão sendo carregados ou não há conteúdo disponível no momento."
               }
@@ -323,21 +366,62 @@ export default function DashboardPage() {
             <Button onClick={fetchCourses}>Tentar novamente</Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => (
-              <CourseCard 
-                key={course.id} 
-                course={{
-                  id: course.id,
-                  slug: course.slug,
-                  title: course.title,
-                  description: course.description,
-                  readingTimeMinutes: course.reading_time_minutes || 0,
-                  coverUrl: course.cover_url,
-                  tags: course.tags
-                }} 
-              />
-            ))}
+          <div>
+            {/* Categorias com Carrossel */}
+            {carouselCategories.map((category) => {
+              const categoryCourses = getCoursesByCategory(category.id)
+              if (categoryCourses.length === 0) return null
+
+              return (
+                <CategoryCarousel
+                  key={category.id}
+                  categoryName={category.name}
+                  categorySlug={category.slug}
+                  courses={categoryCourses.map(course => ({
+                    id: course.id,
+                    slug: course.slug,
+                    title: course.title,
+                    description: course.description,
+                    thumbnail_url: course.cover_url || null,
+                    instructor_name: course.author || null,
+                    duration_hours: course.reading_time_minutes ? Math.ceil(course.reading_time_minutes / 60) : null,
+                    level: null,
+                    rating: null,
+                    students_count: 0
+                  }))}
+                />
+              )
+            })}
+
+            {/* Cursos Standalone (grid tradicional) */}
+            {standaloneCourses.length > 0 && (
+              <div>
+                {carouselCategories.length > 0 && (
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold tracking-tight text-foreground">Outros Cursos</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {standaloneCourses.length} {standaloneCourses.length === 1 ? 'curso disponível' : 'cursos disponíveis'}
+                    </p>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {standaloneCourses.map((course) => (
+                    <CourseCard
+                      key={course.id}
+                      course={{
+                        id: course.id,
+                        slug: course.slug,
+                        title: course.title,
+                        description: course.description,
+                        readingTimeMinutes: course.reading_time_minutes || 0,
+                        coverUrl: course.cover_url,
+                        tags: course.tags
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
