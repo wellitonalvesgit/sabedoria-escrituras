@@ -197,44 +197,26 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
 
       console.log('✅ Curso salvo com sucesso')
 
-      // Atualizar categorias do curso
-      console.log('🗑️ Removendo categorias antigas...')
-      const { error: deleteError } = await supabase
-        .from('course_categories')
-        .delete()
-        .eq('course_id', courseId)
+      // Atualizar categorias via API (server-side com SERVICE_ROLE_KEY)
+      console.log('🔄 Salvando categorias via API...')
+      const categoriesResponse = await fetch(`/api/courses/${courseId}/categories`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          categoryIds: selectedCategories
+        })
+      })
 
-      if (deleteError) {
-        console.error('❌ Erro ao deletar categorias antigas:', deleteError)
-      } else {
-        console.log('✅ Categorias antigas removidas')
+      const categoriesResult = await categoriesResponse.json()
+
+      if (!categoriesResponse.ok) {
+        console.error('❌ Erro ao salvar categorias:', categoriesResult)
+        throw new Error('Erro ao salvar categorias: ' + (categoriesResult.error || 'Erro desconhecido'))
       }
 
-      // Adicionar novas categorias
-      if (selectedCategories.length > 0) {
-        console.log('➕ Adicionando novas categorias...')
-        const categoryRelations = selectedCategories.map(categoryId => ({
-          course_id: courseId,
-          category_id: categoryId
-        }))
-
-        console.log('📦 Relações a inserir:', categoryRelations)
-
-        const { data: insertedData, error: categoriesError } = await supabase
-          .from('course_categories')
-          .insert(categoryRelations)
-          .select()
-
-        if (categoriesError) {
-          console.error('❌ Erro ao inserir categorias:', categoriesError)
-          alert('Erro ao salvar categorias: ' + categoriesError.message)
-          return
-        }
-
-        console.log('✅ Categorias inseridas:', insertedData)
-      } else {
-        console.log('⚠️ Nenhuma categoria selecionada')
-      }
+      console.log('✅ Categorias salvas:', categoriesResult)
 
       alert("Curso salvo com sucesso!")
       await fetchCourse() // Recarregar dados
