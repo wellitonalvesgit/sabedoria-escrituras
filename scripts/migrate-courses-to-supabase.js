@@ -1,10 +1,20 @@
 const { createClient } = require('@supabase/supabase-js')
 const fs = require('fs')
 const path = require('path')
+require('dotenv').config()
 
-// Configuração do Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNDY3NDgwMCwiZXhwIjoyMDUwMjUwODAwfQ.ServiceRoleKeyServiceRoleKeyServiceRoleKeyServiceRoleKeyServiceRoleKey'
+// Configuração do Supabase - OBRIGATÓRIO usar variáveis de ambiente
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+// Validar variáveis obrigatórias
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ ERRO: Variáveis de ambiente não configuradas!')
+  console.error('Configure no arquivo .env:')
+  console.error('  NEXT_PUBLIC_SUPABASE_URL=sua_url')
+  console.error('  SUPABASE_SERVICE_ROLE_KEY=sua_chave')
+  process.exit(1)
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
@@ -101,5 +111,6 @@ async function migrateCourses() {
 
 // Executar migração
 migrateCourses().catch(console.error)
+
 
 

@@ -1,15 +1,30 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Validar variáveis de ambiente
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwOTI2ODYsImV4cCI6MjA3NjY2ODY4Nn0.ZStT6hrlRhT3bigKWc3i6An_lL09R_t5gdZ4WIyyYyY'
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs'
+// Validar variáveis de ambiente obrigatórias
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+// Verificar se variáveis críticas estão configuradas
+if (!supabaseUrl) {
+  throw new Error(
+    '❌ NEXT_PUBLIC_SUPABASE_URL não está configurada. ' +
+    'Adicione no arquivo .env.local'
+  )
+}
+
+if (!supabaseAnonKey) {
+  throw new Error(
+    '❌ NEXT_PUBLIC_SUPABASE_ANON_KEY não está configurada. ' +
+    'Adicione no arquivo .env.local'
+  )
+}
 
 // Log para debug (apenas em desenvolvimento)
 if (process.env.NODE_ENV === 'development') {
-  console.log('Supabase URL:', supabaseUrl)
-  console.log('Supabase Anon Key:', supabaseAnonKey ? 'Present' : 'Missing')
-  console.log('Service Role Key:', supabaseServiceRoleKey ? 'Present' : 'Missing')
+  console.log('✅ Supabase URL:', supabaseUrl)
+  console.log('✅ Supabase Anon Key:', supabaseAnonKey ? 'Configurada' : 'Missing')
+  console.log('✅ Service Role Key:', supabaseServiceRoleKey ? 'Configurada' : 'Missing')
 }
 
 // Cliente público (usar em componentes client-side e server-side)
