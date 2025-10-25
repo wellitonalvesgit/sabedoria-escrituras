@@ -4,13 +4,15 @@ import { createClient } from '@supabase/supabase-js'
 // GET /api/users/[id] - Buscar usuário específico
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+
     // Configurar cliente admin diretamente
     const supabaseUrl = 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
     const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs'
-    
+
     const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -21,7 +23,6 @@ export async function GET(
     if (!client) {
       throw new Error('Supabase client not configured')
     }
-    const { id } = params
 
     const { data: user, error } = await client
       .from('users')
@@ -44,13 +45,19 @@ export async function GET(
 // PUT /api/users/[id] - Atualizar usuário
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+    const body = await request.json()
+
+    console.log('🔄 Atualizando usuário:', id)
+    console.log('📝 Dados recebidos:', body)
+
     // Configurar cliente admin diretamente
     const supabaseUrl = 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
     const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs'
-    
+
     const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -61,8 +68,6 @@ export async function PUT(
     if (!client) {
       throw new Error('Supabase client not configured')
     }
-    const { id } = params
-    const body = await request.json()
 
     const { name, email, role, status, access_days, allowed_categories, blocked_categories, allowed_courses, blocked_courses } = body
 
@@ -70,28 +75,39 @@ export async function PUT(
     const accessExpiresAt = new Date()
     accessExpiresAt.setDate(accessExpiresAt.getDate() + (access_days || 30))
 
+    console.log('📅 Calculando data de expiração...')
+    console.log('   access_days:', access_days)
+    console.log('   accessExpiresAt:', accessExpiresAt.toISOString())
+
+    const updateData = {
+      name,
+      email,
+      role,
+      status,
+      access_days: access_days || 30,
+      access_expires_at: accessExpiresAt.toISOString(),
+      allowed_categories: allowed_categories || [],
+      blocked_categories: blocked_categories || [],
+      allowed_courses: allowed_courses || [],
+      blocked_courses: blocked_courses || [],
+      updated_at: new Date().toISOString()
+    }
+
+    console.log('💾 Dados a salvar:', updateData)
+
     const { data: user, error } = await client
       .from('users')
-      .update({
-        name,
-        email,
-        role,
-        status,
-        access_days: access_days || 30,
-        access_expires_at: accessExpiresAt.toISOString(),
-        allowed_categories: allowed_categories || [],
-        blocked_categories: blocked_categories || [],
-        allowed_courses: allowed_courses || [],
-        blocked_courses: blocked_courses || []
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single()
 
     if (error) {
-      console.error('Erro ao atualizar usuário:', error)
-      return NextResponse.json({ error: 'Erro ao atualizar usuário' }, { status: 500 })
+      console.error('❌ Erro ao atualizar usuário:', error)
+      return NextResponse.json({ error: 'Erro ao atualizar usuário', details: error }, { status: 500 })
     }
+
+    console.log('✅ Usuário atualizado com sucesso:', user)
 
     return NextResponse.json({ user })
   } catch (error) {
@@ -103,13 +119,15 @@ export async function PUT(
 // DELETE /api/users/[id] - Deletar usuário
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+
     // Configurar cliente admin diretamente
     const supabaseUrl = 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
     const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs'
-    
+
     const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -120,7 +138,6 @@ export async function DELETE(
     if (!client) {
       throw new Error('Supabase client not configured')
     }
-    const { id } = params
 
     const { error } = await client
       .from('users')
