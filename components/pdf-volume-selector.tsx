@@ -27,7 +27,7 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
         {pdfs.map((pdf, index) => (
           <Card
             key={pdf.volume}
-            className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105 ${
+            className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105 overflow-hidden ${
               selectedPDF?.volume === pdf.volume
                 ? "ring-2 ring-[#F3C77A] bg-[#F3C77A]/5 border-[#F3C77A]"
                 : "hover:border-[#F3C77A]/50"
@@ -36,46 +36,69 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
             onMouseLeave={() => setHoveredVolume(null)}
             onClick={() => onSelectPDF(pdf)}
           >
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <Badge 
+            {/* Capa do Volume */}
+            <div className="relative aspect-[3/4] w-full overflow-hidden bg-gradient-to-br from-[#2E261D] to-[#16130F]">
+              {pdf.cover_url ? (
+                <img
+                  src={pdf.cover_url}
+                  alt={`Capa ${pdf.title}`}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                  <BookOpen className="h-16 w-16 text-[#F3C77A]/40 mb-4" />
+                  <div className="text-[#F3C77A] font-semibold text-lg mb-2">{pdf.volume}</div>
+                  <div className="text-xs text-muted-foreground line-clamp-3">{pdf.title}</div>
+                </div>
+              )}
+
+              {/* Badge do Volume sobre a capa */}
+              <div className="absolute top-3 left-3">
+                <Badge
                   variant={selectedPDF?.volume === pdf.volume ? "default" : "secondary"}
                   className={`${
-                    selectedPDF?.volume === pdf.volume 
-                      ? "bg-[#F3C77A] text-black" 
-                      : "bg-[#2E261D] text-[#F3C77A]"
+                    selectedPDF?.volume === pdf.volume
+                      ? "bg-[#F3C77A] text-black shadow-lg"
+                      : "bg-[#2E261D]/90 text-[#F3C77A] backdrop-blur-sm"
                   }`}
                 >
                   {pdf.volume}
                 </Badge>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <FileText className="h-3 w-3" />
-                  {pdf.pages || 20} páginas
-                </div>
               </div>
+
+              {/* Ícone de seleção */}
+              {selectedPDF?.volume === pdf.volume && (
+                <div className="absolute top-3 right-3">
+                  <div className="bg-[#F3C77A] text-black rounded-full p-1">
+                    <BookOpen className="h-4 w-4" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-foreground line-clamp-2">
                 {pdf.title}
               </CardTitle>
-            </CardHeader>
-            
-            <CardContent className="pt-0">
-              <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                <div className="flex items-center gap-1">
+                  <FileText className="h-3 w-3" />
+                  {pdf.pages || 20} pág
+                </div>
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   {pdf.readingTimeMinutes || 30} min
                 </div>
-                <div className="flex items-center gap-1">
-                  <BookOpen className="h-3 w-3" />
-                  Leitura
-                </div>
               </div>
-              
-              <Button 
+            </CardHeader>
+            
+            <CardContent className="pt-0">
+              <Button
                 className="w-full"
                 variant={selectedPDF?.volume === pdf.volume ? "default" : "outline"}
                 size="sm"
               >
-                {selectedPDF?.volume === pdf.volume ? "Volume Ativo" : "Abrir Volume"}
+                {selectedPDF?.volume === pdf.volume ? "✓ Volume Ativo" : "Abrir Volume"}
               </Button>
             </CardContent>
           </Card>

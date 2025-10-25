@@ -26,6 +26,7 @@ interface CoursePDF {
   text_content?: string
   use_auto_conversion?: boolean
   display_order: number
+  cover_url?: string
 }
 
 interface Course {
@@ -102,7 +103,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
             reading_time_minutes,
             text_content,
             use_auto_conversion,
-            display_order
+            display_order,
+            cover_url
           ),
           course_categories (
             category_id
@@ -278,7 +280,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
           pages: editingPDFData.pages,
           reading_time_minutes: editingPDFData.reading_time_minutes,
           text_content: editingPDFData.text_content,
-          use_auto_conversion: editingPDFData.use_auto_conversion
+          use_auto_conversion: editingPDFData.use_auto_conversion,
+          cover_url: editingPDFData.cover_url || null
         })
         .eq('id', editingPDF)
       
@@ -698,7 +701,64 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                   }}
                                 />
                               </div>
-                              
+
+                              {/* Upload de Capa do Volume */}
+                              <div className="md:col-span-2">
+                                <Label>Capa do Volume (Opcional)</Label>
+                                <div className="flex items-start gap-4">
+                                  {editingPDFData?.cover_url && (
+                                    <div className="flex-shrink-0">
+                                      <img
+                                        src={editingPDFData.cover_url}
+                                        alt="Capa do volume"
+                                        className="w-24 h-32 object-cover rounded border"
+                                      />
+                                    </div>
+                                  )}
+                                  <div className="flex-1">
+                                    <ImageUpload
+                                      onFileSelect={async (file) => {
+                                        try {
+                                          // Upload da capa
+                                          const formData = new FormData()
+                                          formData.append('file', file)
+                                          formData.append('type', 'pdf-cover')
+                                          formData.append('pdfId', pdf.id)
+
+                                          const response = await fetch('/api/upload', {
+                                            method: 'POST',
+                                            body: formData,
+                                          })
+
+                                          const result = await response.json()
+
+                                          if (result.success) {
+                                            setEditingPDFData(prev => prev ? { ...prev, cover_url: result.fileUrl } : null)
+                                            alert("Capa carregada! Clique em 'Salvar' para confirmar.")
+                                          } else {
+                                            alert("Erro ao fazer upload: " + result.error)
+                                          }
+                                        } catch (err) {
+                                          console.error('Erro no upload:', err)
+                                          alert("Erro ao fazer upload da capa")
+                                        }
+                                      }}
+                                      currentImageUrl={editingPDFData?.cover_url}
+                                    />
+                                    {editingPDFData?.cover_url && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="mt-2"
+                                        onClick={() => setEditingPDFData(prev => prev ? { ...prev, cover_url: undefined } : null)}
+                                      >
+                                        Remover Capa
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
                                   <Label htmlFor={`edit-pages-${pdf.id}`}>Páginas</Label>
