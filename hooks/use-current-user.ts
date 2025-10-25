@@ -31,14 +31,18 @@ export function useCurrentUser() {
       } else {
         console.log('⚠️ Nenhum usuário autenticado, usando fallback')
         // Fallback para usuário mock se não houver autenticação
+        // Data de expiração: 1 ano no futuro
+        const expirationDate = new Date()
+        expirationDate.setFullYear(expirationDate.getFullYear() + 1)
+
         const mockUser: User = {
           id: "43f29360-cfff-4f67-8c6e-70503e4194b9",
           name: "Aluno Teste",
           email: "aluno@teste.com",
           role: "student",
           status: "active",
-          access_days: 30,
-          access_expires_at: "2024-12-31T23:59:59Z",
+          access_days: 365,
+          access_expires_at: expirationDate.toISOString(),
           allowed_categories: [],
           blocked_categories: [],
           allowed_courses: [],
@@ -57,14 +61,18 @@ export function useCurrentUser() {
     } catch (error) {
       console.error('❌ Erro ao buscar usuário atual:', error)
       // Fallback para usuário mock
+      // Data de expiração: 1 ano no futuro
+      const expirationDate = new Date()
+      expirationDate.setFullYear(expirationDate.getFullYear() + 1)
+
       const mockUser: User = {
         id: "43f29360-cfff-4f67-8c6e-70503e4194b9",
         name: "Aluno Teste",
         email: "aluno@teste.com",
         role: "student",
         status: "active",
-        access_days: 30,
-        access_expires_at: "2024-12-31T23:59:59Z",
+        access_days: 365,
+        access_expires_at: expirationDate.toISOString(),
         allowed_categories: [],
         blocked_categories: [],
         allowed_courses: [],
