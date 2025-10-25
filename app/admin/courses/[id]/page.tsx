@@ -177,47 +177,70 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
 
   const handleSave = async () => {
     try {
+      console.log('🔄 Iniciando salvamento do curso...')
+      console.log('📝 Dados do curso:', editedCourse)
+      console.log('🏷️ Categorias selecionadas:', selectedCategories)
+
       // Salvar diretamente no Supabase
       const { getSupabaseClient } = await import('@/lib/supabase-admin')
       const supabase = getSupabaseClient()
-      
+
       const { error } = await supabase
         .from('courses')
         .update(editedCourse)
         .eq('id', courseId)
-      
+
       if (error) {
-        throw new Error('Erro ao salvar curso')
+        console.error('❌ Erro ao salvar curso:', error)
+        throw new Error('Erro ao salvar curso: ' + error.message)
       }
 
+      console.log('✅ Curso salvo com sucesso')
+
       // Atualizar categorias do curso
-      // Primeiro, remover todas as categorias existentes
-      await supabase
+      console.log('🗑️ Removendo categorias antigas...')
+      const { error: deleteError } = await supabase
         .from('course_categories')
         .delete()
         .eq('course_id', courseId)
 
+      if (deleteError) {
+        console.error('❌ Erro ao deletar categorias antigas:', deleteError)
+      } else {
+        console.log('✅ Categorias antigas removidas')
+      }
+
       // Adicionar novas categorias
       if (selectedCategories.length > 0) {
+        console.log('➕ Adicionando novas categorias...')
         const categoryRelations = selectedCategories.map(categoryId => ({
           course_id: courseId,
           category_id: categoryId
         }))
 
-        const { error: categoriesError } = await supabase
+        console.log('📦 Relações a inserir:', categoryRelations)
+
+        const { data: insertedData, error: categoriesError } = await supabase
           .from('course_categories')
           .insert(categoryRelations)
+          .select()
 
         if (categoriesError) {
-          console.error('Erro ao atualizar categorias:', categoriesError)
-          // Não bloqueia o salvamento do curso
+          console.error('❌ Erro ao inserir categorias:', categoriesError)
+          alert('Erro ao salvar categorias: ' + categoriesError.message)
+          return
         }
+
+        console.log('✅ Categorias inseridas:', insertedData)
+      } else {
+        console.log('⚠️ Nenhuma categoria selecionada')
       }
-      
+
       alert("Curso salvo com sucesso!")
       await fetchCourse() // Recarregar dados
     } catch (err) {
-      alert('Erro ao salvar curso')
+      console.error('❌ Erro geral ao salvar:', err)
+      alert('Erro ao salvar curso: ' + (err instanceof Error ? err.message : 'Erro desconhecido'))
     }
   }
 
