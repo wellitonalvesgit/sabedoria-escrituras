@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     
     console.log('Using Supabase public client for courses')
     
-    // Buscar cursos com seus PDFs
+    // Buscar cursos com seus PDFs e categorias
     const { data: courses, error } = await client
       .from('courses')
       .select(`
@@ -27,7 +27,17 @@ export async function GET(request: NextRequest) {
           reading_time_minutes,
           text_content,
           use_auto_conversion,
-          display_order
+          display_order,
+          cover_url
+        ),
+        course_categories (
+          category_id,
+          categories (
+            id,
+            name,
+            slug,
+            color
+          )
         )
       `)
       .eq('status', 'published')

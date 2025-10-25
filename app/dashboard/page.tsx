@@ -45,6 +45,15 @@ interface Course {
   course_pdfs: CoursePDF[]
   tags?: string[]
   category_id?: string
+  course_categories?: Array<{
+    category_id: string
+    categories: {
+      id: string
+      name: string
+      slug: string
+      color: string
+    }
+  }>
 }
 
 interface Category {
@@ -111,23 +120,32 @@ export default function DashboardPage() {
       }
       const data = await response.json()
       console.log('Dashboard - courses data:', data.courses)
-      
+
       // Filtrar cursos baseado no acesso do usuário
       const filteredCourses = (data.courses || []).filter((course: Course) => {
         // Verificar acesso ao curso específico
         if (!hasAccessToCourse(course.id)) {
+          console.log(`Curso ${course.title} bloqueado - sem acesso ao curso`)
           return false
         }
-        
-        // Verificar acesso à categoria (se o curso tem categoria)
-        if (course.category && !hasAccessToCategory(course.category)) {
-          return false
+
+        // Verificar acesso às categorias do curso (course_categories)
+        if (course.course_categories && course.course_categories.length > 0) {
+          // Se o curso tem categorias, verificar se o usuário tem acesso a ALGUMA delas
+          const hasAccessToAnyCat = course.course_categories.some((cc: any) =>
+            hasAccessToCategory(cc.category_id)
+          )
+
+          if (!hasAccessToAnyCat) {
+            console.log(`Curso ${course.title} bloqueado - sem acesso às categorias`)
+            return false
+          }
         }
-        
+
         return true
       })
-      
-      console.log('Dashboard - filtered courses:', filteredCourses)
+
+      console.log('Dashboard - filtered courses:', filteredCourses.length)
       setAllCourses(filteredCourses)
       setCourses(filteredCourses)
     } catch (err) {

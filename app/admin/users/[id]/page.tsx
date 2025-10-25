@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { CategorySelector } from "@/components/category-selector"
 import Link from "next/link"
 
 interface User {
@@ -56,7 +57,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     blocked_courses: [] as string[]
   })
 
-  const [newCategory, setNewCategory] = useState("")
   const [newCourse, setNewCourse] = useState("")
 
   useEffect(() => {
@@ -129,25 +129,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     }
   }
 
-  const addCategory = (type: 'allowed' | 'blocked') => {
-    if (!newCategory.trim()) return
-    
-    const field = type === 'allowed' ? 'allowed_categories' : 'blocked_categories'
-    setEditedUser(prev => ({
-      ...prev,
-      [field]: [...prev[field as keyof typeof prev] as string[], newCategory.trim()]
-    }))
-    setNewCategory("")
-  }
-
-  const removeCategory = (type: 'allowed' | 'blocked', category: string) => {
-    const field = type === 'allowed' ? 'allowed_categories' : 'blocked_categories'
-    setEditedUser(prev => ({
-      ...prev,
-      [field]: (prev[field as keyof typeof prev] as string[]).filter(c => c !== category)
-    }))
-  }
-
   const addCourse = (type: 'allowed' | 'blocked') => {
     if (!newCourse) return
     
@@ -165,11 +146,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       ...prev,
       [field]: (prev[field as keyof typeof prev] as string[]).filter(c => c !== courseId)
     }))
-  }
-
-  const getAvailableCategories = () => {
-    const allCategories = courses.map(c => c.category).filter(Boolean)
-    return [...new Set(allCategories)]
   }
 
   if (loading) {
@@ -350,35 +326,16 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Digite uma categoria..."
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
+              <div>
+                <Label>Selecione as categorias que o aluno PODE acessar</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Se nenhuma categoria for selecionada, o aluno terá acesso a todas (exceto bloqueadas)
+                </p>
+                <CategorySelector
+                  selectedCategories={editedUser.allowed_categories}
+                  onChange={(categories) => setEditedUser(prev => ({ ...prev, allowed_categories: categories }))}
+                  multiple={true}
                 />
-                <Button onClick={() => addCategory('allowed')} size="sm">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                {editedUser.allowed_categories.map((category, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
-                    <span className="text-sm font-medium text-green-800">{category}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeCategory('allowed', category)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="text-xs text-muted-foreground">
-                <p><strong>Dica:</strong> Categorias disponíveis: {getAvailableCategories().join(', ')}</p>
               </div>
             </CardContent>
           </Card>
@@ -392,31 +349,16 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Digite uma categoria..."
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
+              <div>
+                <Label>Selecione as categorias que o aluno NÃO PODE acessar</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Essas categorias serão sempre bloqueadas, mesmo se estiverem em "Permitidas"
+                </p>
+                <CategorySelector
+                  selectedCategories={editedUser.blocked_categories}
+                  onChange={(categories) => setEditedUser(prev => ({ ...prev, blocked_categories: categories }))}
+                  multiple={true}
                 />
-                <Button onClick={() => addCategory('blocked')} size="sm" variant="destructive">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                {editedUser.blocked_categories.map((category, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-red-50 border border-red-200 rounded">
-                    <span className="text-sm font-medium text-red-800">{category}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeCategory('blocked', category)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>
@@ -430,20 +372,26 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <Label>Selecione os cursos específicos que o aluno PODE acessar</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Se nenhum curso for selecionado, o aluno terá acesso a todos os cursos das categorias permitidas
+                </p>
+              </div>
               <div className="flex gap-2">
                 <Select value={newCourse} onValueChange={setNewCourse}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um curso..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {courses.map((course) => (
+                    {courses.filter(c => !editedUser.allowed_courses.includes(c.id)).map((course) => (
                       <SelectItem key={course.id} value={course.id}>
                         {course.title}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Button onClick={() => addCourse('allowed')} size="sm">
+                <Button onClick={() => addCourse('allowed')} size="sm" disabled={!newCourse}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
@@ -452,8 +400,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 {editedUser.allowed_courses.map((courseId) => {
                   const course = courses.find(c => c.id === courseId)
                   return (
-                    <div key={courseId} className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
-                      <span className="text-sm font-medium text-green-800">{course?.title || courseId}</span>
+                    <div key={courseId} className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded">
+                      <span className="text-sm font-medium text-green-800 dark:text-green-200">{course?.title || courseId}</span>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -465,6 +413,9 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     </div>
                   )
                 })}
+                {editedUser.allowed_courses.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic">Nenhum curso específico permitido - Acesso baseado em categorias</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -478,20 +429,26 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <Label>Selecione os cursos específicos que o aluno NÃO PODE acessar</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Esses cursos serão sempre bloqueados, mesmo se suas categorias estiverem permitidas
+                </p>
+              </div>
               <div className="flex gap-2">
                 <Select value={newCourse} onValueChange={setNewCourse}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um curso..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {courses.map((course) => (
+                    {courses.filter(c => !editedUser.blocked_courses.includes(c.id)).map((course) => (
                       <SelectItem key={course.id} value={course.id}>
                         {course.title}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Button onClick={() => addCourse('blocked')} size="sm" variant="destructive">
+                <Button onClick={() => addCourse('blocked')} size="sm" variant="destructive" disabled={!newCourse}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
@@ -500,8 +457,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 {editedUser.blocked_courses.map((courseId) => {
                   const course = courses.find(c => c.id === courseId)
                   return (
-                    <div key={courseId} className="flex items-center justify-between p-2 bg-red-50 border border-red-200 rounded">
-                      <span className="text-sm font-medium text-red-800">{course?.title || courseId}</span>
+                    <div key={courseId} className="flex items-center justify-between p-2 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded">
+                      <span className="text-sm font-medium text-red-800 dark:text-red-200">{course?.title || courseId}</span>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -513,6 +470,9 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     </div>
                   )
                 })}
+                {editedUser.blocked_courses.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic">Nenhum curso bloqueado</p>
+                )}
               </div>
             </CardContent>
           </Card>
