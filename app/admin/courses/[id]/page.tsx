@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { use } from "react"
-import { ArrowLeft, Save, Plus, Trash2, Edit, Eye, FileText, Upload, Download, Loader2, Copy, ArrowUp, ArrowDown } from "lucide-react"
+import { ArrowLeft, Save, Plus, Trash2, Edit, Eye, FileText, Upload, Download, Loader2, Copy, ArrowUp, ArrowDown, Gift } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -42,6 +42,7 @@ interface Course {
   status: string
   created_at: string
   course_pdfs: CoursePDF[]
+  is_free?: boolean
 }
 
 export default function AdminEditCoursePage({ params }: { params: Promise<{ id: string }> }) {
@@ -57,7 +58,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
     category: "",
     reading_time_minutes: 0,
     pages: 0,
-    cover_url: ""
+    cover_url: "",
+    is_free: false
   })
 
   const [editingPDF, setEditingPDF] = useState<string | null>(null)
@@ -132,7 +134,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         category: course.category || "",
         reading_time_minutes: course.reading_time_minutes || 0,
         pages: course.pages || 0,
-        cover_url: course.cover_url || ""
+        cover_url: course.cover_url || "",
+        is_free: course.is_free || false
       })
       
       // Carregar categorias do curso
@@ -585,6 +588,27 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                     value={editedCourse.description}
                     onChange={(e) => setEditedCourse(prev => ({ ...prev, description: e.target.value }))}
                     rows={4}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-green-500/10">
+                      <Gift className="h-5 w-5 text-green-500" />
+                    </div>
+                    <div>
+                      <Label htmlFor="is_free" className="text-sm font-medium cursor-pointer">
+                        Curso Gratuito
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Disponível para todos, sem necessidade de assinatura
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    id="is_free"
+                    checked={editedCourse.is_free || false}
+                    onCheckedChange={(checked) => setEditedCourse(prev => ({ ...prev, is_free: checked }))}
                   />
                 </div>
 

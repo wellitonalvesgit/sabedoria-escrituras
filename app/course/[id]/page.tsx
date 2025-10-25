@@ -10,6 +10,7 @@ import { ViewModeSelector } from "@/components/view-mode-selector"
 import { OriginalPDFViewer } from "@/components/original-pdf-viewer"
 import { DigitalMagazineViewer } from "@/components/digital-magazine-viewer"
 import { useGamification } from "@/contexts/gamification-context"
+import { PremiumAccessGate } from "@/components/premium-access-gate"
 import { useState, use, useEffect } from "react"
 import { CoursePDF } from "@/lib/courses-data"
 
@@ -182,7 +183,8 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
           </Button>
         </div>
 
-        {!showPDFReader ? (
+        <PremiumAccessGate courseId={course.id}>
+          {!showPDFReader ? (
           <div className="mb-8">
             <div className="mb-6">
               {course.category && (
@@ -270,6 +272,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
             </div>
           </div>
         ) : null}
+        </PremiumAccessGate>
       </div>
     </div>
   )
