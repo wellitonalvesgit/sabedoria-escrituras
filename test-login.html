@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Login - Sabedoria das Escrituras</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Teste de Login - Sabedoria das Escrituras</h1>
+    <div id="status"></div>
+    
+    <div style="margin: 20px 0;">
+        <button onclick="testLogin()">1. Fazer Login (aluno@teste.com)</button>
+        <button onclick="checkSession()">2. Verificar Sessão</button>
+        <button onclick="getUserData()">3. Buscar Dados do Usuário</button>
+        <button onclick="logout()">4. Logout</button>
+    </div>
+
+    <div id="results" style="background: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 5px;"></div>
+
+    <script>
+        const supabaseUrl = 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwOTI2ODYsImV4cCI6MjA3NjY2ODY4Nn0.ZStT6hrlRhT3bigKWc3i6An_lL09R_t5gdZ4WIyyYyY'
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
+            auth: {
+                storage: window.localStorage,
+                storageKey: 'sabedoria-escrituras-auth-test'
+            }
+        })
+
+        function log(message) {
+            const results = document.getElementById('results')
+            results.innerHTML += `<div style="margin: 10px 0; padding: 10px; background: white; border-left: 4px solid #007acc;">${message}</div>`
+        }
+
+        async function testLogin() {
+            log('🔄 Tentando fazer login com aluno@teste.com...')
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: 'aluno@teste.com',
+                    password: '123456'
+                })
+                
+                if (error) {
+                    log(`❌ Erro no login: ${error.message}`)
+                } else {
+                    log(`✅ Login realizado com sucesso!`)
+                    log(`👤 User ID: ${data.user?.id}`)
+                    log(`📧 Email: ${data.user?.email}`)
+                    log(`🔑 Access Token: ${data.session?.access_token ? 'Presente' : 'Ausente'}`)
+                }
+            } catch (err) {
+                log(`❌ Erro inesperado: ${err.message}`)
+            }
+        }
+
+        async function checkSession() {
+            log('🔄 Verificando sessão atual...')
+            
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession()
+                
+                if (error) {
+                    log(`❌ Erro ao verificar sessão: ${error.message}`)
+                } else if (session) {
+                    log(`✅ Sessão encontrada!`)
+                    log(`👤 User ID: ${session.user?.id}`)
+                    log(`📧 Email: ${session.user?.email}`)
+                    log(`⏰ Expires: ${new Date(session.expires_at).toLocaleString()}`)
+                } else {
+                    log(`❌ Nenhuma sessão ativa`)
+                }
+            } catch (err) {
+                log(`❌ Erro inesperado: ${err.message}`)
+            }
+        }
+
+        async function getUserData() {
+            log('🔄 Buscando dados do usuário na tabela users...')
+            
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                
+                if (!session?.user) {
+                    log(`❌ Nenhuma sessão ativa para buscar dados`)
+                    return
+                }
+
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single()
+
+                if (userError) {
+                    log(`❌ Erro ao buscar dados: ${userError.message}`)
+                } else if (userData) {
+                    log(`✅ Dados do usuário encontrados!`)
+                    log(`👤 Nome: ${userData.name}`)
+                    log(`📧 Email: ${userData.email}`)
+                    log(`🎭 Role: ${userData.role}`)
+                    log(`📊 Status: ${userData.status}`)
+                } else {
+                    log(`❌ Usuário não encontrado na tabela users`)
+                }
+            } catch (err) {
+                log(`❌ Erro inesperado: ${err.message}`)
+            }
+        }
+
+        async function logout() {
+            log('🔄 Fazendo logout...')
+            
+            try {
+                const { error } = await supabase.auth.signOut()
+                
+                if (error) {
+                    log(`❌ Erro no logout: ${error.message}`)
+                } else {
+                    log(`✅ Logout realizado com sucesso!`)
+                }
+            } catch (err) {
+                log(`❌ Erro inesperado: ${err.message}`)
+            }
+        }
+
+        // Verificar sessão ao carregar a página
+        window.onload = function() {
+            log('🚀 Página carregada. Verificando sessão inicial...')
+            checkSession()
+        }
+    </script>
+</body>
+</html>

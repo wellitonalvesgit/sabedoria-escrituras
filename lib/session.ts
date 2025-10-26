@@ -23,8 +23,15 @@ class SessionManager {
   private readonly INACTIVITY_TIMEOUT = 30 * 60 * 1000 // 30 minutos
 
   private constructor() {
-    this.initializeSession()
-    this.setupInactivityDetection()
+    // Aguardar um pouco para garantir que o DOM esteja pronto
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        this.initializeSession()
+        this.setupInactivityDetection()
+      }, 100)
+    } else {
+      this.initializeSession()
+    }
   }
 
   public static getInstance(): SessionManager {
