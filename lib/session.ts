@@ -1,6 +1,6 @@
 "use client"
 
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { User } from '@/lib/auth'
 
 interface SessionData {
@@ -36,7 +36,7 @@ class SessionManager {
 
   private async initializeSession() {
     try {
-      const supabase = createClient()
+      // Usar o cliente configurado
       
       // Verificar sessão atual
       const { data: { session }, error } = await supabase.auth.getSession()
@@ -109,6 +109,9 @@ class SessionManager {
   }
 
   private setupInactivityDetection() {
+    // Verificar se está no cliente
+    if (typeof window === 'undefined') return
+    
     // Detectar atividade do usuário
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart']
     
@@ -143,7 +146,7 @@ class SessionManager {
 
   public async signOut() {
     try {
-      const supabase = createClient()
+      // Usar o cliente configurado
       await supabase.auth.signOut()
       this.updateSession({ user: null, loading: false, sessionId: '' })
     } catch (error) {

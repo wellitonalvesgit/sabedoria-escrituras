@@ -157,8 +157,7 @@ export default function DashboardPage() {
 
   const fetchCategories = async () => {
     try {
-      const { createClient } = await import('@/lib/supabase')
-      const supabase = createClient()
+      const { supabase } = await import('@/lib/supabase')
 
       const { data, error } = await supabase
         .from('categories')

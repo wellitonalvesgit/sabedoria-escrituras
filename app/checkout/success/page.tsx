@@ -25,8 +25,7 @@ function SuccessContent() {
 
   const fetchPayment = async () => {
     try {
-      const { createClient } = await import('@/lib/supabase')
-      const supabase = createClient()
+      const { supabase } = await import('@/lib/supabase')
 
       const { data, error } = await supabase
         .from('payments')

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email e senha são obrigatórios' }, { status: 400 })
     }
 
-    const supabase = createClient()
+    // Usar o cliente configurado
 
     // Buscar o usuário pelo email
     const { data: userData, error: userError } = await supabase

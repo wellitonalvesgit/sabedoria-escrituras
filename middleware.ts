@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
 
   // Rotas que precisam de autenticação
   try {
-    const supabase = createClient()
+    // Usar o cliente configurado
     
     // Verificar se há uma sessão válida
     const { data: { session }, error } = await supabase.auth.getSession()

@@ -64,8 +64,7 @@ export default function PricingPage() {
 
   const fetchSubscription = async () => {
     try {
-      const { createClient } = await import('@/lib/supabase')
-      const supabase = createClient()
+      const { supabase } = await import('@/lib/supabase')
 
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
@@ -89,8 +88,7 @@ export default function PricingPage() {
       setProcessing(plan.id)
 
       // Verificar autenticação
-      const { createClient } = await import('@/lib/supabase')
-      const supabase = createClient()
+      const { supabase } = await import('@/lib/supabase')
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
