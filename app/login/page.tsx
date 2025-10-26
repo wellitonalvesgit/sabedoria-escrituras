@@ -229,13 +229,6 @@ export default function LoginPage() {
             </TabsContent>
           </Tabs>
 
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <h4 className="font-semibold mb-2">Contas de teste:</h4>
-            <div className="space-y-1 text-sm">
-              <p><strong>Aluno:</strong> aluno@teste.com / 123456</p>
-              <p><strong>Admin:</strong> admin@teste.com / 123456</p>
-            </div>
-          </div>
 
           <div className="mt-4 text-center">
             <Button variant="ghost" asChild>
