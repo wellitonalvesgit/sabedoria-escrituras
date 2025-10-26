@@ -61,7 +61,23 @@ export async function signIn(email: string, password: string) {
       throw error
     }
 
-    return { user: data.user, error: null }
+    if (!data.user) {
+      return { user: null, error: new Error('Usuário não encontrado') }
+    }
+
+    // Buscar dados completos do usuário na tabela users
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single()
+
+    if (userError) {
+      console.error('Erro ao buscar dados do usuário:', userError)
+      return { user: null, error: new Error('Erro ao buscar dados do usuário') }
+    }
+
+    return { user: userData, error: null }
   } catch (error) {
     return { user: null, error }
   }

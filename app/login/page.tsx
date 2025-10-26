@@ -49,10 +49,20 @@ export default function LoginPage() {
       }
 
       if (user) {
+        // Verificar se o usuário tem todos os dados necessários
+        if (!user.role || !user.status) {
+          setError("Dados do usuário incompletos. Entre em contato com o administrador.")
+          return
+        }
+
         setSuccess("Login realizado com sucesso! Redirecionando...")
-        // Redirecionar baseado no role (será implementado)
+        
+        // Redirecionar baseado no role do usuário
+        const redirectPath = user.role === 'admin' ? '/admin' : '/dashboard'
+        console.log('🔄 Redirecionando para:', redirectPath)
+        
         setTimeout(() => {
-          window.location.href = "/dashboard"
+          window.location.href = redirectPath
         }, 1500)
       }
     } catch (err) {
@@ -215,13 +225,13 @@ export default function LoginPage() {
 
                 <Button 
                   type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-[#F3C77A] to-[#FFD88A] hover:from-[#FFD88A] hover:to-[#F3C77A] text-gray-800 font-semibold shadow-lg transition-all duration-200" 
+                  className="w-full h-12 bg-gradient-to-r from-[#F3C77A] to-[#FFD88A] hover:from-[#FFD88A] hover:to-[#F3C77A] text-gray-800 font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" 
                   disabled={loading}
                 >
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Entrando...
+                      Verificando credenciais...
                     </>
                   ) : (
                     <>
