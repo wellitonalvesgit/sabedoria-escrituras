@@ -71,6 +71,18 @@ export async function POST(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
     const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
+    console.log('🔧 Configuração Supabase:')
+    console.log('URL:', supabaseUrl ? '✅ Configurada' : '❌ Não configurada')
+    console.log('Service Key:', supabaseServiceRoleKey ? '✅ Configurada' : '❌ Não configurada')
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error('❌ Variáveis de ambiente do Supabase não configuradas')
+      return NextResponse.json(
+        { error: 'Configuração do servidor incompleta' },
+        { status: 500 }
+      )
+    }
+
     const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -96,9 +108,10 @@ export async function POST(request: NextRequest) {
 
     if (authError) {
       console.error('❌ Erro ao criar usuário no Auth:', authError)
+      console.error('❌ Detalhes do erro:', JSON.stringify(authError, null, 2))
 
       // Verificar se é erro de email duplicado
-      if (authError.message.includes('already registered')) {
+      if (authError.message.includes('already registered') || authError.message.includes('already been registered')) {
         return NextResponse.json(
           { error: 'Este email já está cadastrado no sistema' },
           { status: 400 }
@@ -106,7 +119,7 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json(
-        { error: 'Erro ao criar usuário no sistema de autenticação', details: authError },
+        { error: 'Erro ao criar usuário no sistema de autenticação', details: authError.message },
         { status: 500 }
       )
     }
@@ -141,12 +154,18 @@ export async function POST(request: NextRequest) {
 
     if (userError) {
       console.error('❌ Erro ao criar registro do usuário:', userError)
+      console.error('❌ Detalhes do erro na tabela users:', JSON.stringify(userError, null, 2))
 
       // Tentar deletar o usuário do Auth se falhou ao criar na tabela
-      await adminClient.auth.admin.deleteUser(authData.user.id)
+      try {
+        await adminClient.auth.admin.deleteUser(authData.user.id)
+        console.log('🗑️ Usuário removido do Auth após erro na tabela')
+      } catch (deleteError) {
+        console.error('❌ Erro ao deletar usuário do Auth:', deleteError)
+      }
 
       return NextResponse.json(
-        { error: 'Erro ao criar registro do usuário', details: userError },
+        { error: 'Erro ao criar registro do usuário', details: userError.message },
         { status: 500 }
       )
     }
