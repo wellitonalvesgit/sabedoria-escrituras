@@ -203,8 +203,12 @@ export function generateNewUserEmailTemplate(
             </div>
 
             <div style="text-align: center;">
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/login" class="cta-button">
+                <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/login" class="cta-button" style="margin-right: 10px;">
                     🚀 Acessar Plataforma
+                </a>
+                <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/login?tab=magic" 
+                   style="display: inline-block; background: #3498db; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                    ✨ Link Mágico
                 </a>
             </div>
 
