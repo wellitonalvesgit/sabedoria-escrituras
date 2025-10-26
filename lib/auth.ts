@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, supabaseAdmin } from './supabase'
 
 export interface User {
   id: string
@@ -26,12 +26,14 @@ export interface User {
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
-    
+
     if (authError || !authUser) {
       return null
     }
 
     // Buscar dados do usuário na tabela users
+    // IMPORTANTE: Usar cliente regular aqui porque o RLS permite que o usuário
+    // veja seu próprio perfil (auth.uid() = id)
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('*')

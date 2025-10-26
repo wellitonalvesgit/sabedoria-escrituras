@@ -1,0 +1,45 @@
+
+> my-v0-project@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.2.4
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.100.12:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 3.3s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1411ms (190 modules)
+ ○ Compiling / ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (118kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled / in 10.5s (755 modules)
+ GET / 200 in 11033ms
+ ✓ Compiled in 780ms (359 modules)
+ ✓ Compiled in 281ms (359 modules)
+ ✓ Compiled in 327ms (359 modules)
+ ✓ Compiled in 350ms (359 modules)
+ ✓ Compiled in 465ms (359 modules)
+ ✓ Compiled in 603ms (359 modules)
+ ✓ Compiled in 385ms (359 modules)
+ ✓ Compiled in 418ms (359 modules)
+ ✓ Compiled in 313ms (359 modules)
+ ✓ Compiled in 379ms (359 modules)
+ ✓ Compiled in 288ms (359 modules)
+ ✓ Compiled in 319ms (359 modules)
+ ✓ Compiled in 355ms (359 modules)
+ ✓ Compiled in 274ms (359 modules)
+ ✓ Compiled in 389ms (359 modules)
+ ✓ Compiled in 276ms (359 modules)
+ ✓ Compiled in 374ms (359 modules)
+ ✓ Compiled in 302ms (359 modules)
+ ✓ Compiled in 353ms (359 modules)
+ ✓ Compiled in 268ms (359 modules)
+ ✓ Compiled in 349ms (359 modules)
+ ✓ Compiled in 271ms (359 modules)
+ ✓ Compiled in 370ms (359 modules)
+ ✓ Compiled in 269ms (359 modules)
+ ✓ Compiled in 446ms (359 modules)
+ ✓ Compiled in 497ms (359 modules)
+ ✓ Compiled in 291ms (359 modules)
+ ✓ Compiled in 409ms (359 modules)

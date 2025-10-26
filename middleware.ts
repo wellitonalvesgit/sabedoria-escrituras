@@ -31,9 +31,13 @@ export async function middleware(request: NextRequest) {
   try {
     // Criar cliente Supabase com cookies para middleware
     const cookieStore = cookies()
+
+    // IMPORTANTE: Usar SERVICE_ROLE_KEY no middleware para bypassar RLS
+    // Isso é necessário porque o middleware precisa verificar dados do usuário
+    // antes de permitir acesso às páginas
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
         cookies: {
           getAll() {
@@ -47,7 +51,7 @@ export async function middleware(request: NextRequest) {
         },
       }
     )
-    
+
     // Verificar se há uma sessão válida
     const { data: { session }, error } = await supabase.auth.getSession()
 
@@ -57,6 +61,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Verificar se o usuário existe na tabela users
+    // Como estamos usando SERVICE_ROLE_KEY, o RLS não se aplica
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('id, status, access_expires_at, role')
@@ -64,7 +69,7 @@ export async function middleware(request: NextRequest) {
       .single()
 
     if (userError || !userData) {
-      console.log('🔒 Usuário não encontrado na base de dados')
+      console.log('🔒 Usuário não encontrado na base de dados:', userError?.message)
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
@@ -78,7 +83,7 @@ export async function middleware(request: NextRequest) {
     if (userData.access_expires_at) {
       const expirationDate = new Date(userData.access_expires_at)
       const now = new Date()
-      
+
       if (expirationDate < now) {
         console.log('🔒 Acesso expirado')
         return NextResponse.redirect(new URL('/login?error=expired', request.url))

@@ -90,14 +90,16 @@ class SessionManager {
         console.log('✅ Sessão válida, buscando dados do usuário...')
         
         // Buscar dados completos do usuário
+        // NOTA: Com RLS configurado corretamente, o usuário pode ver seu próprio registro
+        // porque a política permite SELECT quando auth.uid() = id
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('*')
           .eq('id', session.user.id)
           .single()
 
-        console.log('📊 Dados do usuário na tabela:', { 
-          hasUserData: !!userData, 
+        console.log('📊 Dados do usuário na tabela:', {
+          hasUserData: !!userData,
           error: userError?.message,
           userEmail: userData?.email,
           userRole: userData?.role,
@@ -106,6 +108,7 @@ class SessionManager {
 
         if (userError || !userData) {
           console.error('❌ Erro ao buscar dados do usuário:', userError)
+          console.error('💡 Dica: Verifique se as políticas RLS estão configuradas corretamente')
           this.updateSession({ user: null, loading: false })
           return
         }
