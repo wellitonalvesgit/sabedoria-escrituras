@@ -125,6 +125,8 @@ export default function DashboardPage() {
         blocked_courses: user.blocked_courses,
         blocked_categories: user.blocked_categories
       } : 'N/A')
+      console.log('⏳ Loading state:', loading)
+      console.log('🔐 Session valid:', sessionValid)
       
       const response = await fetch('/api/courses')
       if (!response.ok) {

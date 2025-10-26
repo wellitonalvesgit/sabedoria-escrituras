@@ -1,11 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// Criar instância específica para middleware
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const supabase = createClient(supabaseUrl, supabaseKey)
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -33,7 +29,24 @@ export async function middleware(request: NextRequest) {
 
   // Rotas que precisam de autenticação
   try {
-    // Usar o cliente configurado
+    // Criar cliente Supabase com cookies para middleware
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
     
     // Verificar se há uma sessão válida
     const { data: { session }, error } = await supabase.auth.getSession()

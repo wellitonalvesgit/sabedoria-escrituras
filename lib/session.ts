@@ -45,6 +45,9 @@ class SessionManager {
     try {
       console.log('🔄 Inicializando sessão...')
       
+      // Aguardar um pouco mais para garantir que o Supabase esteja pronto
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
       // Verificar sessão atual
       const { data: { session }, error } = await supabase.auth.getSession()
       
@@ -53,7 +56,8 @@ class SessionManager {
         hasUser: !!session?.user,
         error: error?.message,
         userId: session?.user?.id,
-        userEmail: session?.user?.email
+        userEmail: session?.user?.email,
+        sessionExpiry: session?.expires_at
       })
       
       if (error) {
@@ -64,6 +68,14 @@ class SessionManager {
 
       if (session?.user) {
         console.log('👤 Usuário encontrado na sessão:', session.user.id)
+        
+        // Verificar se a sessão não expirou
+        if (session.expires_at && new Date(session.expires_at) < new Date()) {
+          console.log('⏰ Sessão expirada, fazendo logout')
+          await supabase.auth.signOut()
+          this.updateSession({ user: null, loading: false })
+          return
+        }
         
         // Buscar dados completos do usuário
         const { data: userData, error: userError } = await supabase
@@ -76,11 +88,19 @@ class SessionManager {
           hasUserData: !!userData, 
           error: userError?.message,
           userEmail: userData?.email,
-          userRole: userData?.role
+          userRole: userData?.role,
+          userStatus: userData?.status
         })
 
         if (userError || !userData) {
           console.error('❌ Erro ao buscar dados do usuário:', userError)
+          this.updateSession({ user: null, loading: false })
+          return
+        }
+
+        // Verificar se o usuário está ativo
+        if (userData.status !== 'active') {
+          console.log('❌ Usuário inativo:', userData.status)
           this.updateSession({ user: null, loading: false })
           return
         }
