@@ -8,6 +8,7 @@ import { Slider } from "@/components/ui/slider"
 import { CoursePDF } from "@/lib/courses-data"
 import { HighlightToolbar } from "@/components/highlight-toolbar"
 import { SummariesPanel } from "@/components/summaries-panel"
+import { usePageProgress } from "@/hooks/use-page-progress"
 
 interface BibleDigitalReaderProps {
   pdfUrl: string
@@ -53,6 +54,14 @@ export const BibleDigitalReader = ({
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null)
   const [highlights, setHighlights] = useState<any[]>([])
   const [isLoadingHighlights, setIsLoadingHighlights] = useState(false)
+
+  // Hook para gerenciar progresso de páginas
+  const { 
+    currentPage: savedPage, 
+    loadPageProgress, 
+    savePageProgress,
+    isLoading: isLoadingProgress 
+  } = usePageProgress()
 
   const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const pageFlipAudioRef = useRef<HTMLAudioElement | null>(null)
@@ -182,6 +191,19 @@ export const BibleDigitalReader = ({
     }
   }, [pdfUrl, pdfData])
 
+  // Carregar página salva quando o componente monta
+  useEffect(() => {
+    if (courseId && !isLoading) {
+      loadPageProgress(courseId, pdfId).then(() => {
+        // Após carregar o progresso, definir a página salva
+        if (savedPage > 1) {
+          setCurrentPage(savedPage)
+          console.log(`📖 Continuando da página ${savedPage}`)
+        }
+      })
+    }
+  }, [courseId, pdfId, isLoading, loadPageProgress, savedPage])
+
   useEffect(() => {
     pageFlipAudioRef.current = new Audio()
     pageFlipAudioRef.current.volume = 0.3
@@ -230,6 +252,33 @@ export const BibleDigitalReader = ({
       }
     }
   }, [autoScroll, scrollSpeed])
+
+  // Salvar progresso baseado na posição do scroll
+  useEffect(() => {
+    const saveScrollProgress = async () => {
+      if (textContainerRef.current && totalPages > 0) {
+        const container = textContainerRef.current
+        const scrollTop = container.scrollTop
+        const scrollHeight = container.scrollHeight
+        const clientHeight = container.clientHeight
+        
+        // Calcular página baseada na posição do scroll
+        const scrollPercentage = scrollTop / (scrollHeight - clientHeight)
+        const estimatedPage = Math.max(1, Math.ceil(scrollPercentage * totalPages))
+        
+        // Salvar apenas se mudou significativamente
+        if (Math.abs(estimatedPage - currentPage) >= 1) {
+          await savePageProgress(courseId, pdfId || null, estimatedPage, totalPages)
+          setCurrentPage(estimatedPage)
+        }
+      }
+    }
+
+    // Salvar progresso a cada 5 segundos durante o scroll
+    const scrollInterval = setInterval(saveScrollProgress, 5000)
+    
+    return () => clearInterval(scrollInterval)
+  }, [courseId, pdfId, totalPages, currentPage, savePageProgress])
 
   const playPageFlipSound = () => {
     if (soundEnabled && pageFlipAudioRef.current) {
@@ -773,6 +822,31 @@ export const BibleDigitalReader = ({
             <div className="rounded-full bg-[#16130F]/95 px-8 py-4 text-lg font-semibold text-[#F3C77A] backdrop-blur-sm shadow-xl">
               Texto Corrido
             </div>
+            
+            {/* Botão de Salvar Progresso */}
+            <Button
+              onClick={async () => {
+                if (textContainerRef.current && totalPages > 0) {
+                  const container = textContainerRef.current
+                  const scrollTop = container.scrollTop
+                  const scrollHeight = container.scrollHeight
+                  const clientHeight = container.clientHeight
+                  
+                  const scrollPercentage = scrollTop / (scrollHeight - clientHeight)
+                  const estimatedPage = Math.max(1, Math.ceil(scrollPercentage * totalPages))
+                  
+                  const success = await savePageProgress(courseId, pdfId || null, estimatedPage, totalPages)
+                  if (success) {
+                    alert(`✅ Progresso salvo! Página ${estimatedPage} de ${totalPages}`)
+                  }
+                }
+              }}
+              className="h-12 px-6 rounded-full bg-[#F3C77A] text-black font-semibold hover:bg-[#FFD88A] shadow-xl"
+              title="Salvar progresso atual"
+            >
+              💾 Salvar Progresso
+            </Button>
+            
             <Button
               onClick={downloadAsTxt}
               variant="ghost"

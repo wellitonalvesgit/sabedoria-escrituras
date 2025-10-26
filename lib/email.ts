@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
+import { sendEmailSMTP, isSMTPConfigured } from './email-smtp'
+import { sendEmailResend } from './email-resend'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -18,14 +20,37 @@ interface EmailData {
 }
 
 /**
- * Envia email usando a função Edge do Supabase
+ * Envia email usando múltiplas opções (SMTP, Resend, Supabase)
  */
 export async function sendEmail({ to, subject, html, text }: EmailData): Promise<boolean> {
   try {
     console.log('📧 Enviando email para:', to)
     console.log('📝 Assunto:', subject)
 
-    // Usar a função Edge do Supabase para envio de email
+    // OPÇÃO 1: Tentar SMTP primeiro (se configurado)
+    if (isSMTPConfigured()) {
+      console.log('📧 Tentando envio via SMTP...')
+      const smtpSuccess = await sendEmailSMTP({ to, subject, html, text })
+      if (smtpSuccess) {
+        console.log('✅ Email enviado com sucesso via SMTP')
+        return true
+      }
+      console.log('⚠️  Falha no envio via SMTP, tentando outras opções...')
+    }
+
+    // OPÇÃO 2: Tentar Resend API (se configurado)
+    if (process.env.RESEND_API_KEY) {
+      console.log('📧 Tentando envio via Resend...')
+      const resendSuccess = await sendEmailResend({ to, subject, html, text })
+      if (resendSuccess) {
+        console.log('✅ Email enviado com sucesso via Resend')
+        return true
+      }
+      console.log('⚠️  Falha no envio via Resend, tentando Supabase...')
+    }
+
+    // OPÇÃO 3: Tentar Supabase Edge Function
+    console.log('📧 Tentando envio via Supabase Edge Function...')
     const { data, error } = await adminClient.functions.invoke('send-email', {
       body: {
         to,
@@ -36,14 +61,15 @@ export async function sendEmail({ to, subject, html, text }: EmailData): Promise
     })
 
     if (error) {
-      console.error('❌ Erro ao enviar email:', error)
+      console.error('❌ Erro na função Supabase:', error)
       return false
     }
 
-    console.log('✅ Email enviado com sucesso:', data)
+    console.log('✅ Email enviado com sucesso via Supabase')
     return true
+
   } catch (error) {
-    console.error('❌ Erro ao enviar email:', error)
+    console.error('❌ Erro geral no envio de email:', error)
     return false
   }
 }

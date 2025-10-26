@@ -11,6 +11,9 @@ import { OriginalPDFViewer } from "@/components/original-pdf-viewer"
 import { DigitalMagazineViewer } from "@/components/digital-magazine-viewer"
 import { useGamification } from "@/contexts/gamification-context"
 import { PremiumAccessGate } from "@/components/premium-access-gate"
+import { CongratulationsModal } from "@/components/congratulations-modal"
+import { useCongratulations } from "@/hooks/use-congratulations"
+import { useCurrentUser } from "@/hooks/use-current-user"
 import { useState, use, useEffect } from "react"
 import { CoursePDF } from "@/lib/courses-data"
 
@@ -27,6 +30,15 @@ interface Course {
   status: string
   created_at: string
   course_pdfs: CoursePDF[]
+  course_categories?: Array<{
+    category_id: string
+    categories: {
+      id: string
+      name: string
+      slug: string
+      color: string
+    }
+  }>
 }
 
 export default function CoursePage({ params }: { params: Promise<{ id: string }> }) {
@@ -36,6 +48,14 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   const [viewMode, setViewMode] = useState<'original' | 'digital-magazine' | undefined>(undefined)
   const [readingMode, setReadingMode] = useState<'light' | 'sepia' | 'dark'>('light')
   const { addPoints } = useGamification()
+  const { 
+    showModal, 
+    courseId: congratsCourseId, 
+    courseTitle: congratsCourseTitle, 
+    checkForCompletion, 
+    closeModal 
+  } = useCongratulations()
+  const { user, hasAccessToCourse, hasAccessToCategory } = useCurrentUser()
   const [sessionDuration, setSessionDuration] = useState(0)
   const [lastPage, setLastPage] = useState(1)
   const [course, setCourse] = useState<Course | null>(null)
@@ -86,6 +106,64 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-muted-foreground">Curso não encontrado</p>
+      </div>
+    )
+  }
+
+  // Verificar se o usuário tem acesso ao curso
+  const userHasAccess = hasAccessToCourse(course.id) || 
+    (course.course_categories && course.course_categories.length > 0 && 
+     course.course_categories.some((cc: any) => hasAccessToCategory(cc.category_id)))
+
+  // Se não tem acesso, mostrar página de acesso negado
+  if (!userHasAccess) {
+    return (
+      <div className="min-h-screen bg-background">
+        <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/95">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="flex h-16 items-center justify-between">
+              <Link href="/dashboard" className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+                  <BookOpen className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <span className="text-xl font-semibold tracking-tight">Sabedoria das Escrituras</span>
+              </Link>
+              <div className="flex items-center gap-3">
+                <ThemeToggle />
+                <PointsDisplay />
+                <Link href="/settings">
+                  <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-primary/10 hover:text-primary">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <div className="mx-auto max-w-7xl px-6 pt-24 pb-8 lg:px-8">
+          <div className="text-center py-12">
+            <div className="mx-auto w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6">
+              <span className="text-4xl">🔒</span>
+            </div>
+            <h1 className="text-3xl font-bold text-foreground mb-4">Acesso Restrito</h1>
+            <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
+              Você não tem permissão para acessar este curso. Entre em contato com o administrador 
+              para solicitar acesso ou verifique se você tem uma assinatura ativa.
+            </p>
+            <div className="space-y-4">
+              <Link href="/dashboard">
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  Voltar aos Cursos
+                </Button>
+              </Link>
+              <div className="text-sm text-muted-foreground">
+                <p>Curso: <strong>{course.title}</strong></p>
+                <p>Autor: <strong>{course.author}</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -218,12 +296,14 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
               <OriginalPDFViewer
                 pdfUrl={selectedPDF.url}
                 courseId={courseId}
+                pdfId={selectedPDF.id}
                 onSessionUpdate={handleSessionUpdate}
               />
             ) : (
               <DigitalMagazineViewer
                 pdfUrl={selectedPDF.url}
                 courseId={courseId}
+                pdfId={selectedPDF.id}
                 pdfData={selectedPDF}
                 onSessionUpdate={handleSessionUpdate}
                 readingMode={readingMode}
@@ -259,9 +339,14 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                   Voltar aos Volumes
                 </Button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     addPoints(sessionDuration, `Sessão de leitura de ${Math.round(sessionDuration / 60)} minutos`)
                     alert("Progresso salvo no ranking!")
+                    
+                    // Verificar se o curso foi concluído
+                    if (course) {
+                      await checkForCompletion(course.id, course.title)
+                    }
                   }}
                   disabled={sessionDuration < 60}
                   className="rounded-full bg-[#F3C77A] px-6 py-3 text-sm font-semibold text-black shadow-[0_20px_60px_rgba(243,199,122,0.35)] disabled:cursor-not-allowed disabled:bg-[#B39B6C]"
@@ -273,6 +358,16 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
           </div>
         ) : null}
         </PremiumAccessGate>
+
+        {/* Modal de Parabéns */}
+        {congratsCourseId && congratsCourseTitle && (
+          <CongratulationsModal
+            courseId={congratsCourseId}
+            courseTitle={congratsCourseTitle}
+            isOpen={showModal}
+            onClose={closeModal}
+          />
+        )}
       </div>
     </div>
   )

@@ -11,6 +11,7 @@ import { CoursePDF } from "@/lib/courses-data"
 interface DigitalMagazineViewerProps {
   pdfUrl: string
   courseId: string
+  pdfId?: string  // ID do PDF no banco de dados
   pdfData?: CoursePDF  // Dados completos do PDF incluindo textContent
   onSessionUpdate?: (durationSeconds: number, currentPage: number) => void
   readingMode?: 'light' | 'sepia' | 'dark'
@@ -20,6 +21,7 @@ interface DigitalMagazineViewerProps {
 export const DigitalMagazineViewer = ({
   pdfUrl,
   courseId,
+  pdfId,
   pdfData,
   onSessionUpdate,
   readingMode = 'light',
@@ -245,5 +247,5 @@ export const DigitalMagazineViewer = ({
   }
 
   // Sempre renderizar modo Bíblia Digital
-  return <BibleDigitalReader pdfUrl={pdfUrl} courseId={courseId} pdfData={pdfData} onSessionUpdate={onSessionUpdate} readingMode={readingMode} onBackToModeSelection={onBackToModeSelection} />
+  return <BibleDigitalReader pdfUrl={pdfUrl} courseId={courseId} pdfId={pdfId} pdfData={pdfData} onSessionUpdate={onSessionUpdate} readingMode={readingMode} onBackToModeSelection={onBackToModeSelection} />
 }

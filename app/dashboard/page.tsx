@@ -45,6 +45,7 @@ interface Course {
   course_pdfs: CoursePDF[]
   tags?: string[]
   category_id?: string
+  userHasAccess?: boolean // Novo campo para indicar se o usuário tem acesso
   course_categories?: Array<{
     category_id: string
     categories: {
@@ -114,6 +115,17 @@ export default function DashboardPage() {
   const fetchCourses = async () => {
     try {
       setLoading(true)
+      console.log('🔍 Iniciando busca de cursos...')
+      console.log('👤 Usuário atual:', user ? `${user.name} (${user.email})` : 'Não logado')
+      console.log('🔑 Dados do usuário:', user ? {
+        role: user.role,
+        status: user.status,
+        allowed_courses: user.allowed_courses,
+        allowed_categories: user.allowed_categories,
+        blocked_courses: user.blocked_courses,
+        blocked_categories: user.blocked_categories
+      } : 'N/A')
+      
       const response = await fetch('/api/courses')
       if (!response.ok) {
         throw new Error('Erro ao carregar cursos')
@@ -121,33 +133,27 @@ export default function DashboardPage() {
       const data = await response.json()
       console.log('Dashboard - courses data:', data.courses)
 
-      // Filtrar cursos baseado no acesso do usuário
-      const filteredCourses = (data.courses || []).filter((course: Course) => {
-        // Verificar acesso ao curso específico
-        if (!hasAccessToCourse(course.id)) {
-          console.log(`Curso ${course.title} bloqueado - sem acesso ao curso`)
-          return false
+      // Mostrar TODOS os cursos, mas marcar quais têm acesso
+      const allCoursesWithAccess = (data.courses || []).map((course: Course) => {
+        console.log(`Verificando acesso ao curso: ${course.title}`)
+        
+        // Verificar se o usuário tem acesso ao curso
+        const hasAccess = hasAccessToCourse(course.id) || 
+          (course.course_categories && course.course_categories.length > 0 && 
+           course.course_categories.some((cc: any) => hasAccessToCategory(cc.category_id)))
+        
+        console.log(`${hasAccess ? '✅' : '🔒'} Curso ${course.title} - ${hasAccess ? 'Acesso liberado' : 'Acesso restrito'}`)
+        
+        return {
+          ...course,
+          userHasAccess: hasAccess
         }
-
-        // Verificar acesso às categorias do curso (course_categories)
-        if (course.course_categories && course.course_categories.length > 0) {
-          // Se o curso tem categorias, verificar se o usuário tem acesso a ALGUMA delas
-          const hasAccessToAnyCat = course.course_categories.some((cc: any) =>
-            hasAccessToCategory(cc.category_id)
-          )
-
-          if (!hasAccessToAnyCat) {
-            console.log(`Curso ${course.title} bloqueado - sem acesso às categorias`)
-            return false
-          }
-        }
-
-        return true
       })
 
-      console.log('Dashboard - filtered courses:', filteredCourses.length)
-      setAllCourses(filteredCourses)
-      setCourses(filteredCourses)
+      console.log('Dashboard - todos os cursos:', allCoursesWithAccess.length)
+      console.log('Dashboard - cursos com acesso:', allCoursesWithAccess.filter(c => c.userHasAccess).length)
+      setAllCourses(allCoursesWithAccess)
+      setCourses(allCoursesWithAccess)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
     } finally {
@@ -433,7 +439,8 @@ export default function DashboardPage() {
                         description: course.description,
                         readingTimeMinutes: course.reading_time_minutes || 0,
                         coverUrl: course.cover_url,
-                        tags: course.tags
+                        tags: course.tags,
+                        userHasAccess: course.userHasAccess
                       }}
                     />
                   ))}

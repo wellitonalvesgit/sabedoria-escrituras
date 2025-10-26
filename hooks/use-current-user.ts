@@ -37,7 +37,14 @@ export function useCurrentUser() {
     if (user.role === 'admin') return true
     if (!sessionValid) return false
     
-    return user.allowed_categories?.includes(categoryId) || false
+    // Verificar se a categoria não está bloqueada
+    if (user.blocked_categories && user.blocked_categories.includes(categoryId)) return false
+    
+    // Verificar se a categoria está explicitamente permitida
+    if (user.allowed_categories && user.allowed_categories.includes(categoryId)) return true
+    
+    // Se não há categorias específicas permitidas, permitir todas (exceto bloqueadas)
+    return !user.allowed_categories || user.allowed_categories.length === 0
   }
 
   const hasAccessToCourse = (courseId: string): boolean => {
@@ -46,10 +53,10 @@ export function useCurrentUser() {
     if (!sessionValid) return false
     
     // Verificar se o curso não está bloqueado
-    if (user.blocked_courses?.includes(courseId)) return false
+    if (user.blocked_courses && user.blocked_courses.includes(courseId)) return false
     
     // Verificar se o curso está explicitamente permitido
-    if (user.allowed_courses?.includes(courseId)) return true
+    if (user.allowed_courses && user.allowed_courses.includes(courseId)) return true
     
     // Se não há cursos específicos permitidos, permitir todos (exceto bloqueados)
     return !user.allowed_courses || user.allowed_courses.length === 0

@@ -8,10 +8,11 @@ import { motion } from "framer-motion"
 interface OriginalPDFViewerProps {
   pdfUrl: string
   courseId: string
+  pdfId?: string  // ID do PDF no banco de dados
   onSessionUpdate?: (durationSeconds: number, currentPage: number) => void
 }
 
-export const OriginalPDFViewer = ({ pdfUrl, courseId, onSessionUpdate }: OriginalPDFViewerProps) => {
+export const OriginalPDFViewer = ({ pdfUrl, courseId, pdfId, onSessionUpdate }: OriginalPDFViewerProps) => {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
   const [startTime] = useState(() => Date.now())
