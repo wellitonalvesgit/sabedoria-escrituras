@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Adicionar Usuário</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #F3C77A;
+            color: black;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .button:hover {
+            background: #FFD88A;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste - Funcionalidade Adicionar Usuário</h1>
+        
+        <div class="info">
+            <strong>📋 Instruções:</strong>
+            <ol>
+                <li>Acesse <a href="http://localhost:3000/admin/users" target="_blank">http://localhost:3000/admin/users</a></li>
+                <li>Clique no botão "Adicionar Usuário" (botão laranja)</li>
+                <li>Verifique se o modal abre corretamente</li>
+                <li>Teste preencher os campos e criar um usuário</li>
+            </ol>
+        </div>
+
+        <h2>🔧 Correções Implementadas:</h2>
+        <ul>
+            <li>✅ Criado componente AddUserDrawerFixed com modal customizado</li>
+            <li>✅ Removido dependência do Radix UI Sheet (que estava causando problemas)</li>
+            <li>✅ Implementado modal com overlay e z-index adequado</li>
+            <li>✅ Adicionado logs de debug para rastreamento</li>
+            <li>✅ Mantida toda funcionalidade original (validação, API, etc.)</li>
+        </ul>
+
+        <h2>🎯 O que deve acontecer:</h2>
+        <div class="success">
+            <strong>✅ Sucesso:</strong> Ao clicar no botão, deve aparecer um modal centralizado com formulário para criar usuário.
+        </div>
+
+        <h2>🐛 Se ainda não funcionar:</h2>
+        <div class="error">
+            <strong>❌ Problema:</strong> Verifique o console do navegador (F12) para ver os logs de debug e me informe o que aparece.
+        </div>
+
+        <button class="button" onclick="window.open('http://localhost:3000/admin/users', '_blank')">
+            🚀 Abrir Página de Usuários
+        </button>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // Verificar se o servidor está rodando
+        fetch('http://localhost:3000/api/users')
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('status').innerHTML = 
+                        '<div class="success">✅ Servidor está rodando e API está funcionando!</div>';
+                } else {
+                    document.getElementById('status').innerHTML = 
+                        '<div class="error">❌ Servidor está rodando mas API retornou erro: ' + response.status + '</div>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('status').innerHTML = 
+                    '<div class="error">❌ Erro ao conectar com o servidor: ' + error.message + '</div>';
+            });
+    </script>
+</body>
+</html>

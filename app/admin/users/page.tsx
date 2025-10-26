@@ -21,6 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import Link from "next/link"
+import { AddUserDrawer } from "@/components/add-user-drawer"
+import { AddUserDrawerFixed } from "@/components/add-user-drawer-fixed"
 
 interface User {
   id: string
@@ -52,6 +54,7 @@ export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [addUserDrawerOpen, setAddUserDrawerOpen] = useState(false)
 
   useEffect(() => {
     fetchUsers()
@@ -167,7 +170,10 @@ export default function AdminUsersPage() {
                   Voltar ao Admin
                 </Button>
               </Link>
-              <Button className="bg-[#F3C77A] text-black hover:bg-[#FFD88A]">
+              <Button
+                className="bg-[#F3C77A] text-black hover:bg-[#FFD88A]"
+                onClick={() => setAddUserDrawerOpen(true)}
+              >
                 <UserPlus className="mr-2 h-4 w-4" />
                 Adicionar Usuário
               </Button>
@@ -362,6 +368,13 @@ export default function AdminUsersPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add User Drawer - Versão Corrigida */}
+      <AddUserDrawerFixed
+        open={addUserDrawerOpen}
+        onOpenChange={setAddUserDrawerOpen}
+        onUserAdded={fetchUsers}
+      />
     </div>
   )
 }
