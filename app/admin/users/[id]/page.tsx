@@ -73,6 +73,13 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       }
       const data = await response.json()
       setUser(data.user)
+      // Limpar conflitos entre cursos permitidos e bloqueados
+      const allowedCourses = data.user.allowed_courses || []
+      const blockedCourses = data.user.blocked_courses || []
+      
+      // Remover cursos que estão em ambas as listas (priorizar permitidos)
+      const cleanBlockedCourses = blockedCourses.filter(courseId => !allowedCourses.includes(courseId))
+      
       setEditedUser({
         name: data.user.name,
         email: data.user.email,
@@ -81,8 +88,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         access_days: data.user.access_days || 30,
         allowed_categories: data.user.allowed_categories || [],
         blocked_categories: data.user.blocked_categories || [],
-        allowed_courses: data.user.allowed_courses || [],
-        blocked_courses: data.user.blocked_courses || []
+        allowed_courses: allowedCourses,
+        blocked_courses: cleanBlockedCourses
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
@@ -108,12 +115,28 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       setSaving(true)
       setError(null)
       
+      // Limpar conflitos antes de salvar
+      const cleanBlockedCourses = editedUser.blocked_courses.filter(courseId => 
+        !editedUser.allowed_courses.includes(courseId)
+      )
+      
+      // Verificar se houve conflitos resolvidos
+      const hadConflicts = editedUser.blocked_courses.length !== cleanBlockedCourses.length
+      if (hadConflicts) {
+        setSuccess("Conflitos de permissões resolvidos automaticamente. Cursos permitidos têm prioridade sobre bloqueados.")
+      }
+      
+      const userDataToSave = {
+        ...editedUser,
+        blocked_courses: cleanBlockedCourses
+      }
+      
       const response = await fetch(`/api/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(editedUser)
+        body: JSON.stringify(userDataToSave)
       })
       
       if (!response.ok) {
@@ -133,9 +156,13 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     if (!newCourse) return
     
     const field = type === 'allowed' ? 'allowed_courses' : 'blocked_courses'
+    const oppositeField = type === 'allowed' ? 'blocked_courses' : 'allowed_courses'
+    
     setEditedUser(prev => ({
       ...prev,
-      [field]: [...prev[field as keyof typeof prev] as string[], newCourse]
+      [field]: [...prev[field as keyof typeof prev] as string[], newCourse],
+      // Remover o curso da lista oposta se estiver lá
+      [oppositeField]: (prev[oppositeField as keyof typeof prev] as string[]).filter(c => c !== newCourse)
     }))
     setNewCourse("")
   }
@@ -384,7 +411,10 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     <SelectValue placeholder="Selecione um curso..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {courses.filter(c => !editedUser.allowed_courses.includes(c.id)).map((course) => (
+                    {courses.filter(c => 
+                      !editedUser.allowed_courses.includes(c.id) && 
+                      !editedUser.blocked_courses.includes(c.id)
+                    ).map((course) => (
                       <SelectItem key={course.id} value={course.id}>
                         {course.title}
                       </SelectItem>
@@ -441,7 +471,10 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     <SelectValue placeholder="Selecione um curso..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {courses.filter(c => !editedUser.blocked_courses.includes(c.id)).map((course) => (
+                    {courses.filter(c => 
+                      !editedUser.blocked_courses.includes(c.id) && 
+                      !editedUser.allowed_courses.includes(c.id)
+                    ).map((course) => (
                       <SelectItem key={course.id} value={course.id}>
                         {course.title}
                       </SelectItem>
