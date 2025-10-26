@@ -30,14 +30,42 @@ if (process.env.NODE_ENV === 'development') {
   console.log('✅ Service Role Key:', supabaseServiceRoleKey ? 'Configurada' : 'Missing')
 }
 
-// Cliente público (usar em componentes client-side e server-side)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
+// Instância singleton para evitar múltiplas instâncias do GoTrueClient
+// IMPORTANTE: Isso resolve o aviso "Multiple GoTrueClient instances detected"
+let supabaseInstance: ReturnType<typeof createClient> | null = null
+
+function getSupabaseClient() {
+  // Server-side: sempre criar nova instância
+  if (typeof window === 'undefined') {
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      }
+    })
   }
-})
+
+  // Client-side: usar singleton para evitar múltiplas instâncias
+  if (!supabaseInstance) {
+    console.log('🔧 Criando instância singleton do Supabase Client')
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        storage: window.localStorage,
+        storageKey: 'sb-auth-token',
+        flowType: 'pkce'
+      }
+    })
+  }
+
+  return supabaseInstance
+}
+
+// Cliente público (usar em componentes client-side e server-side)
+export const supabase = getSupabaseClient()
 
 // Cliente admin (APENAS para uso server-side - API routes, server components)
 // Bypassa Row Level Security
