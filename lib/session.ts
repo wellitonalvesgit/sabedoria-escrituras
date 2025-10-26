@@ -36,10 +36,12 @@ class SessionManager {
 
   private async initializeSession() {
     try {
-      // Usar o cliente configurado
+      console.log('🔄 Inicializando sessão...')
       
       // Verificar sessão atual
       const { data: { session }, error } = await supabase.auth.getSession()
+      
+      console.log('📊 Dados da sessão:', { session: !!session, error, userId: session?.user?.id })
       
       if (error) {
         console.error('❌ Erro ao verificar sessão:', error)
@@ -48,6 +50,8 @@ class SessionManager {
       }
 
       if (session?.user) {
+        console.log('👤 Usuário encontrado na sessão:', session.user.id)
+        
         // Buscar dados completos do usuário
         const { data: userData, error: userError } = await supabase
           .from('users')
@@ -55,18 +59,22 @@ class SessionManager {
           .eq('id', session.user.id)
           .single()
 
+        console.log('📊 Dados do usuário na tabela:', { userData: !!userData, error: userError })
+
         if (userError || !userData) {
           console.error('❌ Erro ao buscar dados do usuário:', userError)
           this.updateSession({ user: null, loading: false })
           return
         }
 
+        console.log('✅ Usuário carregado com sucesso:', userData.email)
         this.updateSession({ 
           user: userData, 
           loading: false,
           sessionId: session.access_token
         })
       } else {
+        console.log('❌ Nenhuma sessão ativa encontrada')
         this.updateSession({ user: null, loading: false })
       }
 
