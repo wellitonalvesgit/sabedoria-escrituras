@@ -1,6 +1,7 @@
 "use client"
 
-import { LogOut } from "lucide-react"
+import { useState } from "react"
+import { LogOut, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
   DropdownMenu, 
@@ -9,6 +10,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator 
 } from "@/components/ui/dropdown-menu"
+import { useCurrentUser } from "@/hooks/use-current-user"
 
 interface LogoutButtonProps {
   user?: {
@@ -19,13 +21,22 @@ interface LogoutButtonProps {
 }
 
 export function LogoutButton({ user }: LogoutButtonProps) {
-  const handleLogout = () => {
-    // Limpar dados do usuário
-    localStorage.removeItem('user')
-    sessionStorage.clear()
-    
-    // Redirecionar para landing page
-    window.location.href = '/landing'
+  const [loading, setLoading] = useState(false)
+  const { signOut } = useCurrentUser()
+
+  const handleLogout = async () => {
+    setLoading(true)
+    try {
+      await signOut()
+      // Redirecionar para login
+      window.location.href = '/login'
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error)
+      // Mesmo com erro, redirecionar para login
+      window.location.href = '/login'
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!user) {
@@ -49,9 +60,17 @@ export function LogoutButton({ user }: LogoutButtonProps) {
           <p className="text-xs text-muted-foreground">{user.email}</p>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-          <LogOut className="mr-2 h-4 w-4" />
-          Sair da Plataforma
+        <DropdownMenuItem 
+          onClick={handleLogout} 
+          className="text-red-600"
+          disabled={loading}
+        >
+          {loading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <LogOut className="mr-2 h-4 w-4" />
+          )}
+          {loading ? 'Saindo...' : 'Sair da Plataforma'}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

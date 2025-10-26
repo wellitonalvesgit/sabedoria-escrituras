@@ -41,24 +41,33 @@ export default function LoginPage() {
     setSuccess("")
 
     try {
-      const { user, error } = await signIn(email, password)
+      // Usar a API de login com rate limiting
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      })
 
-      if (error) {
-        setError(error.message)
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          // Rate limiting
+          const minutes = Math.ceil(data.timeUntilReset / (1000 * 60))
+          setError(`Muitas tentativas de login. Tente novamente em ${minutes} minutos.`)
+        } else {
+          setError(data.error || 'Erro ao fazer login')
+        }
         return
       }
 
-      if (user) {
-        // Verificar se o usuário tem todos os dados necessários
-        if (!user.role || !user.status) {
-          setError("Dados do usuário incompletos. Entre em contato com o administrador.")
-          return
-        }
-
+      if (data.success && data.user) {
         setSuccess("Login realizado com sucesso! Redirecionando...")
         
         // Redirecionar baseado no role do usuário
-        const redirectPath = user.role === 'admin' ? '/admin' : '/dashboard'
+        const redirectPath = data.user.role === 'admin' ? '/admin' : '/dashboard'
         console.log('🔄 Redirecionando para:', redirectPath)
         
         setTimeout(() => {
@@ -66,7 +75,8 @@ export default function LoginPage() {
         }, 1500)
       }
     } catch (err) {
-      setError("Erro ao fazer login")
+      console.error('❌ Erro no login:', err)
+      setError("Erro de conexão. Tente novamente.")
     } finally {
       setLoading(false)
     }

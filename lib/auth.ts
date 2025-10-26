@@ -52,18 +52,36 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function signIn(email: string, password: string) {
   try {
+    console.log('🔐 Iniciando processo de login para:', email)
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (error) {
-      throw error
+      console.error('❌ Erro na autenticação:', error.message)
+      
+      // Mapear erros específicos do Supabase para mensagens amigáveis
+      if (error.message.includes('Invalid login credentials')) {
+        return { user: null, error: new Error('Email ou senha incorretos') }
+      }
+      if (error.message.includes('Email not confirmed')) {
+        return { user: null, error: new Error('Email não confirmado. Verifique sua caixa de entrada') }
+      }
+      if (error.message.includes('Too many requests')) {
+        return { user: null, error: new Error('Muitas tentativas. Tente novamente em alguns minutos') }
+      }
+      
+      return { user: null, error: new Error(error.message) }
     }
 
     if (!data.user) {
+      console.error('❌ Usuário não encontrado após autenticação')
       return { user: null, error: new Error('Usuário não encontrado') }
     }
+
+    console.log('✅ Usuário autenticado no Supabase Auth:', data.user.id)
 
     // Buscar dados completos do usuário na tabela users
     const { data: userData, error: userError } = await supabase
@@ -73,13 +91,37 @@ export async function signIn(email: string, password: string) {
       .single()
 
     if (userError) {
-      console.error('Erro ao buscar dados do usuário:', userError)
-      return { user: null, error: new Error('Erro ao buscar dados do usuário') }
+      console.error('❌ Erro ao buscar dados do usuário:', userError)
+      return { user: null, error: new Error('Erro ao carregar dados do usuário') }
     }
 
+    if (!userData) {
+      console.error('❌ Dados do usuário não encontrados na tabela users')
+      return { user: null, error: new Error('Dados do usuário não encontrados') }
+    }
+
+    // Verificar se o usuário está ativo
+    if (userData.status !== 'active') {
+      console.error('❌ Usuário inativo:', userData.status)
+      return { user: null, error: new Error('Sua conta está inativa. Entre em contato com o suporte') }
+    }
+
+    // Verificar se o acesso não expirou
+    if (userData.access_expires_at) {
+      const expirationDate = new Date(userData.access_expires_at)
+      const now = new Date()
+      
+      if (expirationDate < now) {
+        console.error('❌ Acesso expirado:', userData.access_expires_at)
+        return { user: null, error: new Error('Seu acesso expirou. Entre em contato com o administrador') }
+      }
+    }
+
+    console.log('✅ Login realizado com sucesso para:', userData.email)
     return { user: userData, error: null }
   } catch (error) {
-    return { user: null, error }
+    console.error('❌ Erro geral no login:', error)
+    return { user: null, error: new Error('Erro interno do servidor') }
   }
 }
 
@@ -135,10 +177,20 @@ export async function signUp(email: string, password: string, name: string) {
 
 export async function signOut() {
   try {
+    console.log('🚪 Iniciando processo de logout')
+    
     const { error } = await supabase.auth.signOut()
-    return { error }
+    
+    if (error) {
+      console.error('❌ Erro ao fazer logout:', error)
+      return { error: new Error('Erro ao fazer logout') }
+    }
+
+    console.log('✅ Logout realizado com sucesso')
+    return { error: null }
   } catch (error) {
-    return { error }
+    console.error('❌ Erro geral no logout:', error)
+    return { error: new Error('Erro interno do servidor') }
   }
 }
 
