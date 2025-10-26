@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
+import { useCurrentUser } from "@/hooks/use-current-user"
 
 interface UserProfile {
   id: string
@@ -38,6 +39,7 @@ interface UserProfile {
 }
 
 export default function SettingsPage() {
+  const { user: currentUser, loading: userLoading, sessionValid } = useCurrentUser()
   const [user, setUser] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -80,24 +82,8 @@ export default function SettingsPage() {
   })
 
   useEffect(() => {
-    fetchUserProfile()
-  }, [])
-
-  const fetchUserProfile = async () => {
-    try {
-      setLoading(true)
-
-      // Buscar usuário autenticado real do Supabase
-      const { getCurrentUser } = await import('@/lib/auth')
-      const currentUser = await getCurrentUser()
-
-      if (!currentUser) {
-        setError("Usuário não autenticado")
-        setLoading(false)
-        return
-      }
-
-      // Converter para UserProfile (adicionar campos extras se necessário)
+    if (!userLoading && currentUser) {
+      // Converter currentUser para UserProfile
       const userProfile: UserProfile = {
         ...currentUser,
         cpf: "",
@@ -125,12 +111,12 @@ export default function SettingsPage() {
         state: userProfile.state || "",
         zip_code: userProfile.zip_code || ""
       })
-    } catch (err) {
-      setError("Erro ao carregar perfil do usuário")
-    } finally {
+      setLoading(false)
+    } else if (!userLoading && !currentUser) {
+      setError("Usuário não encontrado")
       setLoading(false)
     }
-  }
+  }, [userLoading, currentUser])
 
   const handleSaveProfile = async () => {
     try {
