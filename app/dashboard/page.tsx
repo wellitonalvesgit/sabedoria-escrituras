@@ -73,7 +73,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const { user, loading: userLoading, hasAccessToCategory, hasAccessToCourse, isAccessExpired } = useCurrentUser()
+  const { user, loading: userLoading, sessionValid, hasAccessToCategory, hasAccessToCourse, isAccessExpired } = useCurrentUser()
 
   useEffect(() => {
     if (!userLoading) {
@@ -81,6 +81,15 @@ export default function DashboardPage() {
       fetchCategories()
     }
   }, [userLoading])
+
+  // Verificação de segurança para sessionValid
+  useEffect(() => {
+    if (sessionValid === undefined) {
+      console.log('⚠️ sessionValid é undefined, aguardando inicialização...')
+    } else {
+      console.log('✅ sessionValid inicializado:', sessionValid)
+    }
+  }, [sessionValid])
 
   // Aplicar filtros
   useEffect(() => {
@@ -139,10 +148,10 @@ export default function DashboardPage() {
       const allCoursesWithAccess = (data.courses || []).map((course: Course) => {
         console.log(`Verificando acesso ao curso: ${course.title}`)
         
-        // Verificar se o usuário tem acesso ao curso
-        const hasAccess = hasAccessToCourse(course.id) || 
+        // Verificar se o usuário tem acesso ao curso (com verificações de segurança)
+        const hasAccess = user && sessionValid && (hasAccessToCourse(course.id) || 
           (course.course_categories && course.course_categories.length > 0 && 
-           course.course_categories.some((cc: any) => hasAccessToCategory(cc.category_id)))
+           course.course_categories.some((cc: any) => hasAccessToCategory(cc.category_id))))
         
         console.log(`${hasAccess ? '✅' : '🔒'} Curso ${course.title} - ${hasAccess ? 'Acesso liberado' : 'Acesso restrito'}`)
         
