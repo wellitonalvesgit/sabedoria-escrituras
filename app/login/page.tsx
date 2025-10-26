@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { signIn } from "@/lib/auth"
+import { signIn, resetPassword } from "@/lib/auth"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -22,6 +22,9 @@ export default function LoginPage() {
   const [activeTab, setActiveTab] = useState("password")
   const [magicLinkSent, setMagicLinkSent] = useState(false)
   const [countdown, setCountdown] = useState(0)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("")
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
 
   // Countdown para reenvio de link mágico
   useEffect(() => {
@@ -87,6 +90,29 @@ export default function LoginPage() {
       setError("Erro ao enviar link mágico")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setForgotPasswordLoading(true)
+    setError("")
+    setSuccess("")
+
+    try {
+      const { error } = await resetPassword(forgotPasswordEmail)
+
+      if (error) {
+        setError(error.message)
+      } else {
+        setSuccess("Email de recuperação enviado! Verifique sua caixa de entrada.")
+        setShowForgotPassword(false)
+        setForgotPasswordEmail("")
+      }
+    } catch (err) {
+      setError("Erro ao enviar email de recuperação")
+    } finally {
+      setForgotPasswordLoading(false)
     }
   }
 
@@ -204,6 +230,17 @@ export default function LoginPage() {
                     </>
                   )}
                 </Button>
+
+                <div className="text-center">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-sm text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowForgotPassword(true)}
+                  >
+                    Esqueci minha senha
+                  </Button>
+                </div>
               </form>
             </TabsContent>
 
@@ -312,6 +349,76 @@ export default function LoginPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal Esqueci Senha */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Recuperar Senha</CardTitle>
+              <p className="text-muted-foreground">
+                Digite seu email para receber instruções de recuperação
+              </p>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <XCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {success && (
+                  <Alert className="border-green-200 bg-green-50 dark:bg-green-950">
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription className="text-green-800 dark:text-green-200">
+                      {success}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="forgot-email">Email</Label>
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setShowForgotPassword(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1"
+                    disabled={forgotPasswordLoading}
+                  >
+                    {forgotPasswordLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      'Enviar Email'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
