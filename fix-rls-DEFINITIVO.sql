@@ -64,6 +64,7 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
 -- POLÍTICA 1: SELECT - Ver APENAS próprio perfil
 -- Admins usarão SERVICE_ROLE_KEY que bypassa RLS
+DROP POLICY IF EXISTS "users_can_view_own" ON public.users;
 CREATE POLICY "users_can_view_own"
 ON public.users
 FOR SELECT
@@ -71,6 +72,7 @@ USING (auth.uid() = id);
 
 -- POLÍTICA 2: UPDATE - Atualizar APENAS próprio perfil
 -- Admins usarão SERVICE_ROLE_KEY que bypassa RLS
+DROP POLICY IF EXISTS "users_can_update_own" ON public.users;
 CREATE POLICY "users_can_update_own"
 ON public.users
 FOR UPDATE
@@ -79,6 +81,7 @@ WITH CHECK (auth.uid() = id);
 
 -- POLÍTICA 3: INSERT - Criar própria conta durante signup
 -- Admins usarão SERVICE_ROLE_KEY que bypassa RLS
+DROP POLICY IF EXISTS "users_can_insert_own" ON public.users;
 CREATE POLICY "users_can_insert_own"
 ON public.users
 FOR INSERT
