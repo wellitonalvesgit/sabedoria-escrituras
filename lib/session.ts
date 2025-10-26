@@ -45,8 +45,17 @@ class SessionManager {
     try {
       console.log('🔄 Inicializando sessão...')
       
-      // Aguardar um pouco mais para garantir que o Supabase esteja pronto
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Aguardar mais tempo para garantir que o Supabase esteja pronto
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Verificar se o Supabase está disponível
+      if (!supabase) {
+        console.error('❌ Supabase não está disponível')
+        this.updateSession({ user: null, loading: false })
+        return
+      }
+      
+      console.log('✅ Supabase disponível, verificando sessão...')
       
       // Verificar sessão atual
       const { data: { session }, error } = await supabase.auth.getSession()
@@ -57,7 +66,8 @@ class SessionManager {
         error: error?.message,
         userId: session?.user?.id,
         userEmail: session?.user?.email,
-        sessionExpiry: session?.expires_at
+        sessionExpiry: session?.expires_at,
+        sessionValid: session ? new Date(session.expires_at) > new Date() : false
       })
       
       if (error) {
@@ -76,6 +86,8 @@ class SessionManager {
           this.updateSession({ user: null, loading: false })
           return
         }
+        
+        console.log('✅ Sessão válida, buscando dados do usuário...')
         
         // Buscar dados completos do usuário
         const { data: userData, error: userError } = await supabase
@@ -113,6 +125,19 @@ class SessionManager {
         })
       } else {
         console.log('❌ Nenhuma sessão ativa encontrada')
+        
+        // Tentar verificar se há sessão em localStorage
+        if (typeof window !== 'undefined') {
+          const localStorageKeys = Object.keys(localStorage).filter(key => 
+            key.includes('supabase') || key.includes('sb-')
+          )
+          console.log('🔍 Chaves do Supabase no localStorage:', localStorageKeys)
+          
+          if (localStorageKeys.length > 0) {
+            console.log('⚠️ Há dados do Supabase no localStorage, mas sessão não encontrada')
+          }
+        }
+        
         this.updateSession({ user: null, loading: false })
       }
 

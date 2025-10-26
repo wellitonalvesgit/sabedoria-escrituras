@@ -82,39 +82,45 @@ export default function SettingsPage() {
   })
 
   useEffect(() => {
-    if (!userLoading && currentUser) {
-      // Converter currentUser para UserProfile
-      const userProfile: UserProfile = {
-        ...currentUser,
-        cpf: "",
-        phone: "",
-        bio: "",
-        birth_date: "",
-        address: "",
-        city: "",
-        state: "",
-        zip_code: "",
-        preferences: {},
-        notification_settings: {}
-      }
+    console.log('🔍 Settings - userLoading:', userLoading, 'currentUser:', currentUser ? 'Presente' : 'Ausente')
+    
+    if (!userLoading) {
+      if (currentUser) {
+        console.log('✅ Settings - Usuário encontrado, carregando perfil...')
+        // Converter currentUser para UserProfile
+        const userProfile: UserProfile = {
+          ...currentUser,
+          cpf: "",
+          phone: "",
+          bio: "",
+          birth_date: "",
+          address: "",
+          city: "",
+          state: "",
+          zip_code: "",
+          preferences: {},
+          notification_settings: {}
+        }
 
-      setUser(userProfile)
-      setProfileData({
-        name: userProfile.name,
-        email: userProfile.email,
-        cpf: userProfile.cpf || "",
-        phone: userProfile.phone || "",
-        bio: userProfile.bio || "",
-        birth_date: userProfile.birth_date || "",
-        address: userProfile.address || "",
-        city: userProfile.city || "",
-        state: userProfile.state || "",
-        zip_code: userProfile.zip_code || ""
-      })
-      setLoading(false)
-    } else if (!userLoading && !currentUser) {
-      setError("Usuário não encontrado")
-      setLoading(false)
+        setUser(userProfile)
+        setProfileData({
+          name: userProfile.name,
+          email: userProfile.email,
+          cpf: userProfile.cpf || "",
+          phone: userProfile.phone || "",
+          bio: userProfile.bio || "",
+          birth_date: userProfile.birth_date || "",
+          address: userProfile.address || "",
+          city: userProfile.city || "",
+          state: userProfile.state || "",
+          zip_code: userProfile.zip_code || ""
+        })
+        setLoading(false)
+      } else {
+        console.log('❌ Settings - Usuário não encontrado')
+        setError("Usuário não encontrado")
+        setLoading(false)
+      }
     }
   }, [userLoading, currentUser])
 
