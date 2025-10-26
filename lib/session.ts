@@ -41,7 +41,13 @@ class SessionManager {
       // Verificar sessão atual
       const { data: { session }, error } = await supabase.auth.getSession()
       
-      console.log('📊 Dados da sessão:', { session: !!session, error, userId: session?.user?.id })
+      console.log('📊 Dados da sessão:', { 
+        hasSession: !!session, 
+        hasUser: !!session?.user,
+        error: error?.message,
+        userId: session?.user?.id,
+        userEmail: session?.user?.email
+      })
       
       if (error) {
         console.error('❌ Erro ao verificar sessão:', error)
@@ -59,7 +65,12 @@ class SessionManager {
           .eq('id', session.user.id)
           .single()
 
-        console.log('📊 Dados do usuário na tabela:', { userData: !!userData, error: userError })
+        console.log('📊 Dados do usuário na tabela:', { 
+          hasUserData: !!userData, 
+          error: userError?.message,
+          userEmail: userData?.email,
+          userRole: userData?.role
+        })
 
         if (userError || !userData) {
           console.error('❌ Erro ao buscar dados do usuário:', userError)

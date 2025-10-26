@@ -157,6 +157,7 @@ export default function DashboardPage() {
 
   const fetchCategories = async () => {
     try {
+      // Usar a instância global do supabase
       const { supabase } = await import('@/lib/supabase')
 
       const { data, error } = await supabase
