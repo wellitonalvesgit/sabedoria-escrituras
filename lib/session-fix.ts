@@ -1,6 +1,6 @@
 "use client"
 
-import { supabase, supabaseAdmin } from '@/lib/supabase-server'
+import { supabase } from '@/lib/supabase'
 import { User } from '@/lib/auth'
 
 interface SessionData {

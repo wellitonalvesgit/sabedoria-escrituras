@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, supabase } from '@/lib/supabase-server'
+import { supabaseAdmin } from '@/lib/supabase-server'
+import { supabase } from '@/lib/supabase'
 
 // GET /api/user/profile - Buscar perfil do usuário atual
 export async function GET(request: NextRequest) {
