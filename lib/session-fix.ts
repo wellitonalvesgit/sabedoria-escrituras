@@ -1,6 +1,6 @@
 "use client"
 
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { User } from '@/lib/auth'
 
 interface SessionData {
@@ -80,124 +80,84 @@ class SessionManager {
         console.log('👤 Usuário encontrado na sessão:', session.user.id)
         
         // Verificar se a sessão não expirou
-        if (session.expires_at) {
-          // O expires_at do Supabase é um timestamp Unix em segundos
-          // Precisamos multiplicar por 1000 para converter para milissegundos
-          const expirationDate = new Date(session.expires_at * 1000)
-          const now = new Date()
-          const isExpired = expirationDate < now
-          
-          console.log('⏰ Verificação de expiração da sessão:', {
-            expiresAt: session.expires_at,
-            expirationDate: expirationDate.toISOString(),
-            now: now.toISOString(),
-            isExpired: isExpired,
-            timeDifference: expirationDate.getTime() - now.getTime()
-          })
-          
-          if (isExpired) {
-            console.log('⏰ Sessão expirada, fazendo logout')
-            await supabase.auth.signOut()
-            this.updateSession({ user: null, loading: false })
-            return
-          }
+        if (session.expires_at && new Date(session.expires_at) < new Date()) {
+          console.log('⏰ Sessão expirada, fazendo logout')
+          await supabase.auth.signOut()
+          this.updateSession({ user: null, loading: false })
+          return
         }
         
         console.log('✅ Sessão válida, buscando dados do usuário...')
         
-        // SOLUÇÃO DIRETA: Usar o cliente admin para bypassar RLS
-        // Isso garante que os dados do usuário sejam recuperados corretamente
-        // independentemente das políticas RLS
-        let userData;
+        // CORREÇÃO: Usar API para buscar dados do usuário
+        // Isso evita problemas com RLS e garante que os dados serão retornados
         try {
-          // Importar o cliente admin diretamente para evitar problemas de referência circular
-          const { supabaseAdmin } = await import('@/lib/supabase')
+          const response = await fetch(`/api/users/me`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+          })
           
-          if (!supabaseAdmin) {
-            throw new Error('Cliente admin não disponível')
+          if (!response.ok) {
+            throw new Error(`Erro ao buscar usuário: ${response.status}`)
           }
           
-          const { data: adminUserData, error: userError } = await supabaseAdmin
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-
-          console.log('📊 Dados do usuário na tabela (via admin):', {
-            hasUserData: !!adminUserData,
-            error: userError?.message,
-            userEmail: adminUserData?.email,
-            userRole: adminUserData?.role,
-            userStatus: adminUserData?.status
+          const userData = await response.json()
+          
+          console.log('📊 Dados do usuário via API:', {
+            hasUserData: !!userData,
+            userEmail: userData?.email,
+            userRole: userData?.role,
+            userStatus: userData?.status
           })
-
-          if (userError || !adminUserData) {
-            console.error('❌ Erro ao buscar dados do usuário (via admin):', userError)
-            throw new Error('Dados do usuário não encontrados via admin')
-          }
           
-          // Atribuir os dados do usuário à variável externa
-          userData = adminUserData;
-          
-        } catch (adminError) {
-          console.error('❌ Erro ao usar cliente admin:', adminError)
-          
-          // Fallback para cliente normal
-          console.log('🔍 Tentando fallback para cliente normal...')
-          const { data: normalUserData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-
-          console.log('📊 Dados do usuário na tabela (via cliente normal):', {
-            hasUserData: !!normalUserData,
-            error: userError?.message,
-            userEmail: normalUserData?.email,
-            userRole: normalUserData?.role,
-            userStatus: normalUserData?.status
-          })
-
-          if (userError || !normalUserData) {
-            console.error('❌ Erro ao buscar dados do usuário:', userError)
-            console.error('💡 Dica: Verifique se as políticas RLS estão configuradas corretamente')
+          if (!userData) {
+            console.error('❌ Dados do usuário não encontrados via API')
             this.updateSession({ user: null, loading: false })
             return
           }
           
-          // Atribuir os dados do usuário à variável externa
-          userData = normalUserData;
+          // Verificar se o usuário está ativo
+          if (userData.status !== 'active') {
+            console.log('❌ Usuário inativo:', userData.status)
+            this.updateSession({ user: null, loading: false })
+            return
+          }
+          
+          console.log('✅ Usuário carregado com sucesso:', userData.email)
+          this.updateSession({ 
+            user: userData, 
+            loading: false,
+            sessionId: session.access_token
+          })
+          
+        } catch (apiError) {
+          console.error('❌ Erro ao buscar dados do usuário via API:', apiError)
+          
+          // Fallback: Tentar buscar diretamente
+          // Isso só funcionará se as políticas RLS estiverem configuradas corretamente
+          console.log('🔍 Tentando fallback direto...')
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+            
+          if (userError || !userData) {
+            console.error('❌ Erro no fallback:', userError)
+            this.updateSession({ user: null, loading: false })
+            return
+          }
+          
+          console.log('✅ Fallback bem-sucedido:', userData.email)
+          this.updateSession({ 
+            user: userData, 
+            loading: false,
+            sessionId: session.access_token
+          })
         }
-        
-        // Verificar se temos dados do usuário
-        if (!userData) {
-          console.error('❌ Dados do usuário não encontrados após tentativas')
-          this.updateSession({ user: null, loading: false })
-          return
-        }
-
-        // Verificar se o usuário está ativo
-        if (userData.status !== 'active') {
-          console.log('❌ Usuário inativo:', userData.status)
-          this.updateSession({ user: null, loading: false })
-          return
-        }
-
-        console.log('✅ Usuário carregado com sucesso:', userData.email)
-        this.updateSession({ 
-          user: userData, 
-          loading: false,
-          sessionId: session.access_token
-        })
-        
-        // Log adicional para confirmar que a sessão foi atualizada
-        console.log('✅ Sessão atualizada com dados do usuário:', {
-          id: userData.id,
-          email: userData.email,
-          role: userData.role,
-          status: userData.status,
-          allowed_courses: userData.allowed_courses?.length || 0
-        })
       } else {
         console.log('❌ Nenhuma sessão ativa encontrada')
         
@@ -222,52 +182,45 @@ class SessionManager {
         
         if (event === 'SIGNED_IN' && session?.user) {
           try {
-            // Importar o cliente admin diretamente para evitar problemas de referência circular
-            const { supabaseAdmin } = await import('@/lib/supabase')
+            const response = await fetch(`/api/users/me`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+            })
             
-            if (!supabaseAdmin) {
-              throw new Error('Cliente admin não disponível')
+            if (!response.ok) {
+              throw new Error(`Erro ao buscar usuário: ${response.status}`)
             }
             
-            const { data: userData, error: userError } = await supabaseAdmin
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single()
-
-            console.log('📊 Auth change - Dados do usuário (via admin):', {
-              hasUserData: !!userData,
-              error: userError?.message,
-              userEmail: userData?.email
-            })
-
-            if (!userError && userData) {
-              this.updateSession({ 
-                user: userData, 
-                loading: false,
-                sessionId: session.access_token
-              })
-            } else {
+            const userData = await response.json()
+            
+            if (!userData) {
               throw new Error('Dados do usuário não encontrados')
             }
-          } catch (adminError) {
-            console.error('❌ Auth change - Erro ao usar cliente admin:', adminError)
             
-            // Fallback para cliente normal
+            this.updateSession({ 
+              user: userData, 
+              loading: false,
+              sessionId: session.access_token
+            })
+          } catch (error) {
+            console.error('❌ Erro ao buscar dados do usuário após login:', error)
+            
+            // Fallback para busca direta
             const { data: userData, error: userError } = await supabase
               .from('users')
               .select('*')
               .eq('id', session.user.id)
               .single()
-
+              
             if (!userError && userData) {
               this.updateSession({ 
                 user: userData, 
                 loading: false,
                 sessionId: session.access_token
               })
-            } else {
-              console.error('❌ Auth change - Erro ao buscar dados do usuário:', userError)
             }
           }
         } else if (event === 'SIGNED_OUT') {

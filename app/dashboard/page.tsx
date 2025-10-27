@@ -148,10 +148,14 @@ export default function DashboardPage() {
       const allCoursesWithAccess = (data.courses || []).map((course: Course) => {
         console.log(`Verificando acesso ao curso: ${course.title}`)
         
-        // Verificar se o usuário tem acesso ao curso (com verificações de segurança)
-        const hasAccess = user && sessionValid && (hasAccessToCourse(course.id) || 
+        // Verificar se o usuário tem acesso ao curso
+        // Se tem acesso direto ao curso, permitir independente da categoria
+        const hasAccess = user && sessionValid && (
+          hasAccessToCourse(course.id) || 
+          // Se não tem acesso direto ao curso, verificar se tem acesso via categoria
           (course.course_categories && course.course_categories.length > 0 && 
-           course.course_categories.some((cc: any) => hasAccessToCategory(cc.category_id))))
+           course.course_categories.some((cc: any) => hasAccessToCategory(cc.category_id)))
+        )
         
         console.log(`${hasAccess ? '✅' : '🔒'} Curso ${course.title} - ${hasAccess ? 'Acesso liberado' : 'Acesso restrito'}`)
         

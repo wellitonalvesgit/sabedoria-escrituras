@@ -23,11 +23,17 @@ if (!supabaseAnonKey) {
   )
 }
 
+// SOLUÇÃO DE EMERGÊNCIA: Definir SERVICE_ROLE_KEY diretamente no código
+// Isso é apenas uma solução temporária para desenvolvimento
+if (!supabaseServiceRoleKey && process.env.NODE_ENV === 'development') {
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs';
+}
+
 // Log para debug (apenas em desenvolvimento)
 if (process.env.NODE_ENV === 'development') {
   console.log('✅ Supabase URL:', supabaseUrl)
   console.log('✅ Supabase Anon Key:', supabaseAnonKey ? 'Configurada' : 'Missing')
-  console.log('✅ Service Role Key:', supabaseServiceRoleKey ? 'Configurada' : 'Missing')
+  console.log('✅ Service Role Key:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Configurada' : 'Missing')
 }
 
 // Instância singleton para evitar múltiplas instâncias do GoTrueClient
@@ -69,14 +75,12 @@ export const supabase = getSupabaseClient()
 
 // Cliente admin (APENAS para uso server-side - API routes, server components)
 // Bypassa Row Level Security
-export const supabaseAdmin = supabaseServiceRoleKey
-  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
-  : null
+export const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY || '', {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+})
 
 // Tipos para TypeScript
 export type Database = {

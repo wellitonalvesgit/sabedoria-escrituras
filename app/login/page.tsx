@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Eye, EyeOff, BookOpen, Mail, Lock, ArrowRight, Loader2, CheckCircle, XCircle, Sparkles } from "lucide-react"
+import { Eye, EyeOff, BookOpen, Mail, Lock, ArrowRight, Loader2, CheckCircle, XCircle, Sparkles, UserPlus, Key } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,73 +10,50 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { signIn, resetPassword } from "@/lib/auth"
+import { signIn, signUp, resetPassword, sendMagicLink, sendAccessCode, verifyAccessCode } from "@/lib/auth"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [name, setName] = useState("")
+  const [code, setCode] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
-  const [activeTab, setActiveTab] = useState("password")
-  const [magicLinkSent, setMagicLinkSent] = useState(false)
-  const [countdown, setCountdown] = useState(0)
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("")
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false)
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
+  const [registerLoading, setRegisterLoading] = useState(false)
+  const [codeLoading, setCodeLoading] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [codeSent, setCodeSent] = useState(false)
+  const [codeCountdown, setCodeCountdown] = useState(0)
+  const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null)
 
-  // Countdown para reenvio de link mágico
+  // Countdown para reenvio de código
   useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+    if (codeCountdown > 0) {
+      const timer = setTimeout(() => setCodeCountdown(codeCountdown - 1), 1000)
       return () => clearTimeout(timer)
     }
-  }, [countdown])
+  }, [codeCountdown])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setError("")
-    setSuccess("")
+    setAlert(null)
 
     try {
-      // Usar a API de login com rate limiting
-      const response = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          // Rate limiting
-          const minutes = Math.ceil(data.timeUntilReset / (1000 * 60))
-          setError(`Muitas tentativas de login. Tente novamente em ${minutes} minutos.`)
-        } else {
-          setError(data.error || 'Erro ao fazer login')
-        }
-        return
-      }
-
-      if (data.success && data.user) {
-        setSuccess("Login realizado com sucesso! Redirecionando...")
-        
-        // Redirecionar baseado no role do usuário
-        const redirectPath = data.user.role === 'admin' ? '/admin' : '/dashboard'
-        console.log('🔄 Redirecionando para:', redirectPath)
-        
+      const result = await signIn(email, password)
+      if (result.success) {
+        setAlert({ type: 'success', message: 'Login realizado com sucesso!' })
+        // Redirecionar para dashboard após um breve delay
         setTimeout(() => {
-          window.location.href = redirectPath
-        }, 1500)
+          window.location.href = '/dashboard'
+        }, 1000)
+      } else {
+        setAlert({ type: 'error', message: result.error || 'Erro ao fazer login' })
       }
-    } catch (err) {
-      console.error('❌ Erro no login:', err)
-      setError("Erro de conexão. Tente novamente.")
+    } catch (error) {
+      setAlert({ type: 'error', message: 'Erro inesperado ao fazer login' })
     } finally {
       setLoading(false)
     }
@@ -84,353 +61,490 @@ export default function LoginPage() {
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setError("")
-    setSuccess("")
+    setMagicLinkLoading(true)
+    setAlert(null)
 
     try {
-      const response = await fetch('/api/auth/magic-link', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setSuccess(data.message)
-        setMagicLinkSent(true)
-        setCountdown(60) // 60 segundos de cooldown
+      const result = await sendMagicLink(email)
+      if (result.success) {
+        setAlert({ type: 'success', message: 'Link mágico enviado! Verifique seu email.' })
       } else {
-        setError(data.error || 'Erro ao enviar link mágico')
+        setAlert({ type: 'error', message: result.error || 'Erro ao enviar link mágico' })
       }
-    } catch (err) {
-      setError("Erro ao enviar link mágico")
+    } catch (error) {
+      setAlert({ type: 'error', message: 'Erro inesperado ao enviar link mágico' })
     } finally {
-      setLoading(false)
+      setMagicLinkLoading(false)
     }
   }
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setForgotPasswordLoading(true)
-    setError("")
-    setSuccess("")
+    setAlert(null)
 
     try {
-      const { error } = await resetPassword(forgotPasswordEmail)
-
-      if (error) {
-        setError(error.message)
-      } else {
-        setSuccess("Email de recuperação enviado! Verifique sua caixa de entrada.")
+      const result = await resetPassword(email)
+      if (result.success) {
+        setAlert({ type: 'success', message: 'Email de recuperação enviado!' })
         setShowForgotPassword(false)
-        setForgotPasswordEmail("")
+      } else {
+        setAlert({ type: 'error', message: result.error || 'Erro ao enviar email de recuperação' })
       }
-    } catch (err) {
-      setError("Erro ao enviar email de recuperação")
+    } catch (error) {
+      setAlert({ type: 'error', message: 'Erro inesperado ao enviar email de recuperação' })
     } finally {
       setForgotPasswordLoading(false)
     }
   }
 
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setRegisterLoading(true)
+    setAlert(null)
+
+    try {
+      const result = await signUp(email, password, name)
+      if (result.success) {
+        setAlert({ type: 'success', message: 'Conta criada com sucesso! Verifique seu email para confirmar.' })
+      } else {
+        setAlert({ type: 'error', message: result.error || 'Erro ao criar conta' })
+      }
+    } catch (error) {
+      setAlert({ type: 'error', message: 'Erro inesperado ao criar conta' })
+    } finally {
+      setRegisterLoading(false)
+    }
+  }
+
+  const handleRequestCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCodeLoading(true)
+    setAlert(null)
+
+    try {
+      const result = await sendAccessCode(email)
+      if (result.success) {
+        setCodeSent(true)
+        setCodeCountdown(60) // 60 segundos para reenvio
+        setAlert({ type: 'success', message: 'Código de acesso enviado! Verifique seu email.' })
+      } else {
+        setAlert({ type: 'error', message: result.error || 'Erro ao enviar código de acesso' })
+      }
+    } catch (error) {
+      setAlert({ type: 'error', message: 'Erro inesperado ao enviar código de acesso' })
+    } finally {
+      setCodeLoading(false)
+    }
+  }
+
+  const handleCodeAccess = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCodeLoading(true)
+    setAlert(null)
+
+    try {
+      const result = await verifyAccessCode(email, code)
+      if (result.success) {
+        setAlert({ type: 'success', message: 'Acesso liberado com sucesso!' })
+        // Redirecionar para dashboard após um breve delay
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 1000)
+      } else {
+        setAlert({ type: 'error', message: result.error || 'Código inválido ou expirado' })
+      }
+    } catch (error) {
+      setAlert({ type: 'error', message: 'Erro inesperado ao verificar código' })
+    } finally {
+      setCodeLoading(false)
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-2xl border-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-        <CardHeader className="text-center pb-8">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-[#F3C77A] to-[#FFD88A] shadow-lg">
-              <BookOpen className="h-6 w-6 text-gray-800" />
-            </div>
-            <div className="text-left">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                Sabedoria das Escrituras
-              </h1>
-              <p className="text-sm text-muted-foreground">Plataforma de Estudos Bíblicos</p>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-[#2c3e50] via-[#34495e] to-[#2c3e50] flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <BookOpen className="h-12 w-12 text-[#F3C77A] mr-3" />
+            <h1 className="text-3xl font-bold text-white">Sabedoria das Escrituras</h1>
           </div>
-          <CardTitle className="text-3xl font-bold mb-2">Bem-vindo de volta!</CardTitle>
-          <p className="text-muted-foreground">
-            Escolha sua forma preferida de acesso
-          </p>
-        </CardHeader>
-        <CardContent className="px-8 pb-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-100 dark:bg-gray-800">
-              <TabsTrigger value="password" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                Senha
-              </TabsTrigger>
-              <TabsTrigger value="magic" className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                Link Mágico
-              </TabsTrigger>
-            </TabsList>
+          <p className="text-gray-300">Acesse sua conta e continue sua jornada espiritual</p>
+        </div>
 
-            {/* Login com Senha */}
-            <TabsContent value="password" className="space-y-6">
-              <form onSubmit={handleLogin} className="space-y-6">
-                {error && (
-                  <Alert variant="destructive" className="border-red-200 bg-red-50 dark:bg-red-950">
-                    <XCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
+        {/* Alert */}
+        {alert && (
+          <Alert className={`mb-6 ${alert.type === 'success' ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
+            <div className="flex items-center">
+              {alert.type === 'success' ? (
+                <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+              ) : (
+                <XCircle className="h-4 w-4 text-red-600 mr-2" />
+              )}
+              <AlertDescription className={alert.type === 'success' ? 'text-green-800' : 'text-red-800'}>
+                {alert.message}
+              </AlertDescription>
+            </div>
+          </Alert>
+        )}
 
-                {success && (
-                  <Alert className="border-green-200 bg-green-50 dark:bg-green-950">
-                    <CheckCircle className="h-4 w-4" />
-                    <AlertDescription className="text-green-800 dark:text-green-200">
-                      {success}
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                <div className="space-y-3">
-                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 h-12 border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Sua senha"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-10 h-12 border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full px-3 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
+        {/* Login Form */}
+        <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-2xl font-bold text-[#2c3e50] flex items-center justify-center">
+              <Sparkles className="h-6 w-6 text-[#F3C77A] mr-2" />
+              Acesso à Plataforma
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-4 mb-6">
+                <TabsTrigger value="login" className="text-sm">Login</TabsTrigger>
+                <TabsTrigger value="magic" className="text-sm">Link Mágico</TabsTrigger>
+                <TabsTrigger value="register" className="text-sm">Cadastro</TabsTrigger>
+                <TabsTrigger value="code" className="text-sm">Código</TabsTrigger>
+              </TabsList>
 
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-[#F3C77A] to-[#FFD88A] hover:from-[#FFD88A] hover:to-[#F3C77A] text-gray-800 font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" 
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Verificando credenciais...
-                    </>
-                  ) : (
-                    <>
-                      <ArrowRight className="mr-2 h-4 w-4" />
-                      Entrar na Plataforma
-                    </>
-                  )}
-                </Button>
-
-                <div className="text-center">
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="text-sm text-muted-foreground hover:text-foreground"
-                    onClick={() => setShowForgotPassword(true)}
-                  >
-                    Esqueci minha senha
-                  </Button>
-                </div>
-              </form>
-            </TabsContent>
-
-            {/* Login com Link Mágico */}
-            <TabsContent value="magic" className="space-y-6">
-              <form onSubmit={handleMagicLink} className="space-y-6">
-                {error && (
-                  <Alert variant="destructive" className="border-red-200 bg-red-50 dark:bg-red-950">
-                    <XCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                {success && (
-                  <Alert className="border-green-200 bg-green-50 dark:bg-green-950">
-                    <CheckCircle className="h-4 w-4" />
-                    <AlertDescription className="text-green-800 dark:text-green-200">
-                      {success}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="space-y-3">
-                  <Label htmlFor="magic-email" className="text-sm font-medium">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="magic-email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 h-12 border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
-                      required
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Sparkles className="h-4 w-4" />
-                    <span>Enviaremos um link de acesso seguro para seu email</span>
-                  </div>
-                </div>
-
-                {magicLinkSent && (
-                  <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                    <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
-                      <CheckCircle className="h-4 w-4" />
-                      <span className="font-medium">Link enviado com sucesso!</span>
+              {/* Login com Senha */}
+              <TabsContent value="login">
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-[#2c3e50] font-medium">
+                      Email
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 bg-white border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
+                        required
+                      />
                     </div>
-                    <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
-                      Verifique sua caixa de entrada e spam. O link expira em 1 hora.
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-[#2c3e50] font-medium">
+                      Senha
+                    </Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Sua senha"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 pr-10 bg-white border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-sm text-[#F3C77A] hover:text-[#e6b366] transition-colors"
+                    >
+                      Esqueceu a senha?
+                    </button>
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-[#F3C77A] hover:bg-[#e6b366] text-[#2c3e50] font-medium py-2.5"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4 mr-2" />
+                    )}
+                    {loading ? "Entrando..." : "Entrar"}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              {/* Link Mágico */}
+              <TabsContent value="magic">
+                <form onSubmit={handleMagicLink} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="magic-email" className="text-[#2c3e50] font-medium">
+                      Email
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="magic-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 bg-white border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-blue-800">
+                      <strong>Como funciona:</strong> Enviaremos um link especial para seu email. 
+                      Clique no link para fazer login automaticamente, sem precisar de senha.
                     </p>
                   </div>
-                )}
+                  <Button
+                    type="submit"
+                    className="w-full bg-[#F3C77A] hover:bg-[#e6b366] text-[#2c3e50] font-medium py-2.5"
+                    disabled={magicLinkLoading}
+                  >
+                    {magicLinkLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Mail className="h-4 w-4 mr-2" />
+                    )}
+                    {magicLinkLoading ? "Enviando..." : "Enviar Link Mágico"}
+                  </Button>
+                </form>
+              </TabsContent>
 
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-lg transition-all duration-200" 
-                  disabled={loading || countdown > 0}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enviando...
-                    </>
-                  ) : countdown > 0 ? (
-                    <>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Reenviar em {countdown}s
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Enviar Link Mágico
-                    </>
-                  )}
-                </Button>
-
-                {countdown > 0 && (
-                  <div className="text-center">
-                    <Badge variant="secondary" className="text-xs">
-                      Aguarde {countdown} segundos para reenviar
-                    </Badge>
+              {/* Cadastro */}
+              <TabsContent value="register">
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="register-name" className="text-[#2c3e50] font-medium">
+                      Nome Completo
+                    </Label>
+                    <div className="relative">
+                      <UserPlus className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="register-name"
+                        type="text"
+                        placeholder="Seu nome completo"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="pl-10 bg-white border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
+                        required
+                      />
+                    </div>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="register-email" className="text-[#2c3e50] font-medium">
+                      Email
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="register-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 bg-white border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="register-password" className="text-[#2c3e50] font-medium">
+                      Senha
+                    </Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="register-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Mínimo 6 caracteres"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 pr-10 bg-white border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
+                        required
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-sm text-green-800">
+                      <strong>Benefícios:</strong> Acesso completo a todos os cursos, 
+                      progresso salvo automaticamente e suporte prioritário.
+                    </p>
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-[#F3C77A] hover:bg-[#e6b366] text-[#2c3e50] font-medium py-2.5"
+                    disabled={registerLoading}
+                  >
+                    {registerLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <UserPlus className="h-4 w-4 mr-2" />
+                    )}
+                    {registerLoading ? "Criando conta..." : "Criar Conta"}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              {/* Acesso por Código */}
+              <TabsContent value="code">
+                {!codeSent ? (
+                  <form onSubmit={handleRequestCode} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="code-email" className="text-[#2c3e50] font-medium">
+                        Email
+                      </Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="code-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-10 bg-white border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                      <p className="text-sm text-purple-800">
+                        <strong>Acesso Rápido:</strong> Enviaremos um código de 6 dígitos para seu email. 
+                        Digite o código para acessar instantaneamente.
+                      </p>
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full bg-[#F3C77A] hover:bg-[#e6b366] text-[#2c3e50] font-medium py-2.5"
+                      disabled={codeLoading}
+                    >
+                      {codeLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Key className="h-4 w-4 mr-2" />
+                      )}
+                      {codeLoading ? "Enviando..." : "Solicitar Código"}
+                    </Button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleCodeAccess} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="access-code" className="text-[#2c3e50] font-medium">
+                        Código de Acesso
+                      </Label>
+                      <div className="relative">
+                        <Key className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="access-code"
+                          type="text"
+                          placeholder="123456"
+                          value={code}
+                          onChange={(e) => setCode(e.target.value)}
+                          className="pl-10 bg-white border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A] text-center text-lg tracking-widest"
+                          required
+                          maxLength={6}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-gray-600">
+                        Código enviado para: <strong>{email}</strong>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleRequestCode}
+                        disabled={codeCountdown > 0}
+                        className="text-sm text-[#F3C77A] hover:text-[#e6b366] transition-colors disabled:opacity-50"
+                      >
+                        {codeCountdown > 0 ? `Reenviar em ${codeCountdown}s` : 'Reenviar código'}
+                      </button>
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full bg-[#F3C77A] hover:bg-[#e6b366] text-[#2c3e50] font-medium py-2.5"
+                      disabled={codeLoading}
+                    >
+                      {codeLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <ArrowRight className="h-4 w-4 mr-2" />
+                      )}
+                      {codeLoading ? "Verificando..." : "Acessar"}
+                    </Button>
+                  </form>
                 )}
-              </form>
-            </TabsContent>
-          </Tabs>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
+        {/* Footer */}
+        <div className="text-center mt-8">
+          <p className="text-gray-400 text-sm">
+            Precisa de ajuda?{" "}
+            <Link href="/support" className="text-[#F3C77A] hover:text-[#e6b366] transition-colors">
+              Entre em contato
+            </Link>
+          </p>
+        </div>
+      </div>
 
-          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <div className="text-center space-y-4">
-              <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground">
-                <Link href="/landing" className="flex items-center gap-2">
-                  <ArrowRight className="h-4 w-4 rotate-180" />
-                  Voltar ao Início
-                </Link>
-              </Button>
-              
-              <div className="text-xs text-muted-foreground">
-                <p>Problemas para acessar? Entre em contato conosco</p>
-                <p className="mt-1">
-                  <span className="font-medium">Suporte:</span> ascartasdepailoo@gmail.com
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Modal Esqueci Senha */}
+      {/* Modal de Recuperação de Senha */}
       {showForgotPassword && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Recuperar Senha</CardTitle>
-              <p className="text-muted-foreground">
-                Digite seu email para receber instruções de recuperação
-              </p>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md bg-white">
+            <CardHeader>
+              <CardTitle className="text-center text-[#2c3e50]">Recuperar Senha</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleForgotPassword} className="space-y-4">
-                {error && (
-                  <Alert variant="destructive">
-                    <XCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                {success && (
-                  <Alert className="border-green-200 bg-green-50 dark:bg-green-950">
-                    <CheckCircle className="h-4 w-4" />
-                    <AlertDescription className="text-green-800 dark:text-green-200">
-                      {success}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
                 <div className="space-y-2">
-                  <Label htmlFor="forgot-email">Email</Label>
-                  <Input
-                    id="forgot-email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={forgotPasswordEmail}
-                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                    required
-                  />
+                  <Label htmlFor="forgot-email" className="text-[#2c3e50] font-medium">
+                    Email
+                  </Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="forgot-email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-10 bg-white border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
+                      required
+                    />
+                  </div>
                 </div>
-
                 <div className="flex gap-2">
                   <Button
                     type="button"
                     variant="outline"
-                    className="flex-1"
                     onClick={() => setShowForgotPassword(false)}
+                    className="flex-1"
                   >
                     Cancelar
                   </Button>
                   <Button
                     type="submit"
-                    className="flex-1"
+                    className="flex-1 bg-[#F3C77A] hover:bg-[#e6b366] text-[#2c3e50]"
                     disabled={forgotPasswordLoading}
                   >
                     {forgotPasswordLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Enviando...
-                      </>
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      'Enviar Email'
+                      "Enviar"
                     )}
                   </Button>
                 </div>

@@ -29,25 +29,15 @@ export async function middleware(request: NextRequest) {
 
   // Rotas que precisam de autenticação
   try {
-    // Verificar se SERVICE_ROLE_KEY está disponível
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('❌ SERVICE_ROLE_KEY não está configurada')
-      // Definir SERVICE_ROLE_KEY diretamente no código (apenas para desenvolvimento)
-      if (process.env.NODE_ENV === 'development') {
-        process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs'
-        console.log('✅ SERVICE_ROLE_KEY definida manualmente para desenvolvimento')
-      }
-    } else {
-      console.log('✅ SERVICE_ROLE_KEY está configurada:', process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 10) + '...')
-    }
-
     // Criar cliente Supabase com cookies para middleware
     const cookieStore = cookies()
 
-    // Primeiro, usar ANON_KEY para verificar a sessão
+    // IMPORTANTE: Usar SERVICE_ROLE_KEY no middleware para bypassar RLS
+    // Isso é necessário porque o middleware precisa verificar dados do usuário
+    // antes de permitir acesso às páginas
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
         cookies: {
           getAll() {
@@ -65,53 +55,18 @@ export async function middleware(request: NextRequest) {
     // Verificar se há uma sessão válida
     const { data: { session }, error } = await supabase.auth.getSession()
 
-    console.log('📊 Middleware - Dados da sessão:', { 
-      hasSession: !!session, 
-      hasUser: !!session?.user,
-      error: error?.message,
-      userId: session?.user?.id,
-      userEmail: session?.user?.email
-    })
-
     if (error || !session) {
       console.log('🔒 Sessão inválida, redirecionando para login')
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    // Agora usar SERVICE_ROLE_KEY para buscar dados do usuário (bypassar RLS)
-    const supabaseAdmin = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          },
-        },
-      }
-    )
-
     // Verificar se o usuário existe na tabela users
     // Como estamos usando SERVICE_ROLE_KEY, o RLS não se aplica
-    const { data: userData, error: userError } = await supabaseAdmin
+    const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('id, status, access_expires_at, role, allowed_courses')
+      .select('id, status, access_expires_at, role')
       .eq('id', session.user.id)
       .single()
-
-    console.log('📊 Middleware - Dados do usuário:', {
-      hasUserData: !!userData,
-      error: userError?.message,
-      userEmail: userData?.email,
-      userRole: userData?.role,
-      userStatus: userData?.status,
-      allowedCourses: userData?.allowed_courses?.length || 0
-    })
 
     if (userError || !userData) {
       console.log('🔒 Usuário não encontrado na base de dados:', userError?.message)
@@ -147,7 +102,6 @@ export async function middleware(request: NextRequest) {
     requestHeaders.set('x-user-role', userData.role)
     requestHeaders.set('x-user-status', userData.status)
 
-    console.log('✅ Middleware - Acesso permitido para:', userData.id)
     return NextResponse.next({
       request: {
         headers: requestHeaders,
