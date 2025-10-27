@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { supabase } from "@/lib/supabase"
 
 interface AccessCheckResult {
   canAccess: boolean
-  reason?: 'free_course' | 'premium_access' | 'trial_access' | 'no_access'
+  reason?: 'free_course' | 'premium_access' | 'trial_access' | 'admin_access' | 'no_access'
   message?: string
   course?: {
     id: string
@@ -39,7 +40,31 @@ export function PremiumAccessGate({ courseId, children }: PremiumAccessGateProps
   const checkAccess = async () => {
     try {
       setChecking(true)
-      const response = await fetch(`/api/courses/${courseId}/access`)
+
+      // Obter o token de acesso da sessão do Supabase
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        console.error('❌ Sem sessão no cliente')
+        setAccessResult({
+          canAccess: false,
+          reason: 'no_access',
+          message: 'Usuário não autenticado'
+        })
+        setChecking(false)
+        return
+      }
+
+      console.log('✅ Sessão encontrada no cliente, enviando para API')
+
+      // Enviar requisição com o token no header Authorization
+      const response = await fetch(`/api/courses/${courseId}/access`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
       const data = await response.json()
       setAccessResult(data)
     } catch (error) {
@@ -70,6 +95,20 @@ export function PremiumAccessGate({ courseId, children }: PremiumAccessGateProps
     return (
       <>
         {/* Badge de status */}
+        {accessResult.reason === 'admin_access' && (
+          <div className="mb-6 p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+            <div className="flex items-center gap-3">
+              <Crown className="h-5 w-5 text-purple-600" />
+              <div>
+                <p className="text-sm font-medium text-purple-600">Acesso Administrativo</p>
+                <p className="text-xs text-purple-600/80">
+                  Você tem acesso total como administrador
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {accessResult.reason === 'trial_access' && accessResult.subscription?.trial_ends_at && (
           <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
             <div className="flex items-center gap-3">

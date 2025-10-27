@@ -1,14 +1,100 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { userCanAccessCourse } from '@/lib/access-control'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const courseId = params.id
-    console.log('🔍 Verificando acesso ao curso:', courseId)
-    const cookieStore = cookies()
+    console.log('🔍 [API /courses/[id]/access] Verificando acesso ao curso:', courseId)
 
-    // Verificar se SERVICE_ROLE_KEY está disponível
+    const cookieStore = await cookies()
+    const allCookies = cookieStore.getAll()
+    console.log('🍪 [API] Cookies disponíveis:', allCookies.map(c => c.name).join(', '))
+
+    // Tentar obter token do header Authorization
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    console.log('🔑 [API] Token recebido via header:', token ? 'SIM' : 'NÃO')
+
+    let session = null
+    let sessionError = null
+
+    if (token) {
+      // Se temos token, usar ANON_KEY para verificar o token
+      const supabaseAnon = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll()
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            },
+          },
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        }
+      )
+
+      const result = await supabaseAnon.auth.getUser(token)
+      if (result.data.user) {
+        session = { user: result.data.user }
+        console.log('✅ [API] Usuário autenticado via token')
+      } else {
+        sessionError = result.error
+        console.log('❌ [API] Erro ao validar token:', result.error?.message)
+      }
+    } else {
+      // Fallback: tentar via cookies
+      const supabaseAnon = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll()
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            },
+          },
+        }
+      )
+
+      const result = await supabaseAnon.auth.getSession()
+      session = result.data.session
+      sessionError = result.error
+      console.log('📊 [API] Tentativa via cookies:', session ? 'SUCESSO' : 'FALHOU')
+    }
+
+    console.log('📊 [API] Dados da sessão final:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      error: sessionError?.message,
+      userId: session?.user?.id,
+      userEmail: session?.user?.email
+    })
+
+    if (sessionError || !session) {
+      console.error('❌ [API] Erro na sessão ou sessão não encontrada:', sessionError?.message)
+      return NextResponse.json({
+        canAccess: false,
+        reason: 'no_access',
+        message: 'Usuário não autenticado'
+      }, { status: 401 })
+    }
+
+    // Verificar se SERVICE_ROLE_KEY está disponível para consultas
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('❌ SERVICE_ROLE_KEY não está configurada')
       // Definir SERVICE_ROLE_KEY diretamente no código (apenas para desenvolvimento)
@@ -20,10 +106,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       console.log('✅ SERVICE_ROLE_KEY está configurada')
     }
 
-    // IMPORTANTE: Usar SERVICE_ROLE_KEY para bypassar RLS
-    // Isso é necessário porque precisamos verificar dados do usuário
-    // independentemente das políticas RLS
-    const supabase = createServerClient(
+    // Agora usar SERVICE_ROLE_KEY para bypassar RLS nas consultas
+    const supabaseAdmin = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
@@ -40,190 +124,25 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       }
     )
 
-    // Verificar sessão do usuário
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    // Usar função centralizada para verificar acesso
+    // Passar o cliente Supabase Admin (SERVICE_ROLE_KEY) para bypassar RLS
+    const accessResult = await userCanAccessCourse(session.user.id, courseId, supabaseAdmin)
 
-    console.log('📊 Dados da sessão:', { 
-      hasSession: !!session, 
-      hasUser: !!session?.user,
-      error: sessionError?.message,
-      userId: session?.user?.id,
-      userEmail: session?.user?.email
+    console.log('📊 Resultado da verificação de acesso:', {
+      canAccess: accessResult.canAccess,
+      reason: accessResult.reason,
+      message: accessResult.message
     })
 
-    if (sessionError || !session) {
-      console.error('❌ Erro na sessão ou sessão não encontrada:', sessionError?.message)
-      return NextResponse.json({
-        canAccess: false,
-        reason: 'no_access',
-        message: 'Usuário não autenticado'
-      }, { status: 401 })
+    // Retornar resultado apropriado
+    if (accessResult.canAccess) {
+      return NextResponse.json(accessResult)
+    } else {
+      const statusCode = accessResult.reason === 'no_access' && accessResult.message?.includes('não encontrado')
+        ? 404
+        : 403
+      return NextResponse.json(accessResult, { status: statusCode })
     }
-
-    // Buscar curso
-    const { data: course, error: courseError } = await supabase
-      .from('courses')
-      .select('id, title, is_free')
-      .eq('id', courseId)
-      .single()
-
-    if (courseError || !course) {
-      return NextResponse.json({
-        canAccess: false,
-        reason: 'no_access',
-        message: 'Curso não encontrado'
-      }, { status: 404 })
-    }
-
-    // Buscar dados do usuário
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id, status, role, access_expires_at, allowed_courses, blocked_courses')
-      .eq('id', session.user.id)
-      .single()
-
-    console.log('📊 Dados do usuário:', {
-      hasUserData: !!userData,
-      error: userError?.message,
-      userEmail: userData?.email,
-      userRole: userData?.role,
-      userStatus: userData?.status,
-      allowedCourses: userData?.allowed_courses?.length || 0,
-      blockedCourses: userData?.blocked_courses?.length || 0,
-      accessExpiresAt: userData?.access_expires_at
-    })
-
-    if (userError || !userData) {
-      console.error('❌ Erro ao buscar dados do usuário:', userError?.message)
-      return NextResponse.json({
-        canAccess: false,
-        reason: 'no_access',
-        message: 'Erro ao verificar permissões'
-      }, { status: 500 })
-    }
-
-    // Verificar se o usuário está ativo
-    if (userData.status !== 'active') {
-      return NextResponse.json({
-        canAccess: false,
-        reason: 'no_access',
-        message: 'Sua conta está inativa'
-      }, { status: 403 })
-    }
-
-    // Verificar se o acesso não expirou
-    let hasValidAccessPeriod = false
-    if (userData.access_expires_at) {
-      const expirationDate = new Date(userData.access_expires_at)
-      const now = new Date()
-
-      if (expirationDate < now) {
-        return NextResponse.json({
-          canAccess: false,
-          reason: 'no_access',
-          message: 'Seu acesso expirou'
-        }, { status: 403 })
-      }
-
-      // Usuário tem período de acesso válido
-      hasValidAccessPeriod = true
-    }
-
-    // Verificar se o usuário é admin
-    if (userData.role === 'admin') {
-      return NextResponse.json({
-        canAccess: true,
-        reason: 'premium_access',
-        message: 'Acesso administrativo',
-        course
-      })
-    }
-
-    // Se o usuário tem período de acesso válido (access_expires_at ainda não expirou)
-    // dar acesso a todos os cursos (sistema de trial de 30 dias)
-    if (hasValidAccessPeriod) {
-      console.log('✅ Acesso permitido via período de teste (access_expires_at válido)')
-      return NextResponse.json({
-        canAccess: true,
-        reason: 'trial_access',
-        message: `Acesso via período de teste (válido até ${new Date(userData.access_expires_at).toLocaleDateString('pt-BR')})`,
-        course
-      })
-    }
-
-    // Verificar se o curso é gratuito
-    if (course.is_free) {
-      return NextResponse.json({
-        canAccess: true,
-        reason: 'free_course',
-        message: 'Curso gratuito',
-        course
-      })
-    }
-
-    // Verificar se o curso está na lista de cursos bloqueados
-    if (userData.blocked_courses && userData.blocked_courses.includes(courseId)) {
-      return NextResponse.json({
-        canAccess: false,
-        reason: 'no_access',
-        message: 'Acesso bloqueado para este curso',
-        course
-      }, { status: 403 })
-    }
-
-    // Verificar se o curso está na lista de cursos permitidos
-    const isCourseAllowed = userData.allowed_courses && userData.allowed_courses.includes(courseId);
-    console.log('🔍 Curso está na lista de permitidos?', isCourseAllowed ? 'SIM' : 'NÃO')
-    
-    if (isCourseAllowed) {
-      // Verificar se o usuário tem assinatura
-      const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('status, trial_ends_at, current_period_end')
-        .eq('user_id', userData.id)
-        .in('status', ['trial', 'active'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-
-      console.log('📊 Dados da assinatura:', {
-        hasSubscription: !!subscription,
-        status: subscription?.status,
-        trialEndsAt: subscription?.trial_ends_at,
-        currentPeriodEnd: subscription?.current_period_end
-      })
-
-      if (subscription) {
-        // Verificar se é trial ou assinatura normal
-        const reason = subscription.status === 'trial' ? 'trial_access' : 'premium_access'
-        
-        console.log('✅ Acesso permitido via assinatura:', reason)
-        return NextResponse.json({
-          canAccess: true,
-          reason,
-          message: reason === 'trial_access' ? 'Acesso via período de teste' : 'Assinatura ativa',
-          course,
-          subscription
-        })
-      }
-
-      // Se não tem assinatura mas o curso está na lista de permitidos
-      console.log('✅ Acesso permitido via lista de cursos permitidos')
-      return NextResponse.json({
-        canAccess: true,
-        reason: 'premium_access',
-        message: 'Acesso permitido',
-        course
-      })
-    }
-
-    // Por padrão, negar acesso
-    return NextResponse.json({
-      canAccess: false,
-      reason: 'no_access',
-      message: 'Este curso requer assinatura premium',
-      course
-    }, { status: 403 })
 
   } catch (error) {
     console.error('Erro na API de acesso a curso:', error)

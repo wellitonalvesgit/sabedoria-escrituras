@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Criar cliente Supabase com cookies para middleware
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
 
     // Primeiro, usar ANON_KEY para verificar a sessão
     const supabase = createServerClient(
@@ -119,16 +119,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=inactive', request.url))
     }
 
-    // Verificar se o acesso não expirou
-    if (userData.access_expires_at) {
-      const expirationDate = new Date(userData.access_expires_at)
-      const now = new Date()
-
-      if (expirationDate < now) {
-        console.log('🔒 Acesso expirado')
-        return NextResponse.redirect(new URL('/login?error=expired', request.url))
-      }
-    }
+    // NOTA: Não bloqueamos mais o acesso baseado em access_expires_at aqui
+    // A verificação de acesso é feita individualmente para cada curso
+    // Permitindo que usuários possam acessar:
+    // - Cursos gratuitos
+    // - Cursos específicos em allowed_courses
+    // - Cursos via assinatura ativa
 
     // Verificar permissões para rotas administrativas
     if (pathname.startsWith('/admin') && userData.role !== 'admin') {

@@ -110,63 +110,8 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     )
   }
 
-  // Verificar se o usuário tem acesso ao curso
-  const userHasAccess = hasAccessToCourse(course.id) || 
-    (course.course_categories && course.course_categories.length > 0 && 
-     course.course_categories.some((cc: any) => hasAccessToCategory(cc.category_id)))
-
-  // Se não tem acesso, mostrar página de acesso negado
-  if (!userHasAccess) {
-    return (
-      <div className="min-h-screen bg-background">
-        <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/95">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="flex h-16 items-center justify-between">
-              <Link href="/dashboard" className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-                  <BookOpen className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <span className="text-xl font-semibold tracking-tight">Sabedoria das Escrituras</span>
-              </Link>
-              <div className="flex items-center gap-3">
-                <ThemeToggle />
-                <PointsDisplay />
-                <Link href="/settings">
-                  <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-primary/10 hover:text-primary">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </nav>
-
-        <div className="mx-auto max-w-7xl px-6 pt-24 pb-8 lg:px-8">
-          <div className="text-center py-12">
-            <div className="mx-auto w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6">
-              <span className="text-4xl">🔒</span>
-            </div>
-            <h1 className="text-3xl font-bold text-foreground mb-4">Acesso Restrito</h1>
-            <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
-              Você não tem permissão para acessar este curso. Entre em contato com o administrador 
-              para solicitar acesso ou verifique se você tem uma assinatura ativa.
-            </p>
-            <div className="space-y-4">
-              <Link href="/dashboard">
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                  Voltar aos Cursos
-                </Button>
-              </Link>
-              <div className="text-sm text-muted-foreground">
-                <p>Curso: <strong>{course.title}</strong></p>
-                <p>Autor: <strong>{course.author}</strong></p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // NOTA: A verificação de acesso é feita pelo PremiumAccessGate (server-side)
+  // que é mais confiável e segura. Removemos a verificação client-side duplicada.
 
   const handleSessionUpdate = (durationSeconds: number, currentPage: number) => {
     setSessionDuration(durationSeconds)

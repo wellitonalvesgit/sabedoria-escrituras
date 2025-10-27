@@ -337,12 +337,26 @@ export const BibleDigitalReader = ({
 
     setIsLoadingHighlights(true)
     try {
-      const response = await fetch(`/api/highlights?course_id=${courseId}&pdf_id=${pdfId}`)
+      // Obter token da sessão
+      const { data: { session } } = await supabase.auth.getSession()
+
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      }
+
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
+      const response = await fetch(`/api/highlights?course_id=${courseId}&pdf_id=${pdfId}`, {
+        headers
+      })
+
       if (response.ok) {
         const data = await response.json()
         setHighlights(data.highlights || [])
       } else {
-        console.error('Erro ao carregar highlights')
+        console.error('Erro ao carregar highlights:', response.status)
       }
     } catch (error) {
       console.error('Erro ao carregar highlights:', error)
@@ -359,11 +373,20 @@ export const BibleDigitalReader = ({
     }
 
     try {
+      // Obter token da sessão
+      const { data: { session } } = await supabase.auth.getSession()
+
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      }
+
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch('/api/highlights', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           course_id: courseId,
           pdf_id: pdfId,
@@ -401,8 +424,18 @@ export const BibleDigitalReader = ({
   // Handler para deletar highlight
   const handleDeleteHighlight = async (id: string) => {
     try {
+      // Obter token da sessão
+      const { data: { session } } = await supabase.auth.getSession()
+
+      const headers: HeadersInit = {}
+
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch(`/api/highlights/${id}`, {
         method: 'DELETE',
+        headers
       })
 
       if (response.ok) {
@@ -422,11 +455,20 @@ export const BibleDigitalReader = ({
   // Handler para atualizar nota do highlight
   const handleUpdateHighlight = async (id: string, note: string) => {
     try {
+      // Obter token da sessão
+      const { data: { session } } = await supabase.auth.getSession()
+
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      }
+
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch(`/api/highlights/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ note }),
       })
 

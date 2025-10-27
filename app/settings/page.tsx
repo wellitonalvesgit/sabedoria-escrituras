@@ -83,7 +83,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     console.log('🔍 Settings - userLoading:', userLoading, 'currentUser:', currentUser ? 'Presente' : 'Ausente')
-    
+
     if (!userLoading) {
       if (currentUser) {
         console.log('✅ Settings - Usuário encontrado, carregando perfil...')
@@ -118,7 +118,7 @@ export default function SettingsPage() {
         setLoading(false)
       } else {
         console.log('❌ Settings - Usuário não encontrado')
-        setError("Usuário não encontrado")
+        setError("Usuário não encontrado. Por favor, faça login novamente.")
         setLoading(false)
       }
     }
@@ -128,6 +128,7 @@ export default function SettingsPage() {
     try {
       setSaving(true)
       setError(null)
+      setSuccess(null)
 
       if (!user) {
         setError("Usuário não autenticado")
@@ -147,7 +148,13 @@ export default function SettingsPage() {
       }
 
       setSuccess("Perfil atualizado com sucesso!")
-      await fetchUserProfile() // Recarregar dados
+
+      // Atualizar o estado local com os novos dados
+      setUser(prev => prev ? {
+        ...prev,
+        name: profileData.name,
+        email: profileData.email
+      } : null)
     } catch (err) {
       setError("Erro ao salvar perfil: " + (err as Error).message)
     } finally {

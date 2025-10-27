@@ -26,11 +26,17 @@ class SessionManager {
     // Aguardar um pouco para garantir que o DOM esteja pronto
     if (typeof window !== 'undefined') {
       setTimeout(() => {
-        this.initializeSession()
+        this.initializeSession().catch(error => {
+          console.error('❌ Erro fatal ao inicializar sessão:', error)
+          this.updateSession({ user: null, loading: false })
+        })
         this.setupInactivityDetection()
       }, 100)
     } else {
-      this.initializeSession()
+      this.initializeSession().catch(error => {
+        console.error('❌ Erro fatal ao inicializar sessão (server):', error)
+        this.updateSession({ user: null, loading: false })
+      })
     }
   }
 
@@ -44,10 +50,10 @@ class SessionManager {
   private async initializeSession() {
     try {
       console.log('🔄 Inicializando sessão...')
-      
-      // Aguardar mais tempo para garantir que o Supabase esteja pronto
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+
+      // Aguardar um pouco para garantir que o Supabase esteja pronto
+      await new Promise(resolve => setTimeout(resolve, 300))
+
       // Verificar se o Supabase está disponível
       if (!supabase) {
         console.error('❌ Supabase não está disponível')
@@ -110,11 +116,19 @@ class SessionManager {
         let userData;
         try {
           console.log('📡 Buscando dados do usuário via API...')
+
+          // Adicionar token de autenticação no header
+          const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+          }
+
+          if (session.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`
+          }
+
           const response = await fetch('/api/users/me', {
             method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers,
             credentials: 'include',
           })
 
