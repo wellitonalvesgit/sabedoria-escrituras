@@ -2,7 +2,7 @@
  * Cliente Supabase Admin - APENAS para uso SERVER-SIDE
  *
  * IMPORTANTE: Este arquivo só deve ser importado em:
- * - API routes (app/api/**/route.ts)
+ * - API routes (app/api/..../route.ts)
  * - Server components (RSC)
  * - Server actions
  *
