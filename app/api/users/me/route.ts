@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,8 +9,8 @@ export async function GET(request: NextRequest) {
 
     // Primeiro, usar ANON_KEY para verificar a sessão
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.anonKey,
       {
         cookies: {
           getAll() {
@@ -35,8 +36,8 @@ export async function GET(request: NextRequest) {
 
     // Agora usar SERVICE_ROLE_KEY para buscar dados do usuário (bypassar RLS)
     const supabaseAdmin = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey,
       {
         cookies: {
           getAll() {
