@@ -25,7 +25,7 @@ export async function sendEmailResend({ to, subject, html, text }: EmailData): P
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Sabedoria das Escrituras <noreply@sabedoriaescrituras.com>',
+        from: 'Sabedoria das Escrituras <noreply@paulocartas.com.br>',
         to: [to],
         subject,
         html,

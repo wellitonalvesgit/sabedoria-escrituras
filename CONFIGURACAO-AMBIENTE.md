@@ -15,6 +15,7 @@ RESEND_API_KEY=re_BfCFPuAB_CKMsfpzJqTSwkWuQ18quM5PY
 
 # Site Configuration
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_EMAIL_DOMAIN=paulocartas.com.br
 ```
 
 ## Instruções
