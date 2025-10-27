@@ -31,15 +31,9 @@ export async function middleware(request: NextRequest) {
   // Rotas que precisam de autenticação
   try {
     // Verificar se SERVICE_ROLE_KEY está disponível
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (!SUPABASE_CONFIG.serviceRoleKey) {
       console.error('❌ SERVICE_ROLE_KEY não está configurada')
-      // Definir SERVICE_ROLE_KEY diretamente no código (apenas para desenvolvimento)
-      if (process.env.NODE_ENV === 'development') {
-        process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs'
-        console.log('✅ SERVICE_ROLE_KEY definida manualmente para desenvolvimento')
-      }
-    } else {
-      console.log('✅ SERVICE_ROLE_KEY está configurada:', process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 10) + '...')
+      return NextResponse.redirect(new URL('/login?error=config', request.url))
     }
 
     // Criar cliente Supabase com cookies para middleware

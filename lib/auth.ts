@@ -432,3 +432,26 @@ export async function verifyAccessCode(email: string, code: string) {
   }
 }
 
+
+
+export async function updateUserProfile(userId: string, data: Partial<User>) {
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({
+        ...data,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId)
+    
+    if (error) {
+      console.error('Erro ao atualizar perfil:', error)
+      return { success: false, error: error.message }
+    }
+    
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('Erro geral ao atualizar perfil:', error)
+    return { success: false, error: 'Erro interno do servidor' }
+  }
+}

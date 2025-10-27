@@ -104,53 +104,51 @@ class SessionManager {
         }
         
         console.log('✅ Sessão válida, buscando dados do usuário...')
-        
-        // SOLUÇÃO DIRETA: Usar o cliente admin para bypassar RLS
-        // Isso garante que os dados do usuário sejam recuperados corretamente
-        // independentemente das políticas RLS
+
+        // SOLUÇÃO: Usar API route para buscar dados do usuário
+        // Isso evita problemas com RLS no client-side
         let userData;
         try {
-          // Importar o cliente admin diretamente para evitar problemas de referência circular
-          const { supabaseAdmin } = await import('@/lib/supabase')
-          
-          if (!supabaseAdmin) {
-            throw new Error('Cliente admin não disponível')
-          }
-          
-          const { data: adminUserData, error: userError } = await supabaseAdmin
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-
-          console.log('📊 Dados do usuário na tabela (via admin):', {
-            hasUserData: !!adminUserData,
-            error: userError?.message,
-            userEmail: adminUserData?.email,
-            userRole: adminUserData?.role,
-            userStatus: adminUserData?.status
+          console.log('📡 Buscando dados do usuário via API...')
+          const response = await fetch('/api/users/me', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
           })
 
-          if (userError || !adminUserData) {
-            console.error('❌ Erro ao buscar dados do usuário (via admin):', userError)
-            throw new Error('Dados do usuário não encontrados via admin')
+          if (!response.ok) {
+            throw new Error(`Erro ao buscar usuário: ${response.status}`)
           }
-          
-          // Atribuir os dados do usuário à variável externa
-          userData = adminUserData;
-          
-        } catch (adminError) {
-          console.error('❌ Erro ao usar cliente admin:', adminError)
-          
-          // Fallback para cliente normal
-          console.log('🔍 Tentando fallback para cliente normal...')
+
+          const apiUserData = await response.json()
+
+          console.log('📊 Dados do usuário (via API):', {
+            hasUserData: !!apiUserData,
+            userEmail: apiUserData?.email,
+            userRole: apiUserData?.role,
+            userStatus: apiUserData?.status
+          })
+
+          if (!apiUserData) {
+            throw new Error('Dados do usuário não encontrados via API')
+          }
+
+          userData = apiUserData;
+
+        } catch (apiError) {
+          console.error('❌ Erro ao buscar via API:', apiError)
+
+          // Fallback para cliente normal (com RLS)
+          console.log('🔍 Tentando fallback para cliente normal (RLS)...')
           const { data: normalUserData, error: userError } = await supabase
             .from('users')
             .select('*')
             .eq('id', session.user.id)
             .single()
 
-          console.log('📊 Dados do usuário na tabela (via cliente normal):', {
+          console.log('📊 Dados do usuário na tabela (via RLS):', {
             hasUserData: !!normalUserData,
             error: userError?.message,
             userEmail: normalUserData?.email,
@@ -222,28 +220,29 @@ class SessionManager {
         
         if (event === 'SIGNED_IN' && session?.user) {
           try {
-            // Importar o cliente admin diretamente para evitar problemas de referência circular
-            const { supabaseAdmin } = await import('@/lib/supabase')
-            
-            if (!supabaseAdmin) {
-              throw new Error('Cliente admin não disponível')
-            }
-            
-            const { data: userData, error: userError } = await supabaseAdmin
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single()
+            // Buscar dados do usuário via API
+            const response = await fetch('/api/users/me', {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+            })
 
-            console.log('📊 Auth change - Dados do usuário (via admin):', {
+            if (!response.ok) {
+              throw new Error(`Erro ao buscar usuário: ${response.status}`)
+            }
+
+            const userData = await response.json()
+
+            console.log('📊 Auth change - Dados do usuário (via API):', {
               hasUserData: !!userData,
-              error: userError?.message,
               userEmail: userData?.email
             })
 
-            if (!userError && userData) {
-              this.updateSession({ 
-                user: userData, 
+            if (userData) {
+              this.updateSession({
+                user: userData,
                 loading: false,
                 sessionId: session.access_token
               })

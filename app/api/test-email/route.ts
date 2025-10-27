@@ -1,96 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sendEmail, generateNewUserEmailTemplate } from '@/lib/email'
-import { sendEmailResend, generateSimpleEmailTemplate } from '@/lib/email-resend'
+import { sendEmailResend } from '@/lib/email-resend'
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const { email, name } = await request.json()
+    const { searchParams } = new URL(request.url)
+    const to = searchParams.get('to')
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email é obrigatório' }, { status: 400 })
+    if (!to) {
+      return NextResponse.json({
+        error: 'Parâmetro "to" é obrigatório',
+        example: '/api/test-email?to=seu-email@example.com'
+      }, { status: 400 })
     }
 
-    console.log('🧪 Testando envio de email para:', email)
+    console.log('📧 Testando envio de email para:', to)
 
-    const testName = name || 'Usuário Teste'
-    const testPassword = 'Teste123!'
-    const testAccessDays = 30
-
-    let emailSent = false
-    let method = ''
-
-    try {
-      // Tentar primeiro com Supabase Edge Function
-      console.log('📧 Tentando envio via Supabase Edge Function...')
-      
-      const emailTemplate = generateNewUserEmailTemplate(
-        testName,
-        email,
-        testPassword,
-        testAccessDays
-      )
-
-      emailSent = await sendEmail({
-        to: email,
-        subject: emailTemplate.subject,
-        html: emailTemplate.html,
-        text: emailTemplate.text
-      })
-
-      if (emailSent) {
-        method = 'Supabase Edge Function'
-        console.log('✅ Email enviado via Supabase Edge Function')
-      }
-    } catch (supabaseError) {
-      console.log('❌ Erro no Supabase Edge Function:', supabaseError)
-    }
-
-    // Se falhou, tentar com Resend como fallback
-    if (!emailSent && process.env.RESEND_API_KEY) {
-      try {
-        console.log('📧 Tentando envio via Resend...')
-        
-        const simpleTemplate = generateSimpleEmailTemplate(
-          testName,
-          email,
-          testPassword,
-          testAccessDays
-        )
-
-        emailSent = await sendEmailResend({
-          to: email,
-          subject: simpleTemplate.subject,
-          html: simpleTemplate.html,
-          text: simpleTemplate.text
-        })
-
-        if (emailSent) {
-          method = 'Resend API'
-          console.log('✅ Email enviado via Resend API')
-        }
-      } catch (resendError) {
-        console.log('❌ Erro no Resend API:', resendError)
-      }
-    }
-
-    return NextResponse.json({
-      success: emailSent,
-      method: method,
-      message: emailSent 
-        ? `Email de teste enviado com sucesso via ${method}` 
-        : 'Falha ao enviar email de teste. Verifique as configurações.',
-      details: {
-        supabaseConfigured: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-        resendConfigured: !!process.env.RESEND_API_KEY,
-        siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-      }
+    const success = await sendEmailResend({
+      to,
+      subject: '🧪 Teste de Email - Sabedoria das Escrituras',
+      html: '<h1>Teste de Email</h1><p>Email funcionando via Resend!</p>',
+      text: 'Teste de Email - Email funcionando via Resend!'
     })
 
+    if (success) {
+      return NextResponse.json({
+        success: true,
+        message: '✅ Email enviado com sucesso!',
+        to
+      })
+    } else {
+      return NextResponse.json({
+        success: false,
+        message: '❌ Falha ao enviar email'
+      }, { status: 500 })
+    }
   } catch (error) {
-    console.error('❌ Erro no teste de email:', error)
-    return NextResponse.json({ 
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
-    }, { status: 500 })
+    console.error('❌ Erro:', error)
+    return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 })
   }
 }

@@ -112,10 +112,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     // Verificar se o acesso não expirou
+    let hasValidAccessPeriod = false
     if (userData.access_expires_at) {
       const expirationDate = new Date(userData.access_expires_at)
       const now = new Date()
-      
+
       if (expirationDate < now) {
         return NextResponse.json({
           canAccess: false,
@@ -123,6 +124,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           message: 'Seu acesso expirou'
         }, { status: 403 })
       }
+
+      // Usuário tem período de acesso válido
+      hasValidAccessPeriod = true
     }
 
     // Verificar se o usuário é admin
@@ -131,6 +135,18 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         canAccess: true,
         reason: 'premium_access',
         message: 'Acesso administrativo',
+        course
+      })
+    }
+
+    // Se o usuário tem período de acesso válido (access_expires_at ainda não expirou)
+    // dar acesso a todos os cursos (sistema de trial de 30 dias)
+    if (hasValidAccessPeriod) {
+      console.log('✅ Acesso permitido via período de teste (access_expires_at válido)')
+      return NextResponse.json({
+        canAccess: true,
+        reason: 'trial_access',
+        message: `Acesso via período de teste (válido até ${new Date(userData.access_expires_at).toLocaleDateString('pt-BR')})`,
         course
       })
     }
