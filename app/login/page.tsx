@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Eye, EyeOff, BookOpen, Mail, Lock, ArrowRight, Loader2, CheckCircle, XCircle, Sparkles, UserPlus, Key } from "lucide-react"
+import { Eye, EyeOff, BookOpen, Mail, Lock, ArrowRight, Loader2, CheckCircle, XCircle, Sparkles, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,31 +10,20 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { signIn, signUp, resetPassword, sendMagicLink, sendAccessCode, verifyAccessCode } from "@/lib/auth"
+import { signIn, signUp, resetPassword, sendMagicLink } from "@/lib/auth"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
-  const [code, setCode] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [magicLinkLoading, setMagicLinkLoading] = useState(false)
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
   const [registerLoading, setRegisterLoading] = useState(false)
-  const [codeLoading, setCodeLoading] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [codeSent, setCodeSent] = useState(false)
-  const [codeCountdown, setCodeCountdown] = useState(0)
   const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null)
 
-  // Countdown para reenvio de código
-  useEffect(() => {
-    if (codeCountdown > 0) {
-      const timer = setTimeout(() => setCodeCountdown(codeCountdown - 1), 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [codeCountdown])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -117,49 +106,6 @@ export default function LoginPage() {
     }
   }
 
-  const handleRequestCode = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setCodeLoading(true)
-    setAlert(null)
-
-    try {
-      const result = await sendAccessCode(email)
-      if (result.success) {
-        setCodeSent(true)
-        setCodeCountdown(60) // 60 segundos para reenvio
-        setAlert({ type: 'success', message: 'Código de acesso enviado! Verifique seu email.' })
-      } else {
-        setAlert({ type: 'error', message: result.error || 'Erro ao enviar código de acesso' })
-      }
-    } catch (error) {
-      setAlert({ type: 'error', message: 'Erro inesperado ao enviar código de acesso' })
-    } finally {
-      setCodeLoading(false)
-    }
-  }
-
-  const handleCodeAccess = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setCodeLoading(true)
-    setAlert(null)
-
-    try {
-      const result = await verifyAccessCode(email, code)
-      if (result.success) {
-        setAlert({ type: 'success', message: 'Acesso liberado com sucesso!' })
-        // Redirecionar para dashboard após um breve delay
-        setTimeout(() => {
-          window.location.href = '/dashboard'
-        }, 1000)
-      } else {
-        setAlert({ type: 'error', message: result.error || 'Código inválido ou expirado' })
-      }
-    } catch (error) {
-      setAlert({ type: 'error', message: 'Erro inesperado ao verificar código' })
-    } finally {
-      setCodeLoading(false)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#2c3e50] via-[#34495e] to-[#2c3e50] flex items-center justify-center p-4">
@@ -199,11 +145,10 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 mb-6">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
                 <TabsTrigger value="login" className="text-sm">Login</TabsTrigger>
-                <TabsTrigger value="magic" className="text-sm">Link Mágico</TabsTrigger>
                 <TabsTrigger value="register" className="text-sm">Cadastro</TabsTrigger>
-                <TabsTrigger value="code" className="text-sm">Código</TabsTrigger>
+                <TabsTrigger value="magic" className="text-sm">Link Mágico</TabsTrigger>
               </TabsList>
 
               {/* Login com Senha */}
@@ -274,46 +219,6 @@ export default function LoginPage() {
                 </form>
               </TabsContent>
 
-              {/* Link Mágico */}
-              <TabsContent value="magic">
-                <form onSubmit={handleMagicLink} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="magic-email" className="text-[#2c3e50] font-medium">
-                      Email
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="magic-email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 bg-white border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <p className="text-sm text-blue-800">
-                      <strong>Como funciona:</strong> Enviaremos um link especial para seu email. 
-                      Clique no link para fazer login automaticamente, sem precisar de senha.
-                    </p>
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full bg-[#F3C77A] hover:bg-[#e6b366] text-[#2c3e50] font-medium py-2.5"
-                    disabled={magicLinkLoading}
-                  >
-                    {magicLinkLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Mail className="h-4 w-4 mr-2" />
-                    )}
-                    {magicLinkLoading ? "Enviando..." : "Enviar Link Mágico"}
-                  </Button>
-                </form>
-              </TabsContent>
 
               {/* Cadastro */}
               <TabsContent value="register">
@@ -398,93 +303,45 @@ export default function LoginPage() {
                 </form>
               </TabsContent>
 
-              {/* Acesso por Código */}
-              <TabsContent value="code">
-                {!codeSent ? (
-                  <form onSubmit={handleRequestCode} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="code-email" className="text-[#2c3e50] font-medium">
-                        Email
-                      </Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          id="code-email"
-                          type="email"
-                          placeholder="seu@email.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="pl-10 bg-white border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
-                          required
-                        />
-                      </div>
+              {/* Link Mágico */}
+              <TabsContent value="magic">
+                <form onSubmit={handleMagicLink} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="magic-email" className="text-[#2c3e50] font-medium">
+                      Email
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="magic-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 bg-white border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A]"
+                        required
+                      />
                     </div>
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                      <p className="text-sm text-purple-800">
-                        <strong>Acesso Rápido:</strong> Enviaremos um código de 6 dígitos para seu email. 
-                        Digite o código para acessar instantaneamente.
-                      </p>
-                    </div>
-                    <Button
-                      type="submit"
-                      className="w-full bg-[#F3C77A] hover:bg-[#e6b366] text-[#2c3e50] font-medium py-2.5"
-                      disabled={codeLoading}
-                    >
-                      {codeLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Key className="h-4 w-4 mr-2" />
-                      )}
-                      {codeLoading ? "Enviando..." : "Solicitar Código"}
-                    </Button>
-                  </form>
-                ) : (
-                  <form onSubmit={handleCodeAccess} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="access-code" className="text-[#2c3e50] font-medium">
-                        Código de Acesso
-                      </Label>
-                      <div className="relative">
-                        <Key className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          id="access-code"
-                          type="text"
-                          placeholder="123456"
-                          value={code}
-                          onChange={(e) => setCode(e.target.value)}
-                          className="pl-10 bg-white border-gray-200 focus:border-[#F3C77A] focus:ring-[#F3C77A] text-center text-lg tracking-widest"
-                          required
-                          maxLength={6}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-600">
-                        Código enviado para: <strong>{email}</strong>
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleRequestCode}
-                        disabled={codeCountdown > 0}
-                        className="text-sm text-[#F3C77A] hover:text-[#e6b366] transition-colors disabled:opacity-50"
-                      >
-                        {codeCountdown > 0 ? `Reenviar em ${codeCountdown}s` : 'Reenviar código'}
-                      </button>
-                    </div>
-                    <Button
-                      type="submit"
-                      className="w-full bg-[#F3C77A] hover:bg-[#e6b366] text-[#2c3e50] font-medium py-2.5"
-                      disabled={codeLoading}
-                    >
-                      {codeLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <ArrowRight className="h-4 w-4 mr-2" />
-                      )}
-                      {codeLoading ? "Verificando..." : "Acessar"}
-                    </Button>
-                  </form>
-                )}
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-blue-800">
+                      <strong>Como funciona:</strong> Enviaremos um link especial para seu email cadastrado. 
+                      Clique no link para fazer login automaticamente, sem precisar de senha.
+                    </p>
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-[#F3C77A] hover:bg-[#e6b366] text-[#2c3e50] font-medium py-2.5"
+                    disabled={magicLinkLoading}
+                  >
+                    {magicLinkLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Mail className="h-4 w-4 mr-2" />
+                    )}
+                    {magicLinkLoading ? "Enviando..." : "Enviar Link Mágico"}
+                  </Button>
+                </form>
               </TabsContent>
             </Tabs>
           </CardContent>
