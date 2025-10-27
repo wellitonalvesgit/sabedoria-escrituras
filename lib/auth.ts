@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin } from './supabase'
+import { supabase } from './supabase'
 
 export interface User {
   id: string
@@ -85,8 +85,9 @@ export async function signIn(email: string, password: string) {
 
     console.log('✅ Usuário autenticado no Supabase Auth:', data.user.id)
 
-    // Buscar dados completos do usuário na tabela users usando admin para bypassar RLS
-    const { data: userData, error: userError } = await supabaseAdmin
+    // Buscar dados completos do usuário na tabela users
+    // Como o usuário acabou de se autenticar, o RLS permite acesso ao próprio perfil
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('*')
       .eq('id', data.user.id)
@@ -158,11 +159,12 @@ export async function signUp(email: string, password: string, name: string) {
       return { success: false, error: error.message }
     }
 
-    // Criar registro na tabela users usando supabaseAdmin para bypassar RLS
+    // Criar registro na tabela users via API route (que usa supabaseAdmin)
     if (data.user) {
-      const { error: userError } = await supabaseAdmin
-        .from('users')
-        .insert({
+      const response = await fetch('/api/users/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           id: data.user.id,
           email: data.user.email!,
           name,
@@ -180,6 +182,9 @@ export async function signUp(email: string, password: string, name: string) {
           allowed_courses: [],
           blocked_courses: []
         })
+      })
+
+      const { error: userError } = await response.json()
 
       if (userError) {
         console.error('❌ Erro ao criar usuário na tabela users:', userError)

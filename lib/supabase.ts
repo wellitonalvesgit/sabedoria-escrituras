@@ -7,7 +7,6 @@ export { createClient }
 // Usar configuração centralizada
 const supabaseUrl = SUPABASE_CONFIG.url
 const supabaseAnonKey = SUPABASE_CONFIG.anonKey
-const supabaseServiceRoleKey = SUPABASE_CONFIG.serviceRoleKey
 
 // Log para debug (apenas em desenvolvimento)
 if (process.env.NODE_ENV === 'development') {
@@ -53,14 +52,8 @@ function getSupabaseClient() {
 // Cliente público (usar em componentes client-side e server-side)
 export const supabase = getSupabaseClient()
 
-// Cliente admin (APENAS para uso server-side - API routes, server components)
-// Bypassa Row Level Security
-export const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY || '', {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
+// NOTA: supabaseAdmin foi movido para lib/supabase-server.ts
+// para evitar que seja importado em componentes client-side
 
 // Tipos para TypeScript
 export type Database = {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, supabase } from '@/lib/supabase'
+import { supabaseAdmin, supabase } from '@/lib/supabase-server'
 
 // GET /api/courses - Listar todos os cursos
 export async function GET(request: NextRequest) {
