@@ -1,6 +1,6 @@
 "use client"
 
-import { BookOpen, Plus, Edit, Trash2, Upload, FileText, Users, BarChart3, Tag, Plug } from "lucide-react"
+import { BookOpen, Plus, Edit, Trash2, Upload, FileText, Users, BarChart3, Tag, Plug, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -161,7 +161,7 @@ export default function AdminPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-6 mb-8">
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -202,6 +202,26 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
+          <Card className="hover:shadow-lg transition-shadow border-primary/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-[#F3C77A]" />
+                Planos de Assinatura
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Configure planos, preços e períodos de acesso
+              </p>
+              <Link href="/admin/plans" className="w-full">
+                <Button className="w-full bg-[#F3C77A] text-black hover:bg-[#FFD88A]">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Gerenciar Planos
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -222,7 +242,7 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow border-primary/50">
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Plug className="h-5 w-5 text-[#F3C77A]" />
