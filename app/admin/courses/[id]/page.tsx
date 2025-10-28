@@ -14,6 +14,7 @@ import { PDFUpload } from "@/components/pdf-upload"
 import { GoogleDriveLink } from "@/components/google-drive-link"
 import { ImageUpload } from "@/components/image-upload"
 import { CategorySelector } from "@/components/category-selector"
+import { VolumeCoverUpload } from "@/components/volume-cover-upload"
 import Link from "next/link"
 
 interface CoursePDF {
@@ -1160,6 +1161,40 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                     </Button>
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Volume Covers Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Image className="h-5 w-5" />
+                  Gerenciar Capas dos Volumes
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Personalize a capa de cada volume individualmente. Cada volume pode ter sua própria capa diferente da capa do curso.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {course.course_pdfs.map((pdf) => (
+                    <VolumeCoverUpload
+                      key={pdf.id}
+                      volumeId={pdf.id}
+                      courseId={courseId}
+                      currentCoverUrl={pdf.cover_url}
+                      volumeTitle={pdf.title}
+                      onUploadSuccess={(url) => {
+                        console.log('Capa do volume atualizada:', url)
+                        fetchCourse() // Recarregar dados
+                      }}
+                      onUploadError={(error) => {
+                        console.error('Erro ao fazer upload da capa:', error)
+                        alert('Erro ao fazer upload da capa: ' + error)
+                      }}
+                    />
+                  ))}
                 </div>
               </CardContent>
             </Card>

@@ -35,17 +35,15 @@ function CheckoutContent() {
 
   const fetchPlan = async () => {
     try {
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
+      // Usar API ao invés de Supabase diretamente
+      const response = await fetch(`/api/subscription-plans/${planName}`)
 
-      const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('name', planName)
-        .single()
+      if (!response.ok) {
+        throw new Error('Erro ao carregar plano')
+      }
 
-      if (error) throw error
-      setPlan(data)
+      const { plan } = await response.json()
+      setPlan(plan)
     } catch (error) {
       console.error('Erro ao carregar plano:', error)
       router.push('/pricing')
@@ -56,25 +54,25 @@ function CheckoutContent() {
 
   const fetchUserData = async () => {
     try {
-      const { supabase } = await import('@/lib/supabase')
+      // Usar API /api/auth/me ao invés de Supabase diretamente
+      const response = await fetch('/api/auth/me')
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login?redirect=/checkout')
-        return
+      if (!response.ok) {
+        // Se não autenticado, redirecionar para login
+        if (response.status === 401) {
+          router.push('/login?redirect=/checkout')
+          return
+        }
+        throw new Error('Erro ao carregar dados do usuário')
       }
 
-      const { data: profile } = await supabase
-        .from('users')
-        .select('full_name, email')
-        .eq('id', user.id)
-        .single()
+      const { user } = await response.json()
 
-      if (profile) {
+      if (user) {
         setUserData(prev => ({
           ...prev,
-          name: profile.full_name || '',
-          email: profile.email || user.email || ''
+          name: user.name || '',
+          email: user.email || ''
         }))
       }
     } catch (error) {

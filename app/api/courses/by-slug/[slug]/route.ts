@@ -36,7 +36,8 @@ export async function GET(
           reading_time_minutes,
           text_content,
           use_auto_conversion,
-          display_order
+          display_order,
+          cover_url
         )
       `)
       .eq('slug', slug)

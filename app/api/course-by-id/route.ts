@@ -36,7 +36,8 @@ export async function GET(request: NextRequest) {
           reading_time_minutes,
           text_content,
           use_auto_conversion,
-          display_order
+          display_order,
+          cover_url
         )
       `)
       .eq('id', id)

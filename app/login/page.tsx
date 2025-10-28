@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -25,41 +24,32 @@ export default function LoginPage() {
     setSuccess('')
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Chamar API de login ao invés de usar Supabase diretamente
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
       })
 
-      if (error) {
-        setError(error.message)
+      const result = await response.json()
+
+      if (!response.ok || result.error) {
+        setError(result.error || 'Erro ao fazer login')
         return
       }
 
-      if (data.user) {
+      if (result.success && result.user) {
         setSuccess('Login realizado com sucesso!')
-        
-        // Buscar dados do usuário para verificar o role
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', data.user.id)
-          .single()
-
-        if (userError) {
-          console.error('Erro ao buscar dados do usuário:', userError)
-          // Redirecionar para dashboard como fallback
-          window.location.href = '/dashboard'
-          return
-        }
 
         // Redirecionar baseado no role
-        if (userData?.role === 'admin') {
+        if (result.user.role === 'admin') {
           window.location.href = '/admin'
         } else {
           window.location.href = '/dashboard'
         }
       }
     } catch (err) {
+      console.error('Erro no login:', err)
       setError('Erro inesperado. Tente novamente.')
     } finally {
       setLoading(false)

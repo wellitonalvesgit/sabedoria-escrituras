@@ -44,17 +44,15 @@ export default function PricingPage() {
 
   const fetchPlans = async () => {
     try {
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
+      // Usar API ao invés de Supabase diretamente
+      const response = await fetch('/api/subscription-plans')
 
-      const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true })
+      if (!response.ok) {
+        throw new Error('Erro ao carregar planos')
+      }
 
-      if (error) throw error
-      setPlans(data || [])
+      const { plans } = await response.json()
+      setPlans(plans || [])
     } catch (error) {
       console.error('Erro ao carregar planos:', error)
     } finally {
@@ -64,19 +62,17 @@ export default function PricingPage() {
 
   const fetchSubscription = async () => {
     try {
-      const { supabase } = await import('@/lib/supabase')
+      // Usar API ao invés de Supabase diretamente
+      const response = await fetch('/api/subscriptions/current')
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!response.ok) {
+        // Se não autenticado ou sem assinatura, apenas retorna
+        return
+      }
 
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!error && data) {
-        setSubscription(data)
+      const { subscription } = await response.json()
+      if (subscription) {
+        setSubscription(subscription)
       }
     } catch (error) {
       console.error('Erro ao carregar assinatura:', error)
@@ -87,11 +83,11 @@ export default function PricingPage() {
     try {
       setProcessing(plan.id)
 
-      // Verificar autenticação
-      const { supabase } = await import('@/lib/supabase')
-      const { data: { user } } = await supabase.auth.getUser()
+      // Verificar autenticação usando API
+      const response = await fetch('/api/auth/me')
 
-      if (!user) {
+      if (!response.ok) {
+        // Não autenticado, redirecionar para login
         router.push('/login?redirect=/pricing')
         return
       }
