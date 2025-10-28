@@ -1,14 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Eye, EyeOff, BookOpen, Mail, Lock, ArrowRight, Loader2, CheckCircle, XCircle, Sparkles, UserPlus, Moon, Sun } from "lucide-react"
+import { useState } from "react"
+import { Eye, EyeOff, BookOpen, Mail, Lock, ArrowRight, Loader2, CheckCircle, XCircle, Sparkles, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { signIn, signUp, resetPassword, sendMagicLink } from "@/lib/auth"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -25,7 +24,6 @@ export default function LoginPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null)
 
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -35,7 +33,6 @@ export default function LoginPage() {
       const result = await signIn(email, password)
       if (result.success) {
         setAlert({ type: 'success', message: 'Login realizado com sucesso!' })
-        // Redirecionar baseado no role do usuário
         setTimeout(() => {
           if (result.user?.role === 'admin') {
             window.location.href = '/admin'
@@ -111,20 +108,15 @@ export default function LoginPage() {
     }
   }
 
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
-      {/* Background Pattern */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23F3C77A\" fill-opacity=\"0.03\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-40" />
       
       <div className="w-full max-w-md relative z-10">
-        {/* Theme Toggle */}
         <div className="absolute top-4 right-4">
           <ThemeToggle />
         </div>
 
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <div className="relative">
@@ -138,7 +130,6 @@ export default function LoginPage() {
           <p className="text-muted-foreground">Acesse sua conta e continue sua jornada espiritual</p>
         </div>
 
-        {/* Alert */}
         {alert && (
           <Alert className={`mb-6 ${alert.type === 'success' ? 'border-green-500 bg-green-50 dark:bg-green-950 dark:border-green-800' : 'border-destructive bg-destructive/10 dark:bg-destructive/20'}`}>
             <div className="flex items-center">
@@ -154,7 +145,6 @@ export default function LoginPage() {
           </Alert>
         )}
 
-        {/* Login Form */}
         <Card className="bg-card/95 backdrop-blur-sm border shadow-2xl">
           <CardHeader className="text-center pb-4">
             <CardTitle className="text-2xl font-bold text-card-foreground flex items-center justify-center">
@@ -170,7 +160,6 @@ export default function LoginPage() {
                 <TabsTrigger value="magic" className="text-sm">Link Mágico</TabsTrigger>
               </TabsList>
 
-              {/* Login com Senha */}
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
@@ -238,8 +227,6 @@ export default function LoginPage() {
                 </form>
               </TabsContent>
 
-
-              {/* Cadastro */}
               <TabsContent value="register">
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-2">
@@ -322,7 +309,6 @@ export default function LoginPage() {
                 </form>
               </TabsContent>
 
-              {/* Link Mágico */}
               <TabsContent value="magic">
                 <form onSubmit={handleMagicLink} className="space-y-4">
                   <div className="space-y-2">
@@ -366,7 +352,6 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-muted-foreground text-sm">
             Precisa de ajuda?{" "}
@@ -377,7 +362,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Modal de Recuperação de Senha */}
       {showForgotPassword && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <Card className="w-full max-w-md bg-card">
