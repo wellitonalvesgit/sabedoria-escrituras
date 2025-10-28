@@ -8,20 +8,12 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Verificar variáveis de ambiente
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Variáveis de ambiente Supabase não configuradas')
-      return NextResponse.json({ error: 'Configuração do servidor inválida' }, { status: 500 })
-    }
-
-    // Criar cliente Supabase com cookies para autenticação
     const cookieStore = await cookies()
-    const supabase = createServerClient(
-      supabaseUrl,
-      supabaseAnonKey,
+
+    // ANON_KEY apenas para autenticação
+    const supabaseAnon = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           getAll() {
@@ -37,27 +29,44 @@ export async function PUT(
     )
 
     // Verificar autenticação
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser()
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
+    // SERVICE_ROLE_KEY para operações no banco
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          }
+        }
+      }
+    )
+
     const { id } = await params
     const body = await request.json()
     const { text_content, highlight_color, note } = body
 
-    // Atualizar apenas se a marcação pertence ao usuário (RLS vai garantir isso)
+    // Atualizar apenas se a marcação pertence ao usuário
     const { data: highlight, error } = await supabase
       .from('highlights')
       .update({
         text_content,
         highlight_color,
         note
-        // updated_at será atualizado automaticamente pelo trigger
       })
       .eq('id', id)
-      .eq('user_id', user.id) // Garantir que apenas o dono pode atualizar
+      .eq('user_id', user.id)
       .select()
       .single()
 
@@ -83,20 +92,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Verificar variáveis de ambiente
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Variáveis de ambiente Supabase não configuradas')
-      return NextResponse.json({ error: 'Configuração do servidor inválida' }, { status: 500 })
-    }
-
-    // Criar cliente Supabase com cookies para autenticação
     const cookieStore = await cookies()
-    const supabase = createServerClient(
-      supabaseUrl,
-      supabaseAnonKey,
+
+    // ANON_KEY apenas para autenticação
+    const supabaseAnon = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           getAll() {
@@ -112,20 +113,38 @@ export async function DELETE(
     )
 
     // Verificar autenticação
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser()
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
+    // SERVICE_ROLE_KEY para operações no banco
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          }
+        }
+      }
+    )
+
     const { id } = await params
 
-    // Deletar apenas se a marcação pertence ao usuário (RLS vai garantir isso)
+    // Deletar apenas se a marcação pertence ao usuário
     const { error } = await supabase
       .from('highlights')
       .delete()
       .eq('id', id)
-      .eq('user_id', user.id) // Garantir que apenas o dono pode deletar
+      .eq('user_id', user.id)
 
     if (error) {
       console.error('Erro ao deletar marcação:', error)
