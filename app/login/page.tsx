@@ -1,110 +1,68 @@
 "use client"
 
-import { useState } from "react"
-import { Eye, EyeOff, BookOpen, Mail, Lock, ArrowRight, Loader2, CheckCircle, XCircle, Sparkles, UserPlus } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import Link from "next/link"
-import { signIn, signUp, resetPassword, sendMagicLink } from "@/lib/auth"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { BookOpen, Sparkles, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [name, setName] = useState("")
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [magicLinkLoading, setMagicLinkLoading] = useState(false)
-  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
-  const [registerLoading, setRegisterLoading] = useState(false)
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [alert, setAlert] = useState<{ type: 'success' | 'error', message: string } | null>(null)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setAlert(null)
+    setError('')
+    setSuccess('')
 
     try {
-      const result = await signIn(email, password)
-      if (result.success) {
-        setAlert({ type: 'success', message: 'Login realizado com sucesso!' })
-        setTimeout(() => {
-          if (result.user?.role === 'admin') {
-            window.location.href = '/admin'
-          } else {
-            window.location.href = '/dashboard'
-          }
-        }, 1000)
-      } else {
-        setAlert({ type: 'error', message: result.error || 'Erro ao fazer login' })
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        setError(error.message)
+        return
       }
-    } catch (error) {
-      setAlert({ type: 'error', message: 'Erro inesperado ao fazer login' })
+
+      if (data.user) {
+        setSuccess('Login realizado com sucesso!')
+        
+        // Buscar dados do usuário para verificar o role
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', data.user.id)
+          .single()
+
+        if (userError) {
+          console.error('Erro ao buscar dados do usuário:', userError)
+          // Redirecionar para dashboard como fallback
+          window.location.href = '/dashboard'
+          return
+        }
+
+        // Redirecionar baseado no role
+        if (userData?.role === 'admin') {
+          window.location.href = '/admin'
+        } else {
+          window.location.href = '/dashboard'
+        }
+      }
+    } catch (err) {
+      setError('Erro inesperado. Tente novamente.')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setMagicLinkLoading(true)
-    setAlert(null)
-
-    try {
-      const result = await sendMagicLink(email)
-      if (result.success) {
-        setAlert({ type: 'success', message: 'Link mágico enviado! Verifique seu email.' })
-      } else {
-        setAlert({ type: 'error', message: result.error || 'Erro ao enviar link mágico' })
-      }
-    } catch (error) {
-      setAlert({ type: 'error', message: 'Erro inesperado ao enviar link mágico' })
-    } finally {
-      setMagicLinkLoading(false)
-    }
-  }
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setForgotPasswordLoading(true)
-    setAlert(null)
-
-    try {
-      const result = await resetPassword(email)
-      if (result.success) {
-        setAlert({ type: 'success', message: 'Email de recuperação enviado!' })
-        setShowForgotPassword(false)
-      } else {
-        setAlert({ type: 'error', message: result.error || 'Erro ao enviar email de recuperação' })
-      }
-    } catch (error) {
-      setAlert({ type: 'error', message: 'Erro inesperado ao enviar email de recuperação' })
-    } finally {
-      setForgotPasswordLoading(false)
-    }
-  }
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setRegisterLoading(true)
-    setAlert(null)
-
-    try {
-      const result = await signUp(email, password, name)
-      if (result.success) {
-        setAlert({ type: 'success', message: 'Conta criada com sucesso! Verifique seu email para confirmar.' })
-      } else {
-        setAlert({ type: 'error', message: result.error || 'Erro ao criar conta' })
-      }
-    } catch (error) {
-      setAlert({ type: 'error', message: 'Erro inesperado ao criar conta' })
-    } finally {
-      setRegisterLoading(false)
     }
   }
 
@@ -127,292 +85,89 @@ export default function LoginPage() {
             </div>
             <h1 className="text-3xl font-bold text-foreground">Sabedoria das Escrituras</h1>
           </div>
-          <p className="text-muted-foreground">Acesse sua conta e continue sua jornada espiritual</p>
+          <p className="text-muted-foreground">Entre com suas credenciais para acessar a plataforma</p>
         </div>
 
-        {alert && (
-          <Alert className={`mb-6 ${alert.type === 'success' ? 'border-green-500 bg-green-50 dark:bg-green-950 dark:border-green-800' : 'border-destructive bg-destructive/10 dark:bg-destructive/20'}`}>
-            <div className="flex items-center">
-              {alert.type === 'success' ? (
-                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 mr-2" />
-              ) : (
-                <XCircle className="h-4 w-4 text-destructive mr-2" />
-              )}
-              <AlertDescription className={alert.type === 'success' ? 'text-green-800 dark:text-green-200' : 'text-destructive'}>
-                {alert.message}
-              </AlertDescription>
-            </div>
-          </Alert>
-        )}
-
-        <Card className="bg-card/95 backdrop-blur-sm border shadow-2xl">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-2xl font-bold text-card-foreground flex items-center justify-center">
-              <Sparkles className="h-6 w-6 text-primary mr-2" />
-              Acesso à Plataforma
-            </CardTitle>
+        <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl text-center">Entrar</CardTitle>
+            <CardDescription className="text-center">
+              Digite seu email e senha para acessar sua conta
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6">
-                <TabsTrigger value="login" className="text-sm">Login</TabsTrigger>
-                <TabsTrigger value="register" className="text-sm">Cadastro</TabsTrigger>
-                <TabsTrigger value="magic" className="text-sm">Link Mágico</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-card-foreground font-medium">
-                      Email
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-card-foreground font-medium">
-                      Senha
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Sua senha"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 pr-10"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotPassword(true)}
-                      className="text-sm text-primary hover:text-primary/80 transition-colors"
-                    >
-                      Esqueceu a senha?
-                    </button>
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <ArrowRight className="h-4 w-4 mr-2" />
-                    )}
-                    {loading ? "Entrando..." : "Entrar"}
-                  </Button>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="register-name" className="text-card-foreground font-medium">
-                      Nome Completo
-                    </Label>
-                    <div className="relative">
-                      <UserPlus className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="register-name"
-                        type="text"
-                        placeholder="Seu nome completo"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email" className="text-card-foreground font-medium">
-                      Email
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="register-email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password" className="text-card-foreground font-medium">
-                      Senha
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="register-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Mínimo 6 caracteres"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 pr-10"
-                        required
-                        minLength={6}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                    <p className="text-sm text-green-800 dark:text-green-200">
-                      <strong>Benefícios:</strong> Acesso completo a todos os cursos, 
-                      progresso salvo automaticamente e suporte prioritário.
-                    </p>
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={registerLoading}
-                  >
-                    {registerLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <UserPlus className="h-4 w-4 mr-2" />
-                    )}
-                    {registerLoading ? "Criando conta..." : "Criar Conta"}
-                  </Button>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="magic">
-                <form onSubmit={handleMagicLink} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="magic-email" className="text-card-foreground font-medium">
-                      Email
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="magic-email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                    <p className="text-sm text-blue-800 dark:text-blue-200">
-                      <strong>Como funciona:</strong> Enviaremos um link especial para seu email cadastrado. 
-                      Clique no link para fazer login automaticamente, sem precisar de senha.
-                    </p>
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={magicLinkLoading}
-                  >
-                    {magicLinkLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Mail className="h-4 w-4 mr-2" />
-                    )}
-                    {magicLinkLoading ? "Enviando..." : "Enviar Link Mágico"}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        <div className="text-center mt-8">
-          <p className="text-muted-foreground text-sm">
-            Precisa de ajuda?{" "}
-            <Link href="/support" className="text-primary hover:text-primary/80 transition-colors">
-              Entre em contato
-            </Link>
-          </p>
-        </div>
-      </div>
-
-      {showForgotPassword && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md bg-card">
-            <CardHeader>
-              <CardTitle className="text-center text-card-foreground">Recuperar Senha</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleForgotPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="forgot-email" className="text-card-foreground font-medium">
-                    Email
-                  </Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="forgot-email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="h-11"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Sua senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-11 pr-10"
+                  />
                   <Button
                     type="button"
-                    variant="outline"
-                    onClick={() => setShowForgotPassword(false)}
-                    className="flex-1"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-11 px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
                   >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1"
-                    disabled={forgotPasswordLoading}
-                  >
-                    {forgotPasswordLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
                     ) : (
-                      "Enviar"
+                      <Eye className="h-4 w-4 text-muted-foreground" />
                     )}
                   </Button>
                 </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              </div>
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {success && (
+                <Alert>
+                  <AlertDescription>{success}</AlertDescription>
+                </Alert>
+              )}
+
+              <Button 
+                type="submit" 
+                className="w-full h-11" 
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  'Entrar'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
