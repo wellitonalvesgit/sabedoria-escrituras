@@ -757,28 +757,58 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                     <ImageUpload
                                       onFileSelect={async (file) => {
                                         try {
+                                          console.log('🔄 Iniciando upload da capa do volume...')
+                                          console.log('📁 Arquivo:', file.name, file.size, file.type)
+                                          
                                           // Upload da capa
                                           const formData = new FormData()
                                           formData.append('file', file)
-                                          formData.append('type', 'pdf-cover')
-                                          formData.append('pdfId', pdf.id)
+                                          formData.append('type', 'cover')
+                                          formData.append('courseId', courseId)
 
+                                          console.log('📤 Enviando para API de upload...')
                                           const response = await fetch('/api/upload', {
                                             method: 'POST',
                                             body: formData,
                                           })
 
                                           const result = await response.json()
+                                          console.log('📥 Resposta da API:', result)
 
                                           if (result.success) {
+                                            console.log('✅ Upload realizado, URL:', result.fileUrl)
+                                            
+                                            // Atualizar o estado local
                                             setEditingPDFData(prev => prev ? { ...prev, cover_url: result.fileUrl } : null)
-                                            alert("Capa carregada! Clique em 'Salvar' para confirmar.")
+                                            
+                                            // Salvar automaticamente no banco de dados
+                                            console.log('💾 Salvando capa do volume no banco de dados...')
+                                            
+                                            const saveResponse = await fetch(`/api/course-pdfs/${pdf.id}/cover`, {
+                                              method: 'PUT',
+                                              headers: {
+                                                'Content-Type': 'application/json'
+                                              },
+                                              body: JSON.stringify({
+                                                coverUrl: result.fileUrl
+                                              })
+                                            })
+
+                                            const saveResult = await saveResponse.json()
+                                            
+                                            if (!saveResult.success) {
+                                              console.error('❌ Erro ao salvar no banco:', saveResult.error)
+                                              throw new Error('Erro ao salvar capa no banco: ' + saveResult.error)
+                                            }
+                                            
+                                            console.log('✅ Capa do volume salva no banco com sucesso!')
+                                            alert("Capa do volume atualizada com sucesso!")
                                           } else {
-                                            alert("Erro ao fazer upload: " + result.error)
+                                            throw new Error(result.error)
                                           }
-                                        } catch (err) {
-                                          console.error('Erro no upload:', err)
-                                          alert("Erro ao fazer upload da capa")
+                                        } catch (error) {
+                                          console.error('❌ Erro no upload:', error)
+                                          alert("Erro ao fazer upload da capa: " + (error as Error).message)
                                         }
                                       }}
                                       currentImageUrl={editingPDFData?.cover_url}
@@ -1182,8 +1212,16 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="w-full h-32 bg-muted rounded-lg flex items-center justify-center">
-                    <span className="text-muted-foreground">Capa do Curso</span>
+                  <div className="w-full h-32 bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+                    {editedCourse.cover_url ? (
+                      <img 
+                        src={editedCourse.cover_url} 
+                        alt="Capa do curso" 
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">Capa do Curso</span>
+                    )}
                   </div>
                   <div>
                     <h3 className="font-semibold">{editedCourse.title}</h3>
