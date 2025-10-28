@@ -124,26 +124,33 @@ export function invalidateCoursesCache() {
 // POST /api/courses - Criar novo curso
 export async function POST(request: NextRequest) {
   try {
-    // Usar admin se disponível, senão usar cliente público
-    const client = supabaseAdmin || supabase
-    
-    if (!client) {
-      throw new Error('Supabase client not configured')
+    // SEMPRE usar supabaseAdmin para bypass RLS
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not configured')
     }
+
     const body = await request.json()
-    
+
     const { title, description, author, category, pages, reading_time_minutes, cover_url, pdfs } = body
 
-    // Inserir curso
-    const { data: course, error: courseError } = await client
+    // Validar campos obrigatórios
+    if (!title || !description) {
+      return NextResponse.json(
+        { error: 'Título e descrição são obrigatórios' },
+        { status: 400 }
+      )
+    }
+
+    // Inserir curso usando supabaseAdmin (bypass RLS)
+    const { data: course, error: courseError } = await supabaseAdmin
       .from('courses')
       .insert({
         title,
         description,
         author,
         category,
-        pages,
-        reading_time_minutes,
+        pages: pages || 0,
+        reading_time_minutes: reading_time_minutes || 0,
         cover_url,
         status: 'published'
       })
@@ -152,7 +159,10 @@ export async function POST(request: NextRequest) {
 
     if (courseError) {
       console.error('Erro ao criar curso:', courseError)
-      return NextResponse.json({ error: 'Erro ao criar curso' }, { status: 500 })
+      return NextResponse.json(
+        { error: `Erro ao criar curso: ${courseError.message}` },
+        { status: 500 }
+      )
     }
 
     // Inserir PDFs do curso
@@ -162,14 +172,14 @@ export async function POST(request: NextRequest) {
         volume: pdf.volume,
         title: pdf.title,
         url: pdf.url,
-        pages: pdf.pages,
-        reading_time_minutes: pdf.reading_time_minutes,
+        pages: pdf.pages || 0,
+        reading_time_minutes: pdf.reading_time_minutes || 0,
         text_content: pdf.text_content || null,
         use_auto_conversion: pdf.use_auto_conversion !== false,
         display_order: index
       }))
 
-      const { error: pdfsError } = await client
+      const { error: pdfsError } = await supabaseAdmin
         .from('course_pdfs')
         .insert(pdfsToInsert)
 
@@ -178,6 +188,9 @@ export async function POST(request: NextRequest) {
         // Não falhar aqui, o curso já foi criado
       }
     }
+
+    // Invalidar cache
+    invalidateCoursesCache()
 
     return NextResponse.json({ course }, { status: 201 })
   } catch (error) {
