@@ -5,20 +5,12 @@ import { cookies } from 'next/headers'
 // GET /api/summaries - Listar resumos do usuário autenticado
 export async function GET(request: NextRequest) {
   try {
-    // Verificar variáveis de ambiente
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Variáveis de ambiente Supabase não configuradas')
-      return NextResponse.json({ error: 'Configuração do servidor inválida' }, { status: 500 })
-    }
-
-    // Criar cliente Supabase com cookies para autenticação
     const cookieStore = await cookies()
-    const supabase = createServerClient(
-      supabaseUrl,
-      supabaseAnonKey,
+
+    // ANON_KEY apenas para autenticação
+    const supabaseAnon = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           getAll() {
@@ -34,11 +26,29 @@ export async function GET(request: NextRequest) {
     )
 
     // Verificar autenticação
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser()
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
+
+    // SERVICE_ROLE_KEY para operações no banco
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          }
+        }
+      }
+    )
 
     const { searchParams } = new URL(request.url)
     const courseId = searchParams.get('course_id')
@@ -59,7 +69,7 @@ export async function GET(request: NextRequest) {
           volume
         )
       `)
-      .eq('user_id', user.id) // Filtrar apenas resumos do usuário autenticado
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
     if (courseId) {
@@ -87,20 +97,12 @@ export async function GET(request: NextRequest) {
 // POST /api/summaries - Criar novo resumo
 export async function POST(request: NextRequest) {
   try {
-    // Verificar variáveis de ambiente
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Variáveis de ambiente Supabase não configuradas')
-      return NextResponse.json({ error: 'Configuração do servidor inválida' }, { status: 500 })
-    }
-
-    // Criar cliente Supabase com cookies para autenticação
     const cookieStore = await cookies()
-    const supabase = createServerClient(
-      supabaseUrl,
-      supabaseAnonKey,
+
+    // ANON_KEY apenas para autenticação
+    const supabaseAnon = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           getAll() {
@@ -116,11 +118,29 @@ export async function POST(request: NextRequest) {
     )
 
     // Verificar autenticação
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser()
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
+
+    // SERVICE_ROLE_KEY para operações no banco
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          }
+        }
+      }
+    )
 
     const body = await request.json()
     const {
@@ -141,7 +161,7 @@ export async function POST(request: NextRequest) {
     const { data: summary, error } = await supabase
       .from('summaries')
       .insert({
-        user_id: user.id, // Usar ID do usuário autenticado
+        user_id: user.id,
         course_id,
         pdf_id,
         title,
