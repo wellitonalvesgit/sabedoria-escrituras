@@ -6,7 +6,7 @@ import { SUPABASE_CONFIG } from './lib/supabase-config'
 
 // Cache simples para sessões (em produção usar Redis)
 const sessionCache = new Map<string, { user: any, timestamp: number }>()
-const CACHE_TTL = 30 * 1000 // 30 segundos
+const CACHE_TTL = 5 * 1000 // 5 segundos (reduzido para evitar problemas de cache)
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl

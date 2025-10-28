@@ -31,7 +31,7 @@ interface PremiumAccessGateProps {
 
 // Cache em memória para otimização de performance
 const accessCache = new Map<string, { result: AccessCheckResult, timestamp: number }>()
-const CACHE_TTL = 5 * 60 * 1000 // 5 minutos
+const CACHE_TTL = 10 * 1000 // 10 segundos (reduzido para evitar cache desatualizado)
 
 export function PremiumAccessGate({ courseId, children }: PremiumAccessGateProps) {
   const [checking, setChecking] = useState(true)
