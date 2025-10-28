@@ -6,7 +6,31 @@ export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies()
 
-    // Criar cliente com SERVICE_ROLE_KEY para bypassar RLS
+    // ANON_KEY apenas para autenticação
+    const supabaseAnon = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+
+    // Verificar autenticação
+    const { data: { user } } = await supabaseAnon.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
+    }
+
+    // SERVICE_ROLE_KEY para operações no banco
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -23,12 +47,6 @@ export async function GET(request: NextRequest) {
         },
       }
     )
-
-    // Verificar autenticação
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
-    }
 
     const { data: stats, error } = await supabase
       .from('users')
@@ -53,7 +71,31 @@ export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies()
 
-    // Criar cliente com SERVICE_ROLE_KEY para bypassar RLS
+    // ANON_KEY apenas para autenticação
+    const supabaseAnon = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+
+    // Verificar autenticação
+    const { data: { user } } = await supabaseAnon.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
+    }
+
+    // SERVICE_ROLE_KEY para operações no banco
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -70,12 +112,6 @@ export async function POST(request: NextRequest) {
         },
       }
     )
-
-    // Verificar autenticação
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
-    }
 
     const { totalPoints, level, coursesCompleted, pagesRead, currentStreak } = await request.json()
 
