@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, Download, Maximize2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
+import { convertGoogleDriveToPreview } from "@/lib/google-drive-utils"
 
 interface OriginalPDFViewerProps {
   pdfUrl: string
@@ -13,6 +14,8 @@ interface OriginalPDFViewerProps {
 }
 
 export const OriginalPDFViewer = ({ pdfUrl, courseId, pdfId, onSessionUpdate }: OriginalPDFViewerProps) => {
+  // Converter URL do Google Drive para formato preview
+  const previewUrl = convertGoogleDriveToPreview(pdfUrl)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
   const [startTime] = useState(() => Date.now())
@@ -169,20 +172,21 @@ export const OriginalPDFViewer = ({ pdfUrl, courseId, pdfId, onSessionUpdate }: 
         >
           <iframe
             ref={iframeRef}
-            src={`${pdfUrl}#page=${currentPage}&toolbar=1&navpanes=1&scrollbar=1&zoom=${zoom}`}
+            src={`${previewUrl}#page=${currentPage}&toolbar=1&navpanes=1&scrollbar=1&zoom=${zoom}`}
             className="w-full h-[800px]"
             onLoad={() => {
-              console.log("PDF carregado:", pdfUrl)
+              console.log("PDF carregado com sucesso:", previewUrl)
               setIsLoading(false)
               // Simular detecção de páginas totais
               setTotalPages(45) // Em produção, isso viria da API do PDF
             }}
             onError={() => {
-              console.log("Erro ao carregar PDF:", pdfUrl)
-              setError("Não foi possível carregar o PDF. Verifique se o link está correto.")
+              console.log("Erro ao carregar PDF:", previewUrl)
+              setError("Não foi possível carregar o PDF. Verifique se o link está correto e se o arquivo está público no Google Drive.")
               setIsLoading(false)
             }}
             title="PDF Viewer"
+            allow="autoplay"
           />
         </motion.div>
 
