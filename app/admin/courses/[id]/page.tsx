@@ -458,50 +458,59 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
 
   const handleImageUpload = async (file: File) => {
     try {
+      console.log('🔄 Iniciando upload da capa...')
+      console.log('📁 Arquivo:', file.name, file.size, file.type)
+      
       // Fazer upload da imagem via API
       const formData = new FormData()
       formData.append('file', file)
       formData.append('type', 'cover')
       formData.append('courseId', courseId)
 
+      console.log('📤 Enviando para API de upload...')
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       })
 
       const result = await response.json()
+      console.log('📥 Resposta da API:', result)
 
       if (!result.success) {
         throw new Error(result.error)
       }
 
+      console.log('✅ Upload realizado, URL:', result.fileUrl)
+
       // Atualizar o curso com nova capa
       setEditedCourse(prev => ({ ...prev, cover_url: result.fileUrl }))
       
-      // Salvar automaticamente
-      // Salvar capa diretamente no Supabase
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
+      // Salvar automaticamente no banco de dados
+      console.log('💾 Salvando no banco de dados...')
       
-      const { error } = await supabase
-        .from('courses')
-        .update({ cover_url: result.fileUrl })
-        .eq('id', courseId)
+      const saveResponse = await fetch(`/api/courses/${courseId}/cover`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          courseId,
+          coverUrl: result.fileUrl
+        })
+      })
+
+      const saveResult = await saveResponse.json()
       
-      if (error) {
-        throw new Error('Erro ao salvar capa')
+      if (!saveResult.success) {
+        console.error('❌ Erro ao salvar no banco:', saveResult.error)
+        throw new Error('Erro ao salvar capa no banco: ' + saveResult.error)
       }
       
-      const saveResponse = { ok: true }
-      
-      if (!saveResponse.ok) {
-        throw new Error('Erro ao salvar capa')
-      }
-      
+      console.log('✅ Capa salva no banco com sucesso!')
       alert("Capa atualizada com sucesso!")
       await fetchCourse() // Recarregar dados
     } catch (err) {
-      console.error('Erro no upload:', err)
+      console.error('❌ Erro no upload:', err)
       alert('Erro ao fazer upload da capa: ' + (err as Error).message)
     }
   }
