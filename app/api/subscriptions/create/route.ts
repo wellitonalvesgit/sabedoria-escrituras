@@ -6,7 +6,9 @@ import { getAsaasService } from '@/lib/asaas'
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies()
-    const supabase = createServerClient(
+
+    // Usar ANON_KEY apenas para autenticação
+    const supabaseAnon = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
@@ -24,15 +26,33 @@ export async function POST(request: NextRequest) {
     )
 
     // Verificar autenticação
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
+    // Usar SERVICE_ROLE_KEY para operações no banco (bypassa RLS)
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+
     // Buscar dados do usuário
     const { data: userData } = await supabase
       .from('users')
-      .select('full_name, email')
+      .select('name, email')
       .eq('id', user.id)
       .single()
 
@@ -70,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     // Criar/atualizar cliente no Asaas
     const asaasCustomer = await asaas.createOrUpdateCustomer({
-      name: customer_data.name || userData?.full_name || 'Usuário',
+      name: customer_data.name || userData?.name || 'Usuário',
       email: customer_data.email || userData?.email || user.email!,
       cpfCnpj: customer_data.cpf?.replace(/\D/g, ''),
       phone: customer_data.phone?.replace(/\D/g, ''),

@@ -1,8 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+// Cache em memória para otimização (ranking atualiza a cada sessão, 1 minuto é ok)
+let rankingCache: { data: any[], timestamp: number } | null = null
+const CACHE_TTL = 60 * 1000 // 1 minuto
 
 export async function GET(request: NextRequest) {
   try {
+    // Verificar cache primeiro
+    if (rankingCache && (Date.now() - rankingCache.timestamp) < CACHE_TTL) {
+      return NextResponse.json({ leaderboard: rankingCache.data }, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        }
+      })
+    }
+
+    const cookieStore = await cookies()
+
+    // Criar cliente com SERVICE_ROLE_KEY para bypassar RLS
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+
     const { data: users, error } = await supabase
       .from('users')
       .select(`
@@ -38,7 +72,14 @@ export async function GET(request: NextRequest) {
       rank: index + 1
     }))
 
-    return NextResponse.json({ leaderboard })
+    // Atualizar cache
+    rankingCache = { data: leaderboard, timestamp: Date.now() }
+
+    return NextResponse.json({ leaderboard }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+      }
+    })
 
   } catch (error) {
     console.error('Erro na API de ranking:', error)
@@ -46,3 +87,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Função para invalidar o cache (útil após atualizar pontos)
+export function invalidateRankingCache() {
+  rankingCache = null
+}
