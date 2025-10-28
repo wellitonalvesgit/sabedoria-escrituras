@@ -135,16 +135,22 @@ export default function SettingsPage() {
         return
       }
 
-      // Atualizar perfil no banco
-      const { updateUserProfile } = await import('@/lib/auth')
-      const { error } = await updateUserProfile(user.id, {
-        name: profileData.name,
-        email: profileData.email,
-        // Nota: cpf, phone, bio, etc precisam ser adicionados na tabela users
+      // Atualizar perfil via API (server-side com SERVICE_ROLE_KEY)
+      const response = await fetch('/api/profile/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: profileData.name,
+          email: profileData.email
+        })
       })
 
-      if (error) {
-        throw error
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao atualizar perfil')
       }
 
       setSuccess("Perfil atualizado com sucesso!")
@@ -166,6 +172,7 @@ export default function SettingsPage() {
     try {
       setSaving(true)
       setError(null)
+      setSuccess(null)
 
       if (passwordData.new_password !== passwordData.confirm_password) {
         setError("As senhas não coincidem")
@@ -179,12 +186,22 @@ export default function SettingsPage() {
         return
       }
 
-      // Alterar senha no Supabase
-      const { updatePassword } = await import('@/lib/auth')
-      const { error } = await updatePassword(passwordData.new_password)
+      // Alterar senha via API (server-side com SERVICE_ROLE_KEY)
+      const response = await fetch('/api/profile/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.current_password,
+          newPassword: passwordData.new_password
+        })
+      })
 
-      if (error) {
-        throw error
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao trocar senha')
       }
 
       setSuccess("Senha alterada com sucesso!")

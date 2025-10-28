@@ -150,16 +150,15 @@ export default function DashboardPage() {
 
   const fetchCategories = async () => {
     try {
-      // Usar a instância global do supabase
-      const { supabase } = await import('@/lib/supabase')
+      // Buscar categorias via API
+      const response = await fetch('/api/categories')
 
-      const { data, error } = await supabase
-        .from('categories')
-        .select('id, name, slug, display_as_carousel, display_order')
-        .order('display_order', { ascending: true })
+      if (!response.ok) {
+        throw new Error('Erro ao carregar categorias')
+      }
 
-      if (error) throw error
-      setCategories(data || [])
+      const data = await response.json()
+      setCategories(data.categories || [])
     } catch (err) {
       console.error('Erro ao carregar categorias:', err)
     }
