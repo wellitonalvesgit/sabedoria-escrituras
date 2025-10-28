@@ -204,6 +204,11 @@ class SessionManager {
   public invalidateCache() {
     this.userCache = null
   }
+
+  public async refreshUserData() {
+    this.userCache = null
+    await this.initializeSession()
+  }
 }
 
 export const sessionManager = SessionManager.getInstance()

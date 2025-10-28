@@ -44,32 +44,10 @@ export default function AdminPage() {
 
   const fetchStats = async () => {
     try {
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
-
-      // Buscar usuários
-      const { data: users, error: usersError } = await supabase
-        .from('users')
-        .select('status')
-
-      if (!usersError && users) {
-        setStats(prev => ({
-          ...prev,
-          totalUsers: users.length,
-          activeUsers: users.filter(u => u.status === 'active').length
-        }))
-      }
-
-      // Buscar categorias
-      const { data: categories, error: categoriesError } = await supabase
-        .from('categories')
-        .select('id')
-
-      if (!categoriesError && categories) {
-        setStats(prev => ({
-          ...prev,
-          totalCategories: categories.length
-        }))
+      const response = await fetch('/api/admin/stats')
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
       }
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error)
