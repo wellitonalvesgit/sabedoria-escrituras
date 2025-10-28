@@ -26,7 +26,23 @@ export async function GET(request: NextRequest) {
 
     let query = client
       .from('users')
-      .select('*')
+      .select(`
+        *,
+        subscriptions (
+          id,
+          plan_id,
+          status,
+          trial_ends_at,
+          current_period_end,
+          canceled_at,
+          subscription_plans (
+            id,
+            name,
+            price,
+            duration_days
+          )
+        )
+      `)
       .order('created_at', { ascending: false })
 
     // Aplicar filtros
