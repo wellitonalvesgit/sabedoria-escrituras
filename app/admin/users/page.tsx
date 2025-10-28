@@ -24,6 +24,23 @@ import Link from "next/link"
 import { AddUserDrawer } from "@/components/add-user-drawer"
 import { AddUserDrawerFixed } from "@/components/add-user-drawer-fixed"
 
+interface SubscriptionPlan {
+  id: string
+  name: string
+  price: number
+  duration_days: number
+}
+
+interface Subscription {
+  id: string
+  plan_id: string
+  status: 'trial' | 'active' | 'past_due' | 'canceled' | 'expired'
+  trial_ends_at?: string
+  current_period_end: string
+  canceled_at?: string
+  subscription_plans: SubscriptionPlan
+}
+
 interface User {
   id: string
   name: string
@@ -45,6 +62,7 @@ interface User {
   created_at: string
   last_active_at: string
   user_course_progress: any[]
+  subscriptions?: Subscription[]
 }
 
 export default function AdminUsersPage() {
@@ -54,6 +72,7 @@ export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [planFilter, setPlanFilter] = useState("all")
   const [addUserDrawerOpen, setAddUserDrawerOpen] = useState(false)
 
   useEffect(() => {
@@ -107,6 +126,47 @@ export default function AdminUsersPage() {
     }
   }, [roleFilter, statusFilter, searchTerm])
 
+  // Filtrar usuários por plano (client-side já que subscriptions vem via JOIN)
+  const getFilteredUsers = () => {
+    let filtered = users
+
+    // Filtro por plano
+    if (planFilter !== 'all') {
+      filtered = filtered.filter(user => {
+        const subscription = user.subscriptions?.[0]
+
+        if (!subscription && planFilter === 'no-plan') return true
+        if (!subscription) return false
+
+        switch (planFilter) {
+          case 'trial':
+            if (subscription.status !== 'trial') return false
+            const trialEnds = new Date(subscription.trial_ends_at!)
+            return trialEnds > new Date()
+
+          case 'trial-expired':
+            if (subscription.status !== 'trial') return false
+            const trialExpired = new Date(subscription.trial_ends_at!)
+            return trialExpired <= new Date()
+
+          case 'active':
+            return subscription.status === 'active'
+
+          case 'past_due':
+            return subscription.status === 'past_due'
+
+          case 'canceled':
+            return subscription.status === 'canceled'
+
+          default:
+            return true
+        }
+      })
+    }
+
+    return filtered
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -129,8 +189,21 @@ export default function AdminUsersPage() {
     )
   }
 
-  // Usar dados do Supabase em vez de mockUsers
-  const filteredUsers = users
+  // Usar dados do Supabase com filtros aplicados
+  const filteredUsers = getFilteredUsers()
+
+  // Calcular estatísticas de planos
+  const usersInTrial = users.filter(u => {
+    const sub = u.subscriptions?.[0]
+    return sub?.status === 'trial' && new Date(sub.trial_ends_at!) > new Date()
+  }).length
+
+  const usersTrialExpired = users.filter(u => {
+    const sub = u.subscriptions?.[0]
+    return sub?.status === 'trial' && new Date(sub.trial_ends_at!) <= new Date()
+  }).length
+
+  const usersPremium = users.filter(u => u.subscriptions?.[0]?.status === 'active').length
 
   const getRoleBadge = (role: string) => {
     const roleConfig = {
@@ -148,6 +221,67 @@ export default function AdminUsersPage() {
     ) : (
       <Badge variant="outline" className="bg-gray-500/10 text-gray-500 border-gray-500/20">Inativo</Badge>
     )
+  }
+
+  const getSubscriptionBadge = (user: User) => {
+    const subscription = user.subscriptions?.[0]
+
+    if (!subscription) {
+      return <Badge variant="outline" className="bg-gray-500/10 text-gray-500 border-gray-500/20">Sem Plano</Badge>
+    }
+
+    switch (subscription.status) {
+      case 'trial':
+        const trialEnds = new Date(subscription.trial_ends_at!)
+        const now = new Date()
+        const daysLeft = Math.ceil((trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+        if (daysLeft > 0) {
+          return (
+            <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+              🆓 Trial - {daysLeft} dia{daysLeft !== 1 ? 's' : ''}
+            </Badge>
+          )
+        } else {
+          return (
+            <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
+              ⚠️ Trial Expirado
+            </Badge>
+          )
+        }
+
+      case 'active':
+        return (
+          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+            💎 Premium
+          </Badge>
+        )
+
+      case 'past_due':
+        return (
+          <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20">
+            ⏰ Pagamento Pendente
+          </Badge>
+        )
+
+      case 'canceled':
+        const periodEnd = new Date(subscription.current_period_end)
+        return (
+          <Badge variant="outline" className="bg-gray-500/10 text-gray-600 border-gray-500/20">
+            ❌ Cancelado - {periodEnd.toLocaleDateString('pt-BR')}
+          </Badge>
+        )
+
+      case 'expired':
+        return (
+          <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
+            🚫 Expirado
+          </Badge>
+        )
+
+      default:
+        return <Badge variant="outline">Desconhecido</Badge>
+    }
   }
 
   return (
@@ -184,26 +318,44 @@ export default function AdminUsersPage() {
 
       <div className="mx-auto max-w-7xl px-6 pt-24 pb-8 lg:px-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total de Usuários</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">{users.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Total de usuários</p>
+              <p className="text-xs text-muted-foreground mt-1">Cadastrados</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-yellow-500/20 bg-yellow-500/5">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Usuários Ativos</CardTitle>
+              <CardTitle className="text-sm font-medium text-yellow-600">🆓 Trial Ativo</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {users.filter(u => u.status === "active").length}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Usuários ativos</p>
+              <div className="text-3xl font-bold text-yellow-600">{usersInTrial}</div>
+              <p className="text-xs text-muted-foreground mt-1">7 dias grátis</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-green-500/20 bg-green-500/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-green-600">💎 Premium</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-600">{usersPremium}</div>
+              <p className="text-xs text-muted-foreground mt-1">Pagantes ativos</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-red-500/20 bg-red-500/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-red-600">⚠️ Trial Expirado</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-red-600">{usersTrialExpired}</div>
+              <p className="text-xs text-muted-foreground mt-1">Precisam upgrade</p>
             </CardContent>
           </Card>
 
@@ -215,19 +367,7 @@ export default function AdminUsersPage() {
               <div className="text-3xl font-bold text-foreground">
                 {users.filter(u => u.role === "admin").length}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Com acesso total</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pontos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {users.reduce((sum, u) => sum + u.total_points, 0).toLocaleString()}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Acumulados</p>
+              <p className="text-xs text-muted-foreground mt-1">Acesso total</p>
             </CardContent>
           </Card>
         </div>
@@ -268,6 +408,21 @@ export default function AdminUsersPage() {
                   <SelectItem value="inactive">Inativo</SelectItem>
                 </SelectContent>
               </Select>
+
+              <Select value={planFilter} onValueChange={setPlanFilter}>
+                <SelectTrigger className="w-full md:w-[200px]">
+                  <SelectValue placeholder="Filtrar por plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os planos</SelectItem>
+                  <SelectItem value="trial">🆓 Free Trial</SelectItem>
+                  <SelectItem value="trial-expired">⚠️ Trial Expirado</SelectItem>
+                  <SelectItem value="active">💎 Premium Ativo</SelectItem>
+                  <SelectItem value="past_due">⏰ Pagamento Pendente</SelectItem>
+                  <SelectItem value="canceled">❌ Cancelado</SelectItem>
+                  <SelectItem value="no-plan">Sem Plano</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -285,7 +440,7 @@ export default function AdminUsersPage() {
                     <th className="px-6 py-3 text-left font-medium">Usuário</th>
                     <th className="px-6 py-3 text-left font-medium">Role</th>
                     <th className="px-6 py-3 text-left font-medium">Status</th>
-                    <th className="px-6 py-3 text-left font-medium">Acesso</th>
+                    <th className="px-6 py-3 text-left font-medium">Plano</th>
                     <th className="px-6 py-3 text-left font-medium">Cursos</th>
                     <th className="px-6 py-3 text-left font-medium">Pontos</th>
                     <th className="px-6 py-3 text-left font-medium">Cadastro</th>
@@ -313,14 +468,7 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-6 py-4">{getRoleBadge(user.role)}</td>
                       <td className="px-6 py-4">{getStatusBadge(user.status)}</td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm">
-                          <div className="font-medium text-foreground">{user.access_days || 30} dias</div>
-                          <div className="text-muted-foreground">
-                            {user.access_expires_at ? new Date(user.access_expires_at).toLocaleDateString('pt-BR') : 'Não definido'}
-                          </div>
-                        </div>
-                      </td>
+                      <td className="px-6 py-4">{getSubscriptionBadge(user)}</td>
                       <td className="px-6 py-4">
                         <div className="text-sm">
                           <div className="font-medium text-foreground">{user.courses_enrolled} inscritos</div>
