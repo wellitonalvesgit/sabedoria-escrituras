@@ -26,30 +26,14 @@ export async function GET(request: NextRequest) {
 
     let query = client
       .from('users')
-      .select(`
-        *,
-        subscriptions (
-          id,
-          plan_id,
-          status,
-          trial_ends_at,
-          current_period_end,
-          canceled_at,
-          subscription_plans (
-            id,
-            name,
-            price,
-            duration_days
-          )
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
 
     // Aplicar filtros
     if (role && role !== 'all') {
       query = query.eq('role', role)
     }
-    
+
     if (status && status !== 'all') {
       query = query.eq('status', status)
     }
@@ -62,10 +46,40 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Erro ao buscar usuários:', error)
-      return NextResponse.json({ error: 'Erro ao buscar usuários' }, { status: 500 })
+      return NextResponse.json({ error: 'Erro ao buscar usuários', details: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ users })
+    // Buscar subscriptions separadamente para evitar erro de JOIN
+    const usersWithSubscriptions = await Promise.all(
+      (users || []).map(async (user) => {
+        const { data: subscriptions } = await client
+          .from('subscriptions')
+          .select(`
+            id,
+            plan_id,
+            status,
+            trial_ends_at,
+            current_period_end,
+            canceled_at,
+            subscription_plans (
+              id,
+              name,
+              price,
+              duration_days
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        return {
+          ...user,
+          subscriptions: subscriptions || []
+        }
+      })
+    )
+
+    return NextResponse.json({ users: usersWithSubscriptions })
   } catch (error) {
     console.error('Erro na API de usuários:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
