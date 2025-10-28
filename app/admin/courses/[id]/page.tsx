@@ -181,18 +181,18 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
       console.log('📝 Dados do curso:', editedCourse)
       console.log('🏷️ Categorias selecionadas:', selectedCategories)
 
-      // Salvar diretamente no Supabase
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
+      // Salvar curso via API (server-side com SERVICE_ROLE_KEY)
+      const courseResponse = await fetch(`/api/courses/${courseId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(editedCourse)
+      })
 
-      const { error } = await supabase
-        .from('courses')
-        .update(editedCourse)
-        .eq('id', courseId)
-
-      if (error) {
-        console.error('❌ Erro ao salvar curso:', error)
-        throw new Error('Erro ao salvar curso: ' + error.message)
+      if (!courseResponse.ok) {
+        const courseResult = await courseResponse.json()
+        throw new Error('Erro ao salvar curso: ' + (courseResult.error || 'Erro desconhecido'))
       }
 
       console.log('✅ Curso salvo com sucesso')
@@ -228,28 +228,20 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
 
   const handleAddPDF = async () => {
     try {
-      // Adicionar PDF diretamente no Supabase
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
-      
-      const { error } = await supabase
-        .from('course_pdfs')
-        .insert({
-          course_id: courseId,
-          volume: newPDF.volume,
-          title: newPDF.title,
-          url: newPDF.url,
-          pages: newPDF.pages,
-          reading_time_minutes: newPDF.reading_time_minutes,
-          text_content: newPDF.text_content,
-          use_auto_conversion: newPDF.use_auto_conversion,
-          display_order: course.course_pdfs.length
-        })
-      
-      if (error) {
-        throw new Error('Erro ao adicionar PDF')
+      // Adicionar PDF via API (server-side com SERVICE_ROLE_KEY)
+      const response = await fetch(`/api/courses/${courseId}/pdfs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newPDF)
+      })
+
+      if (!response.ok) {
+        const result = await response.json()
+        throw new Error(result.error || 'Erro ao adicionar PDF')
       }
-      
+
       alert("PDF adicionado com sucesso!")
       setNewPDF({
         volume: "",
@@ -262,7 +254,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
       })
       await fetchCourse() // Recarregar dados
     } catch (err) {
-      alert('Erro ao adicionar PDF')
+      alert('Erro ao adicionar PDF: ' + (err instanceof Error ? err.message : 'Erro desconhecido'))
     }
   }
 
@@ -275,13 +267,13 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
     if (!editingPDFData) return
 
     try {
-      // Atualizar PDF diretamente no Supabase
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
-      
-      const { error } = await supabase
-        .from('course_pdfs')
-        .update({
+      // Atualizar PDF via API (server-side com SERVICE_ROLE_KEY)
+      const response = await fetch(`/api/courses/${courseId}/pdfs/${editingPDF}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           volume: editingPDFData.volume,
           title: editingPDFData.title,
           url: editingPDFData.url,
@@ -291,18 +283,19 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
           use_auto_conversion: editingPDFData.use_auto_conversion,
           cover_url: editingPDFData.cover_url || null
         })
-        .eq('id', editingPDF)
-      
-      if (error) {
-        throw new Error('Erro ao salvar PDF')
+      })
+
+      if (!response.ok) {
+        const result = await response.json()
+        throw new Error(result.error || 'Erro ao salvar PDF')
       }
-      
+
       alert("PDF atualizado com sucesso!")
       setEditingPDF(null)
       setEditingPDFData(null)
       await fetchCourse() // Recarregar dados
     } catch (err) {
-      alert('Erro ao atualizar PDF')
+      alert('Erro ao atualizar PDF: ' + (err instanceof Error ? err.message : 'Erro desconhecido'))
     }
   }
 
@@ -313,55 +306,35 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
 
   const handleDuplicatePDF = async (pdf: CoursePDF) => {
     try {
+      // Duplicar PDF via API (server-side com SERVICE_ROLE_KEY)
       const duplicatedPDF = {
-        ...pdf,
-        id: 'temp-' + Date.now(),
         volume: pdf.volume + '-COPY',
         title: pdf.title + ' (Cópia)',
-        display_order: course.course_pdfs.length
+        url: pdf.url,
+        pages: pdf.pages,
+        reading_time_minutes: pdf.reading_time_minutes,
+        text_content: pdf.text_content,
+        use_auto_conversion: pdf.use_auto_conversion,
+        cover_url: pdf.cover_url
       }
 
-      const updatedPDFs = [...course.course_pdfs, duplicatedPDF]
+      const response = await fetch(`/api/courses/${courseId}/pdfs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(duplicatedPDF)
+      })
 
-      // Atualizar PDFs diretamente no Supabase
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
-      
-      // Primeiro, remover PDFs existentes
-      await supabase
-        .from('course_pdfs')
-        .delete()
-        .eq('course_id', courseId)
-      
-      // Inserir novos PDFs
-      if (updatedPDFs.length > 0) {
-        const { error } = await supabase
-          .from('course_pdfs')
-          .insert(updatedPDFs.map((pdf, index) => ({
-            course_id: courseId,
-            volume: pdf.volume,
-            title: pdf.title,
-            url: pdf.url,
-            pages: pdf.pages,
-            reading_time_minutes: pdf.reading_time_minutes,
-            text_content: pdf.text_content,
-            use_auto_conversion: pdf.use_auto_conversion,
-            display_order: index
-          })))
-        
-        if (error) throw error
-      }
-      
-      const response = { ok: true }
-      
       if (!response.ok) {
-        throw new Error('Erro ao duplicar PDF')
+        const result = await response.json()
+        throw new Error(result.error || 'Erro ao duplicar PDF')
       }
-      
+
       alert("PDF duplicado com sucesso!")
       await fetchCourse() // Recarregar dados
     } catch (err) {
-      alert('Erro ao duplicar PDF')
+      alert('Erro ao duplicar PDF: ' + (err instanceof Error ? err.message : 'Erro desconhecido'))
     }
   }
 
@@ -377,68 +350,56 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
       const [movedPDF] = updatedPDFs.splice(currentIndex, 1)
       updatedPDFs.splice(newIndex, 0, movedPDF)
 
-      // Atualizar display_order
-      const reorderedPDFs = updatedPDFs.map((pdf, index) => ({
-        ...pdf,
-        display_order: index
-      }))
+      // Atualizar display_order de cada PDF via API
+      for (const [index, pdf] of updatedPDFs.entries()) {
+        const response = await fetch(`/api/courses/${courseId}/pdfs/${pdf.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            volume: pdf.volume,
+            title: pdf.title,
+            url: pdf.url,
+            pages: pdf.pages,
+            reading_time_minutes: pdf.reading_time_minutes,
+            text_content: pdf.text_content,
+            use_auto_conversion: pdf.use_auto_conversion,
+            cover_url: pdf.cover_url,
+            display_order: index
+          })
+        })
 
-      // Atualizar ordem diretamente no Supabase
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
-      
-      // Atualizar display_order de cada PDF
-      for (const pdf of reorderedPDFs) {
-        const { error } = await supabase
-          .from('course_pdfs')
-          .update({ display_order: pdf.display_order })
-          .eq('id', pdf.id)
-        
-        if (error) throw error
+        if (!response.ok) {
+          throw new Error('Erro ao reordenar PDF')
+        }
       }
-      
-      const response = { ok: true }
-      
-      if (!response.ok) {
-        throw new Error('Erro ao reordenar PDF')
-      }
-      
+
       await fetchCourse() // Recarregar dados
     } catch (err) {
-      alert('Erro ao reordenar PDF')
+      alert('Erro ao reordenar PDF: ' + (err instanceof Error ? err.message : 'Erro desconhecido'))
     }
   }
 
   const handleDeletePDF = async (pdfId: string) => {
     const pdf = course.course_pdfs.find(p => p.id === pdfId)
     if (!confirm(`Você tem certeza que deseja remover o PDF "${pdf?.title}"?\n\nEsta ação não pode ser desfeita.`)) return
-    
+
     try {
-        // Remover PDF da lista e atualizar curso
-        const updatedPDFs = course.course_pdfs.filter(pdf => pdf.id !== pdfId)
-        // Remover PDF diretamente do Supabase
-        const { getSupabaseClient } = await import('@/lib/supabase-admin')
-        const supabase = getSupabaseClient()
-        
-        const { error } = await supabase
-          .from('course_pdfs')
-          .delete()
-          .eq('id', pdfId)
-        
-        if (error) {
-          throw new Error('Erro ao remover PDF')
-        }
-        
-        const response = { ok: true }
-        
-        if (!response.ok) {
-          throw new Error('Erro ao remover PDF')
-        }
-        
-        alert("PDF removido com sucesso!")
-        await fetchCourse() // Recarregar dados
+      // Remover PDF via API (server-side com SERVICE_ROLE_KEY)
+      const response = await fetch(`/api/courses/${courseId}/pdfs/${pdfId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        const result = await response.json()
+        throw new Error(result.error || 'Erro ao remover PDF')
+      }
+
+      alert("PDF removido com sucesso!")
+      await fetchCourse() // Recarregar dados
     } catch (err) {
-      alert('Erro ao remover PDF')
+      alert('Erro ao remover PDF: ' + (err instanceof Error ? err.message : 'Erro desconhecido'))
     }
   }
 
