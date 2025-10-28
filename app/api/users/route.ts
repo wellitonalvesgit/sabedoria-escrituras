@@ -4,11 +4,11 @@ import { createClient } from '@supabase/supabase-js'
 // GET /api/users - Listar todos os usuários
 export async function GET(request: NextRequest) {
   try {
-    // Configurar cliente admin diretamente
-    const supabaseUrl = 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-    const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs'
-    
-    const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    // Usar configuração segura do Supabase
+    const client = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
       auth: {
         autoRefreshToken: false,
         persistSession: false
@@ -59,16 +59,17 @@ export async function GET(request: NextRequest) {
 // POST /api/users - Criar novo usuário
 export async function POST(request: NextRequest) {
   try {
-    // Configurar cliente admin diretamente
-    const supabaseUrl = 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-    const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs'
-    
-    const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
+    // Usar configuração segura do Supabase
+    const client = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
       }
-    })
+    )
     
     if (!client) {
       throw new Error('Supabase client not configured')

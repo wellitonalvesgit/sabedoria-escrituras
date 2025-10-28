@@ -14,8 +14,6 @@ export interface User {
   current_level: number
   access_days?: number
   access_expires_at?: string
-  allowed_categories?: string[]
-  blocked_categories?: string[]
   allowed_courses?: string[]
   blocked_courses?: string[]
   created_at: string
@@ -177,8 +175,6 @@ export async function signUp(email: string, password: string, name: string) {
           current_level: 1,
           access_days: 30,
           access_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          allowed_categories: [],
-          blocked_categories: [],
           allowed_courses: [],
           blocked_courses: []
         })

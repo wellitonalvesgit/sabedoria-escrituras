@@ -23,8 +23,6 @@ interface User {
   status: string
   access_days: number
   access_expires_at: string
-  allowed_categories: string[]
-  blocked_categories: string[]
   allowed_courses: string[]
   blocked_courses: string[]
   created_at: string
@@ -51,8 +49,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     role: "",
     status: "",
     access_days: 30,
-    allowed_categories: [] as string[],
-    blocked_categories: [] as string[],
     allowed_courses: [] as string[],
     blocked_courses: [] as string[]
   })
@@ -86,8 +82,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         role: data.user.role,
         status: data.user.status,
         access_days: data.user.access_days || 30,
-        allowed_categories: data.user.allowed_categories || [],
-        blocked_categories: data.user.blocked_categories || [],
         allowed_courses: allowedCourses,
         blocked_courses: cleanBlockedCourses
       })
@@ -340,52 +334,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   <p><strong>Expira em:</strong> {user.access_expires_at ? new Date(user.access_expires_at).toLocaleDateString('pt-BR') : 'Não definido'}</p>
                   <p><strong>Dias restantes:</strong> {user.access_expires_at ? Math.ceil((new Date(user.access_expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 'N/A'}</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Categorias Permitidas */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Categorias Permitidas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Selecione as categorias que o aluno PODE acessar</Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Se nenhuma categoria for selecionada, o aluno terá acesso a todas (exceto bloqueadas)
-                </p>
-                <CategorySelector
-                  selectedCategories={editedUser.allowed_categories}
-                  onChange={(categories) => setEditedUser(prev => ({ ...prev, allowed_categories: categories }))}
-                  multiple={true}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Categorias Bloqueadas */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <X className="h-5 w-5" />
-                Categorias Bloqueadas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Selecione as categorias que o aluno NÃO PODE acessar</Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Essas categorias serão sempre bloqueadas, mesmo se estiverem em "Permitidas"
-                </p>
-                <CategorySelector
-                  selectedCategories={editedUser.blocked_categories}
-                  onChange={(categories) => setEditedUser(prev => ({ ...prev, blocked_categories: categories }))}
-                  multiple={true}
-                />
               </div>
             </CardContent>
           </Card>

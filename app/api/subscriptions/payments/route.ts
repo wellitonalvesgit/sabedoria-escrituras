@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies()
 
-    const supabase = createServerClient(
+    // Usar ANON_KEY para verificar autenticação
+    const supabaseAnon = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Verificar autenticação
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await supabaseAnon.auth.getUser()
 
     if (!user) {
       return NextResponse.json(
@@ -38,8 +39,26 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Usar SERVICE_ROLE_KEY para bypassar RLS e melhorar performance
+    const supabaseAdmin = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+
     // Buscar todas as assinaturas do usuário para pegar os IDs
-    const { data: subscriptions } = await supabase
+    const { data: subscriptions } = await supabaseAdmin
       .from('subscriptions')
       .select('id')
       .eq('user_id', user.id)
@@ -52,8 +71,8 @@ export async function GET(request: NextRequest) {
 
     const subscriptionIds = subscriptions.map(s => s.id)
 
-    // Buscar pagamentos dessas assinaturas
-    const { data: payments, error } = await supabase
+    // Buscar pagamentos dessas assinaturas com melhor performance
+    const { data: payments, error } = await supabaseAdmin
       .from('payments')
       .select('*')
       .in('subscription_id', subscriptionIds)

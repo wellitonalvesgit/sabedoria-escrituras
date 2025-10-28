@@ -4,6 +4,10 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { SUPABASE_CONFIG } from './lib/supabase-config'
 
+// Cache simples para sessões (em produção usar Redis)
+const sessionCache = new Map<string, { user: any, timestamp: number }>()
+const CACHE_TTL = 30 * 1000 // 30 segundos
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -60,58 +64,57 @@ export async function middleware(request: NextRequest) {
     // Verificar se há uma sessão válida
     const { data: { session }, error } = await supabase.auth.getSession()
 
-    console.log('📊 Middleware - Dados da sessão:', { 
-      hasSession: !!session, 
-      hasUser: !!session?.user,
-      error: error?.message,
-      userId: session?.user?.id,
-      userEmail: session?.user?.email
-    })
-
     if (error || !session) {
-      console.log('🔒 Sessão inválida, redirecionando para login')
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    // Agora usar SERVICE_ROLE_KEY para buscar dados do usuário (bypassar RLS)
-    const supabaseAdmin = createServerClient(
-      SUPABASE_CONFIG.url,
-      SUPABASE_CONFIG.serviceRoleKey,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
+    // Verificar cache
+    const cachedSession = sessionCache.get(session.user.id)
+    const now = Date.now()
+    
+    let userData
+    if (cachedSession && (now - cachedSession.timestamp) < CACHE_TTL) {
+      // Usar cache
+      userData = cachedSession.user
+    } else {
+      // Buscar do banco
+      const supabaseAdmin = createServerClient(
+        SUPABASE_CONFIG.url,
+        SUPABASE_CONFIG.serviceRoleKey,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll()
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            },
           },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          },
-        },
+        }
+      )
+
+      const { data: dbUserData, error: userError } = await supabaseAdmin
+        .from('users')
+        .select('id, status, access_expires_at, role, allowed_courses')
+        .eq('id', session.user.id)
+        .single()
+
+      if (userError || !dbUserData) {
+        return NextResponse.redirect(new URL('/login', request.url))
       }
-    )
 
-    // Verificar se o usuário existe na tabela users
-    // Como estamos usando SERVICE_ROLE_KEY, o RLS não se aplica
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('users')
-      .select('id, status, access_expires_at, role, allowed_courses')
-      .eq('id', session.user.id)
-      .single()
-
-    console.log('📊 Middleware - Dados do usuário:', {
-      hasUserData: !!userData,
-      error: userError?.message,
-      userEmail: userData?.email,
-      userRole: userData?.role,
-      userStatus: userData?.status,
-      allowedCourses: userData?.allowed_courses?.length || 0
-    })
-
-    if (userError || !userData) {
-      console.log('🔒 Usuário não encontrado na base de dados:', userError?.message)
-      return NextResponse.redirect(new URL('/login', request.url))
+      userData = dbUserData
+      // Atualizar cache
+      sessionCache.set(session.user.id, { user: userData, timestamp: now })
+      
+      // Limpar cache antigo
+      if (sessionCache.size > 1000) {
+        sessionCache.clear()
+      }
     }
+
 
     // Verificar se o usuário está ativo
     if (userData.status !== 'active') {

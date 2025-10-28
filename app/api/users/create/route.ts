@@ -142,8 +142,6 @@ export async function POST(request: NextRequest) {
         status: 'active',
         access_days: access_days || 30,
         access_expires_at: accessExpiresAt.toISOString(),
-        allowed_categories: [],
-        blocked_categories: [],
         allowed_courses: [],
         blocked_courses: [],
         created_at: new Date().toISOString(),

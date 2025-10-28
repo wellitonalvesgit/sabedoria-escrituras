@@ -29,6 +29,10 @@ interface PremiumAccessGateProps {
   children: React.ReactNode
 }
 
+// Cache em memória para otimização de performance
+const accessCache = new Map<string, { result: AccessCheckResult, timestamp: number }>()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutos
+
 export function PremiumAccessGate({ courseId, children }: PremiumAccessGateProps) {
   const [checking, setChecking] = useState(true)
   const [accessResult, setAccessResult] = useState<AccessCheckResult | null>(null)
@@ -41,34 +45,60 @@ export function PremiumAccessGate({ courseId, children }: PremiumAccessGateProps
     try {
       setChecking(true)
 
-      // Obter o token de acesso da sessão do Supabase
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (!session) {
-        console.error('❌ Sem sessão no cliente')
-        setAccessResult({
-          canAccess: false,
-          reason: 'no_access',
-          message: 'Usuário não autenticado'
-        })
+      // Verificar cache primeiro
+      const cached = accessCache.get(courseId)
+      if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+        setAccessResult(cached.result)
         setChecking(false)
         return
       }
 
-      console.log('✅ Sessão encontrada no cliente, enviando para API')
+      // Obter sessão
+      const { data: { session } } = await supabase.auth.getSession()
 
-      // Enviar requisição com o token no header Authorization
-      const response = await fetch(`/api/courses/${courseId}/access`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
+      if (!session) {
+        const result = {
+          canAccess: false,
+          reason: 'no_access' as const,
+          message: 'Usuário não autenticado'
         }
-      })
+        setAccessResult(result)
+        setChecking(false)
+        return
+      }
 
-      const data = await response.json()
-      setAccessResult(data)
+      // Requisição com timeout de 5 segundos
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+      try {
+        const response = await fetch(`/api/courses/${courseId}/access`, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          signal: controller.signal
+        })
+
+        clearTimeout(timeoutId)
+        const data = await response.json()
+
+        // Armazenar no cache
+        accessCache.set(courseId, { result: data, timestamp: Date.now() })
+        setAccessResult(data)
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId)
+        if (fetchError.name === 'AbortError') {
+          setAccessResult({
+            canAccess: false,
+            reason: 'no_access',
+            message: 'Timeout na verificação'
+          })
+        } else {
+          throw fetchError
+        }
+      }
     } catch (error) {
-      console.error('Erro ao verificar acesso:', error)
       setAccessResult({
         canAccess: false,
         reason: 'no_access',

@@ -55,7 +55,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     checkForCompletion, 
     closeModal 
   } = useCongratulations()
-  const { user, hasAccessToCourse, hasAccessToCategory } = useCurrentUser()
+  const { user, hasAccessToCourse } = useCurrentUser()
   const [sessionDuration, setSessionDuration] = useState(0)
   const [lastPage, setLastPage] = useState(1)
   const [course, setCourse] = useState<Course | null>(null)
@@ -198,7 +198,15 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => window.history.back()}
+            onClick={() => {
+              // Usar router.push como fallback se window.history.back() não funcionar
+              if (window.history.length > 1) {
+                window.history.back()
+              } else {
+                // Fallback: ir para dashboard se não há histórico
+                window.location.href = '/dashboard'
+              }
+            }}
             className="inline-flex items-center gap-2 text-sm text-[#F3C77A] hover:text-[#FFD88A] transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />

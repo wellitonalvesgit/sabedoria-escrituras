@@ -9,8 +9,8 @@ export async function GET(
     const { slug } = await params
     
     // Configurar cliente admin diretamente
-    const supabaseUrl = 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-    const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs'
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
     
     const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {

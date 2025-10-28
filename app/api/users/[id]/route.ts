@@ -10,8 +10,8 @@ export async function GET(
     const { id } = await params
 
     // Configurar cliente admin diretamente
-    const supabaseUrl = 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-    const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs'
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
     const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
@@ -55,8 +55,8 @@ export async function PUT(
     console.log('📝 Dados recebidos:', body)
 
     // Configurar cliente admin diretamente
-    const supabaseUrl = 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-    const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs'
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
     const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
@@ -69,7 +69,7 @@ export async function PUT(
       throw new Error('Supabase client not configured')
     }
 
-    const { name, email, role, status, access_days, allowed_categories, blocked_categories, allowed_courses, blocked_courses } = body
+    const { name, email, role, status, access_days, allowed_courses, blocked_courses } = body
 
     // Calcular data de expiração
     const accessExpiresAt = new Date()
@@ -86,8 +86,6 @@ export async function PUT(
       status,
       access_days: access_days || 30,
       access_expires_at: accessExpiresAt.toISOString(),
-      allowed_categories: allowed_categories || [],
-      blocked_categories: blocked_categories || [],
       allowed_courses: allowed_courses || [],
       blocked_courses: blocked_courses || [],
       updated_at: new Date().toISOString()
@@ -125,8 +123,8 @@ export async function DELETE(
     const { id } = await params
 
     // Configurar cliente admin diretamente
-    const supabaseUrl = 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
-    const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs'
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
     const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {

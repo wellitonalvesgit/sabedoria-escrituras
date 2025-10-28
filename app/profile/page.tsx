@@ -48,9 +48,11 @@ export default function ProfilePage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
 
-  // Assinatura e pagamentos
+  // Assinatura e pagamentos - com loading states granulares
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [payments, setPayments] = useState<Payment[]>([])
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false)
+  const [paymentsLoading, setPaymentsLoading] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -62,21 +64,35 @@ export default function ProfilePage() {
 
   const fetchSubscriptionData = async () => {
     try {
-      // Buscar assinatura
-      const subResponse = await fetch('/api/subscriptions/current')
+      setSubscriptionLoading(true)
+      setPaymentsLoading(true)
+
+      // Fazer chamadas em paralelo para melhor performance
+      const [subResponse, paymentsResponse] = await Promise.all([
+        fetch('/api/subscriptions/current'),
+        fetch('/api/subscriptions/payments')
+      ])
+
+      // Processar resposta da assinatura
       if (subResponse.ok) {
         const data = await subResponse.json()
         setSubscription(data.subscription)
+      } else {
+        console.error('Erro ao buscar assinatura:', subResponse.status)
       }
 
-      // Buscar pagamentos
-      const paymentsResponse = await fetch('/api/subscriptions/payments')
+      // Processar resposta dos pagamentos
       if (paymentsResponse.ok) {
         const data = await paymentsResponse.json()
         setPayments(data.payments || [])
+      } else {
+        console.error('Erro ao buscar pagamentos:', paymentsResponse.status)
       }
     } catch (error) {
       console.error('Erro ao carregar dados de assinatura:', error)
+    } finally {
+      setSubscriptionLoading(false)
+      setPaymentsLoading(false)
     }
   }
 
@@ -416,7 +432,16 @@ export default function ProfilePage() {
           <TabsContent value="subscription">
             <div className="space-y-6">
               {/* Card de Assinatura */}
-              {subscription ? (
+              {subscriptionLoading ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                      <span>Carregando assinatura...</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : subscription ? (
                 <Card>
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -494,7 +519,22 @@ export default function ProfilePage() {
               )}
 
               {/* Histórico de Pagamentos */}
-              {payments.length > 0 && (
+              {paymentsLoading ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Histórico de Pagamentos</CardTitle>
+                    <CardDescription>Carregando pagamentos...</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-center py-8">
+                      <div className="flex items-center gap-2">
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                        <span>Carregando histórico...</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : payments.length > 0 ? (
                 <Card>
                   <CardHeader>
                     <CardTitle>Histórico de Pagamentos</CardTitle>
@@ -527,7 +567,7 @@ export default function ProfilePage() {
                     </div>
                   </CardContent>
                 </Card>
-              )}
+              ) : null}
             </div>
           </TabsContent>
         </Tabs>

@@ -99,7 +99,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       console.error('❌ SERVICE_ROLE_KEY não está configurada')
       // Definir SERVICE_ROLE_KEY diretamente no código (apenas para desenvolvimento)
       if (process.env.NODE_ENV === 'development') {
-        process.env.SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs'
+        // Usar SERVICE_ROLE_KEY do ambiente
         console.log('✅ SERVICE_ROLE_KEY definida manualmente para desenvolvimento')
       }
     } else {

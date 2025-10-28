@@ -63,6 +63,9 @@ interface Category {
   slug: string
   display_as_carousel: boolean
   display_order: number
+  courses?: Course[]
+  color?: string
+  icon?: string
 }
 
 export default function DashboardPage() {
@@ -73,23 +76,16 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const { user, loading: userLoading, sessionValid, hasAccessToCategory, hasAccessToCourse, isAccessExpired } = useCurrentUser()
+  const { user, loading: userLoading, sessionValid, hasAccessToCourse, isAccessExpired } = useCurrentUser()
 
   useEffect(() => {
     if (!userLoading) {
-      fetchCourses()
-      fetchCategories()
+      // Carregar cursos e categorias em paralelo para melhor performance
+      Promise.all([fetchCourses(), fetchCategories()])
     }
   }, [userLoading])
 
-  // Verificação de segurança para sessionValid
-  useEffect(() => {
-    if (sessionValid === undefined) {
-      console.log('⚠️ sessionValid é undefined, aguardando inicialização...')
-    } else {
-      console.log('✅ sessionValid inicializado:', sessionValid)
-    }
-  }, [sessionValid])
+  // sessionValid é gerenciado automaticamente pelo useCurrentUser
 
   // Aplicar filtros
   useEffect(() => {
@@ -98,13 +94,14 @@ export default function DashboardPage() {
     // Filtro por categorias
     if (selectedCategories.length > 0) {
       filtered = filtered.filter(course => {
-        // Verificar se o curso tem alguma das categorias selecionadas
-        // Por enquanto, vamos usar o campo category simples
-        // TODO: Implementar busca por course_categories quando disponível
-        return selectedCategories.some(catId => 
-          course.category === catId || 
-          course.tags?.includes(catId)
-        )
+        // Verificar se o curso tem alguma das categorias selecionadas usando course_categories
+        if (course.course_categories && course.course_categories.length > 0) {
+          return course.course_categories.some(cc => 
+            selectedCategories.includes(cc.category_id)
+          )
+        }
+        // Fallback: verificar se o curso tem categoria simples
+        return selectedCategories.includes(course.category_id || '')
       })
     }
 
@@ -124,49 +121,24 @@ export default function DashboardPage() {
   const fetchCourses = async () => {
     try {
       setLoading(true)
-      console.log('🔍 Iniciando busca de cursos...')
-      console.log('👤 Usuário atual:', user ? `${user.name} (${user.email})` : 'Não logado')
-      console.log('🔑 Dados do usuário:', user ? {
-        role: user.role,
-        status: user.status,
-        allowed_courses: user.allowed_courses,
-        allowed_categories: user.allowed_categories,
-        blocked_courses: user.blocked_courses,
-        blocked_categories: user.blocked_categories
-      } : 'N/A')
-      console.log('⏳ Loading state:', loading)
-      console.log('🔐 Session valid:', sessionValid)
-      
+
       const response = await fetch('/api/courses')
       if (!response.ok) {
         throw new Error('Erro ao carregar cursos')
       }
       const data = await response.json()
-      console.log('Dashboard - courses data:', data.courses)
 
       // Mostrar TODOS os cursos, mas marcar quais têm acesso
       const allCoursesWithAccess = (data.courses || []).map((course: Course) => {
-        console.log(`Verificando acesso ao curso: ${course.title}`)
-        
         // Verificar se o usuário tem acesso ao curso
-        // Se tem acesso direto ao curso, permitir independente da categoria
-        const hasAccess = user && sessionValid && (
-          hasAccessToCourse(course.id) || 
-          // Se não tem acesso direto ao curso, verificar se tem acesso via categoria
-          (course.course_categories && course.course_categories.length > 0 && 
-           course.course_categories.some((cc: any) => hasAccessToCategory(cc.category_id)))
-        )
-        
-        console.log(`${hasAccess ? '✅' : '🔒'} Curso ${course.title} - ${hasAccess ? 'Acesso liberado' : 'Acesso restrito'}`)
-        
+        const hasAccess = user && sessionValid && hasAccessToCourse(course.id)
+
         return {
           ...course,
           userHasAccess: hasAccess
         }
       })
 
-      console.log('Dashboard - todos os cursos:', allCoursesWithAccess.length)
-      console.log('Dashboard - cursos com acesso:', allCoursesWithAccess.filter(c => c.userHasAccess).length)
       setAllCourses(allCoursesWithAccess)
       setCourses(allCoursesWithAccess)
     } catch (err) {
@@ -193,10 +165,31 @@ export default function DashboardPage() {
     }
   }
 
-  // Agrupar cursos por categoria
+  // Agrupar cursos por categoria (usar courses filtrados, não allCourses)
   const getCoursesByCategory = (categoryId: string) => {
-    return courses.filter(course => course.category_id === categoryId)
+    return courses.filter(course => {
+      // Verificar se o curso tem a categoria especificada (usando course_categories)
+      if (course.course_categories && course.course_categories.length > 0) {
+        return course.course_categories.some(cc => cc.category_id === categoryId)
+      }
+      // Fallback: verificar se o curso tem categoria simples
+      return course.category_id === categoryId
+    })
   }
+
+  // Filtrar categorias se houver seleção específica
+  const categoriesToShow = selectedCategories.length > 0
+    ? categories.filter(cat => selectedCategories.includes(cat.id))
+    : categories
+
+  // Organizar categorias com seus cursos
+  const categoriesWithCourses = categoriesToShow
+    .map(cat => ({
+      ...cat,
+      courses: getCoursesByCategory(cat.id)
+    }))
+    .filter(cat => cat.courses.length > 0)
+    .sort((a, b) => a.display_order - b.display_order)
 
   // Categorias que devem ser exibidas como carrossel
   const carouselCategories = categories.filter(cat => cat.display_as_carousel)
@@ -296,11 +289,11 @@ export default function DashboardPage() {
           </Alert>
         )}
 
-        {user && (user.allowed_categories?.length || user.allowed_courses?.length) && (
+        {user && user.allowed_courses?.length && (
           <Alert className="mb-6 border-blue-500 bg-blue-500/10">
             <Shield className="h-4 w-4" />
             <AlertDescription className="text-blue-600">
-              Você tem acesso personalizado a {user.allowed_categories?.length || 0} categorias e {user.allowed_courses?.length || 0} cursos específicos.
+              Você tem acesso personalizado a {user.allowed_courses?.length || 0} cursos específicos.
             </AlertDescription>
           </Alert>
         )}
@@ -391,13 +384,13 @@ export default function DashboardPage() {
           <div className="text-center py-12">
             <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              {user?.allowed_categories?.length || user?.allowed_courses?.length
+              {user?.allowed_courses?.length
                 ? "Nenhum curso disponível para seu acesso"
                 : "Nenhum curso disponível"
               }
             </h3>
             <p className="text-muted-foreground mb-4">
-              {user?.allowed_categories?.length || user?.allowed_courses?.length
+              {user?.allowed_courses?.length
                 ? "Você não tem acesso aos cursos disponíveis ou não há conteúdo liberado para seu perfil."
                 : "Os cursos estão sendo carregados ou não há conteúdo disponível no momento."
               }
@@ -405,44 +398,78 @@ export default function DashboardPage() {
             <Button onClick={fetchCourses}>Tentar novamente</Button>
           </div>
         ) : (
-          <div>
-            {/* Categorias com Carrossel */}
-            {carouselCategories.map((category) => {
-              const categoryCourses = getCoursesByCategory(category.id)
-              if (categoryCourses.length === 0) return null
-
-              return (
-                <CategoryCarousel
-                  key={category.id}
-                  categoryName={category.name}
-                  categorySlug={category.slug}
-                  courses={categoryCourses.map(course => ({
-                    id: course.id,
-                    slug: course.slug,
-                    title: course.title,
-                    description: course.description,
-                    thumbnail_url: course.cover_url || null,
-                    instructor_name: course.author || null,
-                    duration_hours: course.reading_time_minutes ? Math.ceil(course.reading_time_minutes / 60) : null,
-                    level: null,
-                    rating: null,
-                    students_count: 0
-                  }))}
-                />
-              )
-            })}
-
-            {/* Cursos Standalone (grid tradicional) */}
-            {standaloneCourses.length > 0 && (
-              <div>
-                {carouselCategories.length > 0 && (
-                  <div className="mb-6">
-                    <h2 className="text-2xl font-bold tracking-tight text-foreground">Outros Cursos</h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {standaloneCourses.length} {standaloneCourses.length === 1 ? 'curso disponível' : 'cursos disponíveis'}
-                    </p>
+          <div className="space-y-12">
+            {/* Mostrar TODAS as categorias organizadas */}
+            {categoriesWithCourses.map((category) => (
+              <div key={category.id} className="space-y-4">
+                {/* Cabeçalho da Categoria - apenas para categorias sem carrossel */}
+                {!category.display_as_carousel && (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-2xl font-bold tracking-tight text-foreground">
+                        {category.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {category.courses.length} {category.courses.length === 1 ? 'curso' : 'cursos'}
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {category.slug}
+                    </Badge>
                   </div>
                 )}
+
+                {/* Cursos da Categoria */}
+                {category.display_as_carousel ? (
+                  <CategoryCarousel
+                    categoryName={category.name}
+                    categorySlug={category.slug}
+                    courses={category.courses.map(course => ({
+                      id: course.id,
+                      slug: course.slug,
+                      title: course.title,
+                      description: course.description,
+                      thumbnail_url: course.cover_url || null,
+                      instructor_name: course.author || null,
+                      duration_hours: course.reading_time_minutes ? Math.ceil(course.reading_time_minutes / 60) : null,
+                      level: null,
+                      rating: null,
+                      students_count: 0
+                    }))}
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {category.courses.map((course) => (
+                      <CourseCard
+                        key={course.id}
+                        course={{
+                          id: course.id,
+                          slug: course.slug,
+                          title: course.title,
+                          description: course.description,
+                          readingTimeMinutes: course.reading_time_minutes || 0,
+                          coverUrl: course.cover_url,
+                          tags: course.tags,
+                          userHasAccess: course.userHasAccess
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Cursos sem categoria */}
+            {standaloneCourses.length > 0 && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-2xl font-bold tracking-tight text-foreground">
+                    Outros Cursos
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {standaloneCourses.length} {standaloneCourses.length === 1 ? 'curso disponível' : 'cursos disponíveis'}
+                  </p>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {standaloneCourses.map((course) => (
                     <CourseCard

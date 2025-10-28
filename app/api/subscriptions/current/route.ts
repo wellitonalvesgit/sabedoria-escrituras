@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies()
 
-    const supabase = createServerClient(
+    // Usar ANON_KEY para verificar autenticação
+    const supabaseAnon = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Verificar autenticação
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await supabaseAnon.auth.getUser()
 
     if (!user) {
       return NextResponse.json(
@@ -38,8 +39,26 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Buscar assinatura mais recente do usuário
-    const { data: subscription, error } = await supabase
+    // Usar SERVICE_ROLE_KEY para bypassar RLS e melhorar performance
+    const supabaseAdmin = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+
+    // Buscar assinatura mais recente do usuário com melhor performance
+    const { data: subscription, error } = await supabaseAdmin
       .from('subscriptions')
       .select(`
         *,

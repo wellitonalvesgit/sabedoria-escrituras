@@ -2,23 +2,43 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { supabase } from '@/lib/supabase'
 
+// Cache em memória para otimização de performance
+let coursesCache: { data: any[], timestamp: number } | null = null
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutos
+
 // GET /api/courses - Listar todos os cursos
 export async function GET(request: NextRequest) {
   try {
-    // Para leitura de cursos, sempre usar cliente público (não precisa de autenticação)
+    // Verificar cache primeiro
+    if (coursesCache && (Date.now() - coursesCache.timestamp) < CACHE_TTL) {
+      return NextResponse.json({ courses: coursesCache.data }, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        }
+      })
+    }
+
     const client = supabase
-    
+
     if (!client) {
       throw new Error('Supabase client not configured')
     }
-    
-    console.log('Using Supabase public client for courses')
-    
+
     // Buscar cursos com seus PDFs e categorias
     const { data: courses, error } = await client
       .from('courses')
       .select(`
-        *,
+        id,
+        slug,
+        title,
+        description,
+        author,
+        pages,
+        reading_time_minutes,
+        cover_url,
+        status,
+        created_at,
+        updated_at,
         course_pdfs (
           id,
           volume,
@@ -82,11 +102,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ courses: mockCourses })
     }
 
-    return NextResponse.json({ courses })
+    // Atualizar cache
+    coursesCache = { data: courses || [], timestamp: Date.now() }
+
+    return NextResponse.json({ courses }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      }
+    })
   } catch (error) {
     console.error('Erro na API de cursos:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
+}
+
+// Função para invalidar o cache (útil após criar/atualizar cursos)
+export function invalidateCoursesCache() {
+  coursesCache = null
 }
 
 // POST /api/courses - Criar novo curso

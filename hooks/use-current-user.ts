@@ -19,43 +19,13 @@ export function useCurrentUser() {
       setTimeUntilExpiration(sessionManager.getTimeUntilExpiration())
     })
 
-    // Atualizar timer de expiração a cada minuto
-    const interval = setInterval(() => {
-      setTimeUntilExpiration(sessionManager.getTimeUntilExpiration())
-      setSessionValid(sessionManager.isSessionValid())
-    }, 60000)
-
     return () => {
       unsubscribe()
-      clearInterval(interval)
     }
   }, [])
 
   // Funções de verificação de acesso
-  const hasAccessToCategory = (categoryId: string): boolean => {
-    if (!user) return false
-    if (user.role === 'admin') return true
-    if (!sessionValid) return false
-
-    // Verificar se a categoria não está bloqueada
-    if (user.blocked_categories && user.blocked_categories.includes(categoryId)) return false
-
-    // NOVO: Verificar se o usuário tem período de acesso válido (access_expires_at)
-    // Isso dá acesso a todas as categorias durante o período de teste
-    if (user.access_expires_at) {
-      const expirationDate = new Date(user.access_expires_at)
-      const now = new Date()
-      if (expirationDate > now) {
-        return true // Acesso via período de teste válido
-      }
-    }
-
-    // Verificar se a categoria está explicitamente permitida
-    if (user.allowed_categories && user.allowed_categories.includes(categoryId)) return true
-
-    // Se não há categorias específicas permitidas, permitir todas (exceto bloqueadas)
-    return !user.allowed_categories || user.allowed_categories.length === 0
-  }
+  // NOTA: Removido hasAccessToCategory - controle apenas por curso individual
 
   const hasAccessToCourse = (courseId: string): boolean => {
     if (!user) return false
@@ -123,7 +93,6 @@ export function useCurrentUser() {
     loading,
     sessionValid,
     timeUntilExpiration,
-    hasAccessToCategory,
     hasAccessToCourse,
     isAccessExpired,
     getAccessDaysRemaining,
