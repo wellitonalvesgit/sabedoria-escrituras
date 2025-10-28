@@ -109,6 +109,46 @@ export const BibleDigitalReader = ({
 
   const currentTemp = readingTemperatures[readingMode]
 
+  // Carregar configurações salvas do localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('kindle-settings')
+      if (saved) {
+        const settings = JSON.parse(saved)
+        if (settings.fontSize !== undefined) setFontSize(settings.fontSize)
+        if (settings.lineHeight !== undefined) setLineHeight(settings.lineHeight)
+        if (settings.textAlign !== undefined) setTextAlign(settings.textAlign)
+        if (settings.showChapterNumbers !== undefined) setShowChapterNumbers(settings.showChapterNumbers)
+        if (settings.showVerseNumbers !== undefined) setShowVerseNumbers(settings.showVerseNumbers)
+        if (settings.brightness !== undefined) setBrightness(settings.brightness)
+        if (settings.contrast !== undefined) setContrast(settings.contrast)
+        if (settings.warmth !== undefined) setWarmth(settings.warmth)
+        console.log('📖 Configurações do Kindle carregadas do localStorage')
+      }
+    } catch (error) {
+      console.error('Erro ao carregar configurações do localStorage:', error)
+    }
+  }, [])
+
+  // Salvar configurações no localStorage sempre que mudarem
+  useEffect(() => {
+    try {
+      const settings = {
+        fontSize,
+        lineHeight,
+        textAlign,
+        showChapterNumbers,
+        showVerseNumbers,
+        brightness,
+        contrast,
+        warmth
+      }
+      localStorage.setItem('kindle-settings', JSON.stringify(settings))
+    } catch (error) {
+      console.error('Erro ao salvar configurações no localStorage:', error)
+    }
+  }, [fontSize, lineHeight, textAlign, showChapterNumbers, showVerseNumbers, brightness, contrast, warmth])
+
   // Carregar texto pré-configurado ou tentar conversão automática
   useEffect(() => {
     const loadText = async () => {
