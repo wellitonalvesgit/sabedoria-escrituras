@@ -32,7 +32,11 @@ export async function GET(
 
     if (authError || !user) {
       return NextResponse.json(
-        { canAccess: false, reason: 'Você precisa estar logado.' },
+        {
+          canAccess: false,
+          reason: 'no_access' as const,
+          message: 'Você precisa estar logado para acessar este curso.'
+        },
         { status: 401 }
       )
     }
@@ -54,6 +58,23 @@ export async function GET(
       }
     )
 
+    // Buscar dados do usuário para verificar role
+    const { data: userData } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('id', user.id)
+      .single()
+
+    // Se for admin, liberar acesso total
+    if (userData?.role === 'admin') {
+      return NextResponse.json({
+        canAccess: true,
+        reason: 'admin_access' as const,
+        message: 'Acesso administrativo concedido',
+        course: { id: courseId, title: '', is_free: false }
+      })
+    }
+
     const { data: course } = await supabase
       .from('courses')
       .select('id, title, is_free')
@@ -62,9 +83,27 @@ export async function GET(
 
     if (!course) {
       return NextResponse.json(
-        { canAccess: false, reason: 'Curso não encontrado.' },
+        {
+          canAccess: false,
+          reason: 'no_access' as const,
+          message: 'Curso não encontrado.'
+        },
         { status: 404 }
       )
+    }
+
+    // Se o curso é gratuito, liberar acesso
+    if (course.is_free) {
+      return NextResponse.json({
+        canAccess: true,
+        reason: 'free_course' as const,
+        message: 'Este curso está disponível gratuitamente para todos os usuários',
+        course: {
+          id: course.id,
+          title: course.title,
+          is_free: course.is_free
+        }
+      })
     }
 
     const { data: subscriptions } = await supabase
@@ -77,17 +116,31 @@ export async function GET(
     const subscriptionStatus = getSubscriptionStatus(subscriptions || [])
     const accessResult = canAccessCourse(course.is_free, subscriptionStatus)
 
+    // Determinar reason baseado no status
+    let apiReason: 'free_course' | 'premium_access' | 'trial_access' | 'admin_access' | 'no_access' = 'no_access'
+
+    if (accessResult.canAccess) {
+      if (subscriptionStatus.isPremium) {
+        apiReason = 'premium_access'
+      } else if (subscriptionStatus.isInTrial) {
+        apiReason = 'trial_access'
+      }
+    }
+
     return NextResponse.json({
       canAccess: accessResult.canAccess,
-      reason: accessResult.reason,
-      courseTitle: course.title,
-      isFree: course.is_free,
-      subscriptionStatus: {
-        isInTrial: subscriptionStatus.isInTrial,
-        isTrialExpired: subscriptionStatus.isTrialExpired,
-        isPremium: subscriptionStatus.isPremium,
-        trialDaysLeft: subscriptionStatus.trialDaysLeft,
+      reason: apiReason,
+      message: accessResult.reason,
+      course: {
+        id: course.id,
+        title: course.title,
+        is_free: course.is_free
       },
+      subscription: subscriptions && subscriptions.length > 0 ? {
+        status: subscriptions[0].status,
+        trial_ends_at: subscriptions[0].trial_ends_at,
+        current_period_end: subscriptions[0].current_period_end
+      } : undefined
     })
   } catch (error) {
     console.error('Erro ao verificar acesso:', error)

@@ -238,7 +238,102 @@ Você precisa estar logado para acessar este curso.
 
 ---
 
-## 🛠️ COMO USAR NO CÓDIGO
+## ✅ INTEGRAÇÃO COMPLETA
+
+### Sistema já está 100% integrado!
+
+A página de curso (`app/course/[id]/page.tsx`) já usa o componente `PremiumAccessGate` que faz toda a verificação automaticamente:
+
+```tsx
+<PremiumAccessGate courseId={course.id}>
+  {/* Conteúdo do curso só é mostrado se tiver acesso */}
+  <PDFVolumeSelector ... />
+  <OriginalPDFViewer ... />
+  <DigitalMagazineViewer ... />
+</PremiumAccessGate>
+```
+
+### Como funciona a integração:
+
+1. **PremiumAccessGate** chama a API `/api/courses/[id]/access`
+2. **API verifica** em ordem:
+   - ✅ Admin? → Libera acesso total
+   - ✅ Curso free? → Libera para todos
+   - ✅ Usuário premium? → Libera acesso
+   - ✅ Usuário em trial ativo? → Libera APENAS cursos free
+   - ❌ Trial expirado? → Bloqueia acesso
+3. **Componente mostra**:
+   - Badge de status (Admin/Trial/Premium/Free)
+   - Conteúdo completo do curso OU
+   - Tela de bloqueio com CTA para upgrade
+
+### Respostas da API por cenário:
+
+**Admin:**
+```json
+{
+  "canAccess": true,
+  "reason": "admin_access",
+  "message": "Acesso administrativo concedido"
+}
+```
+
+**Curso Gratuito:**
+```json
+{
+  "canAccess": true,
+  "reason": "free_course",
+  "message": "Este curso está disponível gratuitamente para todos"
+}
+```
+
+**Premium Ativo:**
+```json
+{
+  "canAccess": true,
+  "reason": "premium_access",
+  "message": "Você tem acesso como assinante premium",
+  "subscription": {
+    "status": "active",
+    "current_period_end": "2025-11-28"
+  }
+}
+```
+
+**Trial Ativo (curso free):**
+```json
+{
+  "canAccess": true,
+  "reason": "trial_access",
+  "message": "Acesso durante o período de teste",
+  "subscription": {
+    "status": "trial",
+    "trial_ends_at": "2025-11-04"
+  }
+}
+```
+
+**Trial Ativo tentando acessar Premium:**
+```json
+{
+  "canAccess": false,
+  "reason": "no_access",
+  "message": "Este curso é exclusivo para assinantes Premium..."
+}
+```
+
+**Trial Expirado:**
+```json
+{
+  "canAccess": false,
+  "reason": "no_access",
+  "message": "Seu período de teste de 7 dias expirou..."
+}
+```
+
+---
+
+## 🛠️ COMO USAR NO CÓDIGO (REFERÊNCIA)
 
 ### Na página do curso (`app/course/[id]/page.tsx`):
 
@@ -294,9 +389,10 @@ export default function CoursePage({ params }: { params: { id: string } }) {
 - [x] Helper `getSubscriptionStatus()`
 - [x] Helper `canAccessCourse()`
 - [x] API `GET /api/courses/[id]/access`
-- [x] Componente `CourseAccessBlocked`
-- [ ] Integrar na página `/course/[id]`
-- [ ] Integrar na página `/course/[id]/pdf/[pdfId]`
+- [x] Componente `CourseAccessBlocked` (não usado - PremiumAccessGate já existe)
+- [x] ✅ **Integrado na página `/course/[id]`** - Usando `PremiumAccessGate`
+- [x] ✅ **Lógica de Admin adicionada** - Admins têm acesso total
+- [x] ✅ **API atualizada** - Retorna formato correto para PremiumAccessGate
 - [ ] Adicionar badges "Free" vs "Premium" nos cards de cursos
 - [ ] Testar com usuários em diferentes status
 - [ ] Documentar para equipe
