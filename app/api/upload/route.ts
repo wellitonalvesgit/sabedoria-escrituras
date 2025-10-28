@@ -6,14 +6,14 @@ export async function POST(request: NextRequest) {
     const data = await request.formData()
     const file: File | null = data.get('file') as unknown as File
     const type: string = data.get('type') as string // 'cover' ou 'pdf'
-    const courseId: string = data.get('courseId') as string
+    const courseId: string | null = data.get('courseId') as string | null
 
     if (!file) {
       return NextResponse.json({ success: false, error: 'Nenhum arquivo enviado' })
     }
 
-    if (!type || !courseId) {
-      return NextResponse.json({ success: false, error: 'Tipo e ID do curso são obrigatórios' })
+    if (!type) {
+      return NextResponse.json({ success: false, error: 'Tipo é obrigatório' })
     }
 
     // Validar tipo de arquivo
@@ -29,8 +29,12 @@ export async function POST(request: NextRequest) {
 
     // Gerar nome único para o arquivo
     const timestamp = Date.now()
+    const randomStr = Math.random().toString(36).substring(7)
     const fileExtension = file.name.split('.').pop()
-    const fileName = `${courseId}_${timestamp}.${fileExtension}`
+    // Se não tem courseId, usar timestamp + random para nome único
+    const fileName = courseId
+      ? `${courseId}_${timestamp}.${fileExtension}`
+      : `temp_${timestamp}_${randomStr}.${fileExtension}`
     const filePath = `${type === 'cover' ? 'covers' : 'pdfs'}/${fileName}`
 
     // Converter arquivo para buffer
