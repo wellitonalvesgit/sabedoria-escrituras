@@ -4,8 +4,9 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { BookOpen, Download, Clock, FileText } from "lucide-react"
+import { BookOpen, Download, Clock, FileText, Play } from "lucide-react"
 import { CoursePDF } from "@/lib/courses-data"
+import { YouTubeVideoPlayer } from "@/components/youtube-video-player"
 
 interface PDFVolumeSelectorProps {
   pdfs: CoursePDF[]
@@ -131,6 +132,18 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
               Baixar PDF
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Player de Vídeo do YouTube */}
+      {selectedPDF && selectedPDF.youtube_url && (
+        <div className="mt-6">
+          <YouTubeVideoPlayer
+            youtubeUrl={selectedPDF.youtube_url}
+            volumeTitle={selectedPDF.title}
+            volumeNumber={selectedPDF.volume}
+            className="w-full"
+          />
         </div>
       )}
     </div>

@@ -7,6 +7,7 @@ export interface CoursePDF {
   textContent?: string  // Texto pré-carregado para modo Kindle (configurado pelo admin)
   useAutoConversion?: boolean  // Se true, tenta conversão automática; se false, usa textContent
   cover_url?: string  // URL da capa do volume
+  youtube_url?: string  // URL do vídeo do YouTube
 }
 
 export interface Course {

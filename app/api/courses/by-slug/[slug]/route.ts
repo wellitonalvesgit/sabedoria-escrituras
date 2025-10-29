@@ -37,7 +37,8 @@ export async function GET(
           text_content,
           use_auto_conversion,
           display_order,
-          cover_url
+          cover_url,
+          youtube_url
         )
       `)
       .eq('slug', slug)

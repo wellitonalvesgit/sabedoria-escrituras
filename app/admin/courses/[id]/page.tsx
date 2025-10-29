@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { use } from "react"
-import { ArrowLeft, Save, Plus, Trash2, Edit, Eye, FileText, Upload, Download, Loader2, Copy, ArrowUp, ArrowDown, Gift } from "lucide-react"
+import { ArrowLeft, Save, Plus, Trash2, Edit, Eye, FileText, Upload, Download, Loader2, Copy, ArrowUp, ArrowDown, Gift, Youtube } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,7 @@ import { GoogleDriveLink } from "@/components/google-drive-link"
 import { ImageUpload } from "@/components/image-upload"
 import { CategorySelector } from "@/components/category-selector"
 import { VolumeCoverUpload } from "@/components/volume-cover-upload"
+import { YouTubeUrlManager } from "@/components/youtube-url-manager"
 import Link from "next/link"
 
 interface CoursePDF {
@@ -28,6 +29,7 @@ interface CoursePDF {
   use_auto_conversion?: boolean
   display_order: number
   cover_url?: string
+  youtube_url?: string
 }
 
 interface Course {
@@ -1192,6 +1194,41 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                       onUploadError={(error) => {
                         console.error('Erro ao fazer upload da capa:', error)
                         alert('Erro ao fazer upload da capa: ' + error)
+                      }}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* YouTube Videos Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Youtube className="h-5 w-5 text-red-600" />
+                  Gerenciar Vídeos dos Volumes
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Adicione vídeos do YouTube para cada volume. Os usuários poderão escolher entre assistir na plataforma (embed) ou abrir no YouTube.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {course.course_pdfs.map((pdf) => (
+                    <YouTubeUrlManager
+                      key={pdf.id}
+                      volumeId={pdf.id}
+                      courseId={courseId}
+                      currentYoutubeUrl={pdf.youtube_url}
+                      volumeTitle={pdf.title}
+                      volumeNumber={pdf.volume}
+                      onUrlUpdate={(url) => {
+                        console.log('URL do YouTube atualizada:', url)
+                        fetchCourse() // Recarregar dados
+                      }}
+                      onUrlRemove={() => {
+                        console.log('URL do YouTube removida')
+                        fetchCourse() // Recarregar dados
                       }}
                     />
                   ))}
