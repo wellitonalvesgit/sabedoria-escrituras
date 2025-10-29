@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Upload, X, Check, FileText, Image, Loader2 } from "lucide-react"
+import { Upload, X, Check, FileText, Image as ImageIcon, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -133,7 +133,7 @@ export const FileUpload = ({
             <div className="space-y-4">
               <div className="flex items-center justify-center w-16 h-16 mx-auto bg-primary/10 rounded-full">
                 {isImage ? (
-                  <Image className="h-8 w-8 text-primary" />
+                  <ImageIcon className="h-8 w-8 text-primary" />
                 ) : (
                   <FileText className="h-8 w-8 text-primary" />
                 )}
