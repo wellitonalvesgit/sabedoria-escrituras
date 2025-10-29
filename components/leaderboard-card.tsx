@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import clsx from "clsx"
 import type { LeaderboardEntry } from "../types"
+import Image from "next/image"
 
 interface LeaderboardCardProps {
   entry: LeaderboardEntry
@@ -31,7 +32,7 @@ export const LeaderboardCard = ({ entry, index }: LeaderboardCardProps) => {
         <div className="relative">
           <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-[#2F271D] text-lg font-semibold">
             {entry.photoUrl ? (
-              <img src={entry.photoUrl} alt={entry.displayName} className="h-full w-full object-cover" />
+              <Image src={entry.photoUrl} alt={entry.displayName} fill className="object-cover" />
             ) : (
               entry.displayName.slice(0, 2).toUpperCase()
             )}

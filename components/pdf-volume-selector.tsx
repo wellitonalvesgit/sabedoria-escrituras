@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { BookOpen, Download, Clock, FileText, Play } from "lucide-react"
 import { CoursePDF } from "@/lib/courses-data"
 import { YouTubeVideoPlayer } from "@/components/youtube-video-player"
+import Image from "next/image"
 
 interface PDFVolumeSelectorProps {
   pdfs: CoursePDF[]
@@ -40,10 +41,11 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
             {/* Capa do Volume */}
             <div className="relative aspect-[3/4] w-full overflow-hidden bg-gradient-to-br from-[#2E261D] to-[#16130F]">
               {pdf.cover_url ? (
-                <img
+                <Image
                   src={pdf.cover_url}
                   alt={`Capa ${pdf.title}`}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-110"
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">

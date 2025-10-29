@@ -5,6 +5,7 @@ import { Play, ExternalLink, Youtube, Maximize2, Minimize2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import Image from "next/image"
 
 interface YouTubeVideoPlayerProps {
   youtubeUrl?: string
@@ -120,10 +121,11 @@ export const YouTubeVideoPlayer = ({
           ) : (
             // Thumbnail com Link Externo
             <div className="relative w-full h-full group cursor-pointer">
-              <img
+              <Image
                 src={thumbnailUrl}
                 alt={`Thumbnail do vídeo ${volumeTitle}`}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
                 onError={(e) => {
                   // Fallback para thumbnail padrão se a imagem não carregar
                   e.currentTarget.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`

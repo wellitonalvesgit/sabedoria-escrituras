@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import Image from "next/image"
 
 interface Course {
   id: string
@@ -124,10 +125,11 @@ export function CategoryCarousel({ courses, categoryName, categorySlug }: Catego
                     {/* Thumbnail */}
                     <div className="aspect-video w-full bg-gradient-to-br from-primary/20 to-primary/5 relative overflow-hidden">
                       {course.thumbnail_url ? (
-                        <img
+                        <Image
                           src={course.thumbnail_url}
                           alt={course.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">

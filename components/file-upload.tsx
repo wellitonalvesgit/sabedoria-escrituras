@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
 interface FileUploadProps {
   type: 'cover' | 'pdf'
@@ -87,11 +88,14 @@ export const FileUpload = ({
             <div className="space-y-4">
               {type === 'cover' && (uploadedFile?.url || currentImageUrl) ? (
                 <div className="flex justify-center">
-                  <img 
-                    src={uploadedFile?.url || currentImageUrl} 
-                    alt="Capa do curso" 
-                    className="w-32 h-32 object-cover rounded-lg border-2 border-border"
-                  />
+                  <div className="relative w-32 h-32 rounded-lg border-2 border-border overflow-hidden">
+                    <Image 
+                      src={uploadedFile?.url || currentImageUrl} 
+                      alt="Capa do curso" 
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full">
