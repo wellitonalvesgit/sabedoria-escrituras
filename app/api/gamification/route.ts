@@ -25,8 +25,9 @@ export async function GET(request: NextRequest) {
     )
 
     // Verificar autenticação
-    const { data: { user } } = await supabaseAnon.auth.getUser()
-    if (!user) {
+    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser()
+    if (authError || !user) {
+      console.error('Erro de autenticação na API gamification:', authError)
       return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
     }
 
@@ -90,8 +91,9 @@ export async function POST(request: NextRequest) {
     )
 
     // Verificar autenticação
-    const { data: { user } } = await supabaseAnon.auth.getUser()
-    if (!user) {
+    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser()
+    if (authError || !user) {
+      console.error('Erro de autenticação na API gamification:', authError)
       return NextResponse.json({ error: 'Usuário não autenticado' }, { status: 401 })
     }
 

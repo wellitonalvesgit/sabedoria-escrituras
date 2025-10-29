@@ -5,6 +5,7 @@ import { Upload, X, Check, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import Image from "next/image"
 
 interface ImageUploadProps {
   onImageSelect: (file: File) => void
@@ -93,11 +94,14 @@ export function ImageUpload({ onImageSelect, currentImageUrl, className }: Image
             
             {currentImageUrl && !uploadedFile && (
               <div className="mb-4">
-                <img 
-                  src={currentImageUrl} 
-                  alt="Capa atual" 
-                  className="w-full h-32 object-cover rounded-lg border border-border"
-                />
+                <div className="relative w-full h-32 rounded-lg border border-border overflow-hidden">
+                  <Image 
+                    src={currentImageUrl} 
+                    alt="Capa atual" 
+                    fill
+                    className="object-cover"
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground mt-2">Capa atual</p>
               </div>
             )}

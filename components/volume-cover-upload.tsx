@@ -5,6 +5,7 @@ import { Upload, X, Check, Image, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import ImageComponent from "next/image"
 
 interface VolumeCoverUploadProps {
   volumeId: string
@@ -94,11 +95,14 @@ export const VolumeCoverUpload = ({
           {displayImage ? (
             <div className="space-y-4">
               <div className="flex justify-center">
-                <img 
-                  src={displayImage} 
-                  alt={`Capa ${volumeTitle}`} 
-                  className="w-32 h-40 object-cover rounded-lg border-2 border-border shadow-lg"
-                />
+                <div className="relative w-32 h-40 rounded-lg border-2 border-border shadow-lg overflow-hidden">
+                  <ImageComponent 
+                    src={displayImage} 
+                    alt={`Capa ${volumeTitle}`} 
+                    fill
+                    className="object-cover"
+                  />
+                </div>
               </div>
               <div>
                 <h3 className="font-semibold text-green-800">

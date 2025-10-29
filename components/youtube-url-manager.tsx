@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import Image from "next/image"
 
 interface YouTubeUrlManagerProps {
   volumeId: string
@@ -186,10 +187,11 @@ export const YouTubeUrlManager = ({
                       />
                     ) : (
                       <div className="relative w-full h-full group cursor-pointer">
-                        <img
+                        <Image
                           src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
                           alt={`Thumbnail ${volumeTitle}`}
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
                         />
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/50 transition-colors">
                           <div className="text-center text-white">
@@ -277,10 +279,11 @@ export const YouTubeUrlManager = ({
               <div className="space-y-2">
                 <Label>Preview</Label>
                 <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                  <img
+                  <Image
                     src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
                     alt="Preview do vídeo"
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
                   />
                 </div>
               </div>

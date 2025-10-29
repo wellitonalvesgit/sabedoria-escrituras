@@ -3,6 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/lib/supabase"
 
 export interface Achievement {
   id: string
@@ -140,6 +141,13 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
 
   const loadStatsFromDatabase = async () => {
     try {
+      // Verificar se há usuário autenticado antes de fazer a chamada
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        console.log('Usuário não autenticado, pulando carregamento de stats')
+        return
+      }
+
       const response = await fetch('/api/gamification')
       if (response.ok) {
         const data = await response.json()
@@ -152,6 +160,8 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
             pagesRead: Math.floor((data.stats.total_reading_minutes || 0) / 2), // Estimativa
           }))
         }
+      } else if (response.status === 401) {
+        console.log('Usuário não autenticado para API gamification')
       }
     } catch (error) {
       console.error('Erro ao carregar stats do banco:', error)
