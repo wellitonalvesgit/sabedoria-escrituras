@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { signIn, signUp, resetPassword, sendMagicLink } from "@/lib/auth"
+import { signUp, resetPassword, sendMagicLink } from "@/lib/auth"
 
 interface LoginModalProps {
   onClose: () => void
@@ -32,15 +32,31 @@ export function LoginModal({ onClose }: LoginModalProps) {
     setAlert(null)
 
     try {
-      const result = await signIn(email, password)
-      if (result.success) {
-        setAlert({ type: 'success', message: 'Login realizado com sucesso!' })
-        // Redirecionar para dashboard após um breve delay
-        setTimeout(() => {
-          window.location.href = '/dashboard'
-        }, 1000)
-      } else {
+      // Usar a mesma API que a página /login para consistência
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || result.error) {
         setAlert({ type: 'error', message: result.error || 'Erro ao fazer login' })
+        return
+      }
+
+      if (result.success && result.user) {
+        setAlert({ type: 'success', message: 'Login realizado com sucesso!' })
+        
+        // Redirecionar baseado no role (mesma lógica da página /login)
+        setTimeout(() => {
+          if (result.user.role === 'admin') {
+            window.location.href = '/admin'
+          } else {
+            window.location.href = '/dashboard'
+          }
+        }, 1000)
       }
     } catch (error) {
       setAlert({ type: 'error', message: 'Erro inesperado ao fazer login' })
