@@ -2,35 +2,51 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { supabase } from '@/lib/supabase'
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
 // Função auxiliar para verificar se usuário é admin
 async function isAdmin(request: NextRequest): Promise<boolean> {
   try {
-    const cookieStore = await cookies()
+    // 1) Tentar via Authorization header (Bearer token) — funciona melhor no App Router
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const anonClient = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
+        global: { headers: { Authorization: authHeader } },
+        auth: { persistSession: false, autoRefreshToken: false }
+      })
 
-    const supabase = createServerClient(
+      const { data: userResp } = await anonClient.auth.getUser()
+      const userId = userResp?.user?.id
+      if (!userId) return false
+
+      const client = supabaseAdmin || anonClient
+      const { data: userData } = await client
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single()
+
+      if (userData?.role === 'admin') return true
+    }
+
+    // 2) Fallback para cookies (quando sessão está em cookies HTTP)
+    const cookieStore = await cookies()
+    const cookieClient = createServerClient(
       SUPABASE_CONFIG.url,
       SUPABASE_CONFIG.serviceRoleKey,
       {
         cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          },
+          getAll() { return cookieStore.getAll() },
+          setAll(cookiesToSet) { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) },
         },
       }
     )
-
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session } } = await cookieClient.auth.getSession()
     if (!session) return false
 
-    const { data: userData } = await supabase
+    const { data: userData } = await (supabaseAdmin || cookieClient)
       .from('users')
       .select('role')
       .eq('id', session.user.id)

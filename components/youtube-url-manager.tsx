@@ -64,9 +64,17 @@ export const YouTubeUrlManager = ({
 
     try {
       // Atualizar via API protegida (server-side) para não expor Service Role no client
+      // Incluir token de sessão no Authorization para a API validar admin
+      const { supabase } = await import('@/lib/supabase')
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+
       const response = await fetch(`/api/courses/${courseId}/pdfs/${volumeId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+        },
         body: JSON.stringify({ youtube_url: youtubeUrl || null })
       })
 
@@ -89,9 +97,16 @@ export const YouTubeUrlManager = ({
     setError(null)
 
     try {
+      const { supabase } = await import('@/lib/supabase')
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+
       const response = await fetch(`/api/courses/${courseId}/pdfs/${volumeId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+        },
         body: JSON.stringify({ youtube_url: null })
       })
 
