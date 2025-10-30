@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/components/theme-provider"
 import { GamificationProvider } from "@/contexts/gamification-context"
 import { Toaster } from "@/components/ui/toaster"
+import { ImagePolyfill } from "@/components/image-polyfill"
 import "./globals.css"
 
 const inter = Inter({

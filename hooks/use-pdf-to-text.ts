@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { configurePdfjs, getPdfjsWorkerSrc } from '@/lib/pdfjs-config'
 
 export interface PdfToTextResult {
   text: string
@@ -23,11 +24,16 @@ export function usePdfToText() {
     setProgress(0)
 
     try {
+      // Configurar pdfjs para evitar conflitos com Image constructor
+      const restoreImage = configurePdfjs()
+      
       // Importar pdfjs-dist dinamicamente no cliente
       const pdfjsLib = await import('pdfjs-dist')
 
-      // Configurar worker usando CDN
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+      // Configurar worker usando CDN com fallback
+      if (typeof window !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = getPdfjsWorkerSrc(pdfjsLib.version)
+      }
 
       // Converter URL do Google Drive se necessário
       let processedUrl = pdfUrl
@@ -47,6 +53,11 @@ export function usePdfToText() {
         url: processedUrl,
         // Habilitar CORS para Google Drive
         withCredentials: false,
+        // Configurações para evitar conflitos com Image constructor
+        useSystemFonts: false,
+        disableFontFace: true,
+        disableRange: false,
+        disableStream: false,
       })
 
       // Monitorar progresso de carregamento
@@ -122,6 +133,11 @@ export function usePdfToText() {
       console.log(`Conversão concluída: ${cleanText.length} caracteres extraídos`)
       setProgress(100)
 
+      // Restaurar o Image constructor original
+      if (restoreImage) {
+        restoreImage()
+      }
+
       return {
         text: cleanText,
         pages: numPages,
@@ -130,6 +146,11 @@ export function usePdfToText() {
 
     } catch (err) {
       console.error('Erro na conversão do PDF:', err)
+
+      // Restaurar o Image constructor original em caso de erro
+      if (restoreImage) {
+        restoreImage()
+      }
 
       let errorMessage = 'Erro ao converter PDF para texto'
 
