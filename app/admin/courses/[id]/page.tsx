@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { use } from "react"
-import { ArrowLeft, Save, Plus, Trash2, Edit, Eye, FileText, Upload, Download, Loader2, Copy, ArrowUp, ArrowDown, Gift, Youtube } from "lucide-react"
+import { ArrowLeft, Save, Plus, Trash2, Edit, Eye, FileText, Upload, Download, Loader2, Copy, ArrowUp, ArrowDown, Gift, Youtube, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -1171,7 +1171,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Image className="h-5 w-5" />
+                  <ImageIcon className="h-5 w-5" />
                   Gerenciar Capas dos Volumes
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
