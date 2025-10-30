@@ -63,18 +63,16 @@ export const YouTubeUrlManager = ({
     setError(null)
 
     try {
-      // Atualizar no banco de dados
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
+      // Atualizar via API protegida (server-side) para não expor Service Role no client
+      const response = await fetch(`/api/courses/${courseId}/pdfs/${volumeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ youtube_url: youtubeUrl || null })
+      })
 
-      const { error: updateError } = await supabase
-        .from('course_pdfs')
-        .update({ youtube_url: youtubeUrl || null })
-        .eq('id', volumeId)
-        .eq('course_id', courseId)
-
-      if (updateError) {
-        throw new Error('Erro ao salvar URL do YouTube: ' + updateError.message)
+      const result = await response.json()
+      if (!response.ok || result.error) {
+        throw new Error(result.error || 'Falha ao salvar URL do YouTube')
       }
 
       setIsEditing(false)
@@ -91,17 +89,15 @@ export const YouTubeUrlManager = ({
     setError(null)
 
     try {
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
+      const response = await fetch(`/api/courses/${courseId}/pdfs/${volumeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ youtube_url: null })
+      })
 
-      const { error: updateError } = await supabase
-        .from('course_pdfs')
-        .update({ youtube_url: null })
-        .eq('id', volumeId)
-        .eq('course_id', courseId)
-
-      if (updateError) {
-        throw new Error('Erro ao remover URL do YouTube: ' + updateError.message)
+      const result = await response.json()
+      if (!response.ok || result.error) {
+        throw new Error(result.error || 'Falha ao remover URL do YouTube')
       }
 
       setYoutubeUrl("")
