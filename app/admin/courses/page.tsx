@@ -71,7 +71,8 @@ export default function AdminCoursesPage() {
   const fetchCourses = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/courses')
+      // Usar parâmetro admin=true para buscar todos os cursos, independente do status
+      const response = await fetch('/api/courses?admin=true')
       if (!response.ok) {
         throw new Error('Erro ao carregar cursos')
       }

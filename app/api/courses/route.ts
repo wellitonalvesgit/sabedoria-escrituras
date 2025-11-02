@@ -9,8 +9,11 @@ const CACHE_TTL = 5 * 60 * 1000 // 5 minutos
 // GET /api/courses - Listar todos os cursos
 export async function GET(request: NextRequest) {
   try {
-    // Verificar cache primeiro
-    if (coursesCache && (Date.now() - coursesCache.timestamp) < CACHE_TTL) {
+    const { searchParams } = new URL(request.url)
+    const includeAllStatus = searchParams.get('all') === 'true' || searchParams.get('admin') === 'true'
+    
+    // Verificar cache primeiro (apenas para cursos públicos)
+    if (!includeAllStatus && coursesCache && (Date.now() - coursesCache.timestamp) < CACHE_TTL) {
       return NextResponse.json({ courses: coursesCache.data }, {
         headers: {
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
@@ -18,14 +21,15 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    const client = supabase
+    // Para admin, usar supabaseAdmin para garantir acesso a todos os cursos
+    const client = includeAllStatus ? supabaseAdmin : supabase
 
     if (!client) {
       throw new Error('Supabase client not configured')
     }
 
     // Buscar cursos com seus PDFs e categorias
-    const { data: courses, error } = await client
+    let query = client
       .from('courses')
       .select(`
         id,
@@ -62,8 +66,13 @@ export async function GET(request: NextRequest) {
           )
         )
       `)
-      .eq('status', 'published')
-      .order('created_at', { ascending: false })
+    
+    // Filtrar por status apenas se não for admin
+    if (!includeAllStatus) {
+      query = query.eq('status', 'published')
+    }
+    
+    const { data: courses, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
       console.error('Erro ao buscar cursos:', error)
@@ -103,12 +112,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ courses: mockCourses })
     }
 
-    // Atualizar cache
-    coursesCache = { data: courses || [], timestamp: Date.now() }
+    // Atualizar cache apenas para cursos públicos
+    if (!includeAllStatus) {
+      coursesCache = { data: courses || [], timestamp: Date.now() }
+    }
 
     return NextResponse.json({ courses }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        'Cache-Control': includeAllStatus ? 'no-cache' : 'public, s-maxage=300, stale-while-revalidate=600',
       }
     })
   } catch (error) {

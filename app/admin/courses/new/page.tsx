@@ -100,6 +100,13 @@ export default function NewCoursePage() {
         throw new Error('Curso criado mas não retornado pela API')
       }
 
+      // Invalidar cache da API
+      try {
+        await fetch('/api/courses?admin=true', { method: 'GET', cache: 'no-store' })
+      } catch (cacheError) {
+        console.error('Erro ao invalidar cache:', cacheError)
+      }
+
       alert("Curso criado com sucesso!")
 
       // Redirecionar para edição do curso para adicionar PDFs
