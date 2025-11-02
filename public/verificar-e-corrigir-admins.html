@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verificar e Corrigir Admins - Sabedoria das Escrituras</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      max-width: 800px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #2d3748;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #718096;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .alert {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+
+    .alert-title {
+      color: #856404;
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .alert-text {
+      color: #856404;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .section-title {
+      color: #2d3748;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 15px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #f56565 0%, #c53030 100%);
+      box-shadow: 0 4px 15px rgba(245, 101, 101, 0.4);
+    }
+
+    .btn-danger:hover {
+      box-shadow: 0 6px 20px rgba(245, 101, 101, 0.6);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
+    }
+
+    .btn-success:hover {
+      box-shadow: 0 6px 20px rgba(72, 187, 120, 0.6);
+    }
+
+    .result {
+      background: #f7fafc;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .result-success {
+      background: #f0fff4;
+      border: 2px solid #48bb78;
+    }
+
+    .result-error {
+      background: #fff5f5;
+      border: 2px solid #f56565;
+    }
+
+    .result pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 12px;
+      color: #2d3748;
+    }
+
+    .steps {
+      background: #f7fafc;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .step {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .step:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .step-number {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-title {
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 5px;
+    }
+
+    .step-text {
+      color: #718096;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    code {
+      background: #2d3748;
+      color: #68d391;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Verificar e Corrigir Admins</h1>
+    <p class="subtitle">Sistema: Sabedoria das Escrituras</p>
+
+    <div class="alert">
+      <div class="alert-title">⚠️ Problema Identificado</div>
+      <div class="alert-text">
+        Todos os administradores estão aparecendo como alunos.<br>
+        <strong>Causa:</strong> Script SQL sobrescreveu os roles no banco de dados.<br>
+        <strong>Solução:</strong> Restaurar admins no banco + limpar caches.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        🔍 Passo 1: Verificar Sessão Atual
+      </div>
+      <button class="btn" onclick="verificarSessao()">
+        Verificar Minha Sessão
+      </button>
+      <div id="sessao-result"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        🔄 Passo 2: Forçar Refresh
+      </div>
+      <button class="btn btn-success" onclick="forcarRefresh()">
+        Forçar Refresh da Sessão
+      </button>
+      <button class="btn btn-danger" onclick="invalidarCache()">
+        Invalidar Cache do SessionManager
+      </button>
+      <div id="refresh-result"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        📋 Passo 3: Instruções para Correção Completa
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Restaurar Admins no Banco de Dados</div>
+            <div class="step-text">
+              Abra o Supabase Dashboard → SQL Editor<br>
+              Execute o script: <code>RESTAURAR-ADMINS-URGENTE.sql</code><br>
+              Adicione TODOS os emails que devem ser admins no script
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Reiniciar Servidor (Limpar Cache do Middleware)</div>
+            <div class="step-text">
+              Pressione <code>Ctrl+C</code> no terminal<br>
+              Execute: <code>npm run dev</code><br>
+              Isso limpa o cache do middleware (TTL de 30 segundos)
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Limpar Caches da Aplicação</div>
+            <div class="step-text">
+              Use os botões acima para:<br>
+              1. Forçar Refresh da Sessão (busca dados novos do banco)<br>
+              2. Invalidar Cache do SessionManager (limpa cache em memória)
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <div class="step-title">Testar Acesso Admin</div>
+            <div class="step-text">
+              Faça logout completo<br>
+              Faça login novamente com o email do admin<br>
+              Verifique se aparece o menu de administrador
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function verificarSessao() {
+      const resultDiv = document.getElementById('sessao-result')
+      resultDiv.innerHTML = '<div class="result"><pre>Verificando sessão...</pre></div>'
+
+      try {
+        const response = await fetch('/api/users/me', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+
+        const html = `
+          <div class="result ${data.role === 'admin' ? 'result-success' : 'result-error'}">
+            <pre><strong>📊 DADOS DA SESSÃO ATUAL:</strong>
+
+Email: ${data.email}
+Nome: ${data.name}
+Role: ${data.role} ${data.role === 'admin' ? '✅ CORRETO' : '❌ INCORRETO - Deveria ser admin'}
+Status: ${data.status}
+
+${data.role !== 'admin' ? '⚠️ AÇÃO NECESSÁRIA: Execute o script RESTAURAR-ADMINS-URGENTE.sql no Supabase' : '✅ Role está correto no banco de dados'}
+</pre>
+          </div>
+        `
+
+        resultDiv.innerHTML = html
+
+        console.log('📊 Sessão completa:', data)
+
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="result result-error">
+            <pre><strong>❌ ERRO:</strong>
+
+${error.message}
+
+Possível causa: Não autenticado ou sessão expirada.
+Faça login novamente.
+</pre>
+          </div>
+        `
+      }
+    }
+
+    async function forcarRefresh() {
+      const resultDiv = document.getElementById('refresh-result')
+      resultDiv.innerHTML = '<div class="result"><pre>Forçando refresh da sessão...</pre></div>'
+
+      try {
+        const response = await fetch('/api/auth/refresh-session', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+
+        const html = `
+          <div class="result result-success">
+            <pre><strong>✅ SESSÃO ATUALIZADA COM SUCESSO!</strong>
+
+Email: ${data.user.email}
+Nome: ${data.user.name}
+Role: ${data.user.role} ${data.user.role === 'admin' ? '✅' : '❌'}
+Status: ${data.user.status}
+
+Agora clique em "Invalidar Cache do SessionManager" abaixo.
+</pre>
+          </div>
+        `
+
+        resultDiv.innerHTML = html
+
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="result result-error">
+            <pre><strong>❌ ERRO AO ATUALIZAR SESSÃO:</strong>
+
+${error.message}
+</pre>
+          </div>
+        `
+      }
+    }
+
+    function invalidarCache() {
+      const resultDiv = document.getElementById('refresh-result')
+
+      try {
+        // Acessar o SessionManager global
+        if (typeof window.sessionManager !== 'undefined') {
+          window.sessionManager.invalidateCache()
+
+          resultDiv.innerHTML = `
+            <div class="result result-success">
+              <pre><strong>✅ CACHE INVALIDADO COM SUCESSO!</strong>
+
+O cache do SessionManager foi limpo.
+
+Agora clique no botão abaixo para recarregar a página:
+</pre>
+              <button class="btn btn-success" onclick="window.location.href='/dashboard'">
+                🔃 Recarregar e Ir para Dashboard
+              </button>
+            </div>
+          `
+        } else {
+          // Tentar importar dinamicamente
+          import('/lib/session.js').then(module => {
+            module.sessionManager.invalidateCache()
+
+            resultDiv.innerHTML = `
+              <div class="result result-success">
+                <pre><strong>✅ CACHE INVALIDADO COM SUCESSO!</strong>
+
+O cache do SessionManager foi limpo.
+
+Agora clique no botão abaixo para recarregar a página:
+</pre>
+                <button class="btn btn-success" onclick="window.location.href='/dashboard'">
+                  🔃 Recarregar e Ir para Dashboard
+                </button>
+              </div>
+            `
+          }).catch(() => {
+            // Fallback: apenas limpar localStorage e recarregar
+            localStorage.clear()
+            sessionStorage.clear()
+
+            resultDiv.innerHTML = `
+              <div class="result result-success">
+                <pre><strong>✅ STORAGE LIMPO!</strong>
+
+LocalStorage e SessionStorage foram limpos.
+
+Clique abaixo para recarregar:
+</pre>
+                <button class="btn btn-success" onclick="window.location.href='/dashboard'">
+                  🔃 Recarregar e Ir para Dashboard
+                </button>
+              </div>
+            `
+          })
+        }
+
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="result result-error">
+            <pre><strong>❌ ERRO:</strong>
+
+${error.message}
+
+Tente fazer logout e login novamente.
+</pre>
+          </div>
+        `
+      }
+    }
+
+    // Verificar sessão automaticamente ao carregar
+    window.addEventListener('load', () => {
+      setTimeout(verificarSessao, 500)
+    })
+  </script>
+</body>
+</html>

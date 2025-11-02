@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forçar Refresh - Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #F3C77A;
+      margin-bottom: 20px;
+    }
+    button {
+      background: #F3C77A;
+      color: #2c3e50;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      margin: 10px 0;
+    }
+    button:hover {
+      background: #e6b865;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 6px;
+      display: none;
+    }
+    .result.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+    .result.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+    .info {
+      background: #e8f4fd;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid #3498db;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔄 Forçar Refresh de Sessão Admin</h1>
+
+    <div class="info">
+      <strong>⚠️ Use esta página quando:</strong>
+      <ul>
+        <li>Seu role foi alterado no banco de dados</li>
+        <li>Você deveria ser admin mas aparece como student</li>
+        <li>Os dados do SessionManager estão desatualizados</li>
+      </ul>
+    </div>
+
+    <button id="refreshBtn" onclick="forcarRefresh()">
+      🔄 Forçar Refresh da Sessão
+    </button>
+
+    <button id="invalidateBtn" onclick="invalidarCache()">
+      🗑️ Invalidar Cache do SessionManager
+    </button>
+
+    <button id="reloadBtn" onclick="recarregar()">
+      🔃 Recarregar Página Completa
+    </button>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    async function forcarRefresh() {
+      const btn = document.getElementById('refreshBtn')
+      const resultDiv = document.getElementById('result')
+
+      btn.disabled = true
+      btn.textContent = '⏳ Atualizando...'
+      resultDiv.className = 'result'
+      resultDiv.style.display = 'none'
+
+      try {
+        const response = await fetch('/api/auth/refresh-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include'
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          resultDiv.className = 'result success'
+          resultDiv.innerHTML = `
+            <strong>✅ Sessão atualizada com sucesso!</strong><br><br>
+            <strong>Dados do usuário:</strong>
+            <pre>${JSON.stringify(data.user, null, 2)}</pre>
+            <br>
+            <strong>Próximo passo:</strong> Invalidar cache do SessionManager
+          `
+        } else {
+          throw new Error(data.error || 'Erro desconhecido')
+        }
+      } catch (error) {
+        resultDiv.className = 'result error'
+        resultDiv.innerHTML = `
+          <strong>❌ Erro ao atualizar sessão:</strong><br>
+          ${error.message}
+        `
+      } finally {
+        btn.disabled = false
+        btn.textContent = '🔄 Forçar Refresh da Sessão'
+      }
+    }
+
+    function invalidarCache() {
+      const resultDiv = document.getElementById('result')
+
+      try {
+        // Acessar o SessionManager global
+        if (typeof sessionManager !== 'undefined') {
+          sessionManager.invalidateCache()
+          resultDiv.className = 'result success'
+          resultDiv.innerHTML = `
+            <strong>✅ Cache invalidado com sucesso!</strong><br><br>
+            <strong>Próximo passo:</strong> Recarregar página
+          `
+        } else {
+          throw new Error('SessionManager não encontrado')
+        }
+      } catch (error) {
+        resultDiv.className = 'result error'
+        resultDiv.innerHTML = `
+          <strong>❌ Erro:</strong> ${error.message}<br>
+          <small>Tente recarregar a página primeiro</small>
+        `
+      }
+    }
+
+    function recarregar() {
+      window.location.href = '/dashboard'
+    }
+
+    // Verificar sessão ao carregar
+    window.addEventListener('load', () => {
+      console.log('🔍 Verificando sessão atual...')
+
+      if (typeof sessionManager !== 'undefined') {
+        const session = sessionManager.getSession()
+        console.log('📊 Sessão atual:', {
+          email: session.user?.email,
+          role: session.user?.role,
+          loading: session.loading
+        })
+      }
+    })
+  </script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { SUPABASE_CONFIG } from './lib/supabase-config'
+
+// Cache simples para sessões (em produção usar Redis)
+const sessionCache = new Map<string, { user: any, timestamp: number }>()
+const CACHE_TTL = 5 * 1000 // 5 segundos (reduzido para evitar problemas de cache)
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Rotas que não precisam de autenticação
+  const publicRoutes = [
+    '/',
+    '/login',
+    '/landing',
+    '/pricing',
+    '/auth/callback',
+    '/reset-password',
+    '/api/auth',
+    '/api/test-config'
+  ]
+
+  // Verificar se é uma rota pública
+  const isPublicRoute = publicRoutes.some(route => 
+    pathname === route || pathname.startsWith(route)
+  )
+
+  if (isPublicRoute) {
+    return NextResponse.next()
+  }
+
+  // Rotas que precisam de autenticação
+  try {
+    // Verificar se SERVICE_ROLE_KEY está disponível
+    if (!SUPABASE_CONFIG.serviceRoleKey) {
+      console.error('❌ SERVICE_ROLE_KEY não está configurada')
+      return NextResponse.redirect(new URL('/login?error=config', request.url))
+    }
+
+    // Criar cliente Supabase com cookies para middleware
+    const cookieStore = await cookies()
+
+    // Primeiro, usar ANON_KEY para verificar a sessão
+    const supabase = createServerClient(
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.anonKey,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+
+    // Verificar se há uma sessão válida
+    const { data: { session }, error } = await supabase.auth.getSession()
+
+    if (error || !session) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+
+    // Verificar cache
+    const cachedSession = sessionCache.get(session.user.id)
+    const now = Date.now()
+    
+    let userData
+    if (cachedSession && (now - cachedSession.timestamp) < CACHE_TTL) {
+      // Usar cache
+      userData = cachedSession.user
+    } else {
+      // Buscar do banco
+      const supabaseAdmin = createServerClient(
+        SUPABASE_CONFIG.url,
+        SUPABASE_CONFIG.serviceRoleKey,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll()
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              )
+            },
+          },
+        }
+      )
+
+      const { data: dbUserData, error: userError } = await supabaseAdmin
+        .from('users')
+        .select('id, status, access_expires_at, role, allowed_courses')
+        .eq('id', session.user.id)
+        .single()
+
+      if (userError || !dbUserData) {
+        return NextResponse.redirect(new URL('/login', request.url))
+      }
+
+      userData = dbUserData
+      // Atualizar cache
+      sessionCache.set(session.user.id, { user: userData, timestamp: now })
+      
+      // Limpar cache antigo
+      if (sessionCache.size > 1000) {
+        sessionCache.clear()
+      }
+    }
+
+
+    // Verificar se o usuário está ativo
+    if (userData.status !== 'active') {
+      console.log('🔒 Usuário inativo:', userData.status)
+      return NextResponse.redirect(new URL('/login?error=inactive', request.url))
+    }
+
+    // NOTA: Não bloqueamos mais o acesso baseado em access_expires_at aqui
+    // A verificação de acesso é feita individualmente para cada curso
+    // Permitindo que usuários possam acessar:
+    // - Cursos gratuitos
+    // - Cursos específicos em allowed_courses
+    // - Cursos via assinatura ativa
+
+    // Verificar permissões para rotas administrativas
+    if (pathname.startsWith('/admin') && userData.role !== 'admin') {
+      console.log('🔒 Acesso negado a área administrativa')
+      return NextResponse.redirect(new URL('/dashboard?error=unauthorized', request.url))
+    }
+
+    // Adicionar headers com informações do usuário
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-user-id', userData.id)
+    requestHeaders.set('x-user-role', userData.role)
+    requestHeaders.set('x-user-status', userData.status)
+
+    console.log('✅ Middleware - Acesso permitido para:', userData.id)
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    })
+
+  } catch (error) {
+    console.error('❌ Erro no middleware de autenticação:', error)
+    return NextResponse.redirect(new URL('/login?error=server', request.url))
+  }
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+  ],
+}

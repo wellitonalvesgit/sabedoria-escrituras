@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste de Login Supabase</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    pre {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .error {
+      color: red;
+    }
+    .success {
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h1>Teste de Login Supabase</h1>
+  
+  <div class="card">
+    <h2>Configurações</h2>
+    <div>
+      <label for="supabaseUrl">URL do Supabase:</label>
+      <input type="text" id="supabaseUrl" value="https://aqvqpkmjdtzeoclndwhj.supabase.co" style="width: 100%;">
+    </div>
+    <div style="margin-top: 10px;">
+      <label for="supabaseKey">Chave Anônima:</label>
+      <input type="text" id="supabaseKey" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwOTI2ODYsImV4cCI6MjA3NjY2ODY4Nn0.ZStT6hrlRhT3bigKWc3i6An_lL09R_t5gdZ4WIyyYyY" style="width: 100%;">
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>Login</h2>
+    <div>
+      <label for="email">Email:</label>
+      <input type="email" id="email" value="geisonhoehr.ai@gmail.com">
+    </div>
+    <div style="margin-top: 10px;">
+      <label for="password">Senha:</label>
+      <input type="password" id="password" value="123456">
+    </div>
+    <div style="margin-top: 20px;">
+      <button onclick="login()">Fazer Login</button>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>Resultado</h2>
+    <pre id="result">Aguardando login...</pre>
+  </div>
+  
+  <div class="card">
+    <h2>LocalStorage</h2>
+    <button onclick="checkLocalStorage()">Verificar LocalStorage</button>
+    <pre id="localStorage">Clique para verificar...</pre>
+  </div>
+  
+  <div class="card">
+    <h2>Verificar Sessão</h2>
+    <button onclick="checkSession()">Verificar Sessão Atual</button>
+    <pre id="session">Clique para verificar...</pre>
+  </div>
+  
+  <div class="card">
+    <h2>Limpar Dados</h2>
+    <button onclick="clearStorage()">Limpar LocalStorage</button>
+    <button onclick="signOut()">Fazer Logout</button>
+  </div>
+
+  <script>
+    // Inicializar cliente Supabase
+    function getSupabase() {
+      const url = document.getElementById('supabaseUrl').value;
+      const key = document.getElementById('supabaseKey').value;
+      return supabase.createClient(url, key);
+    }
+    
+    // Função de login
+    async function login() {
+      const resultEl = document.getElementById('result');
+      resultEl.innerHTML = 'Fazendo login...';
+      
+      try {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const supabase = getSupabase();
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (error) {
+          resultEl.innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+          return;
+        }
+        
+        resultEl.innerHTML = `<span class="success">✅ Login bem-sucedido!</span>
+<b>Usuário:</b> ${data.user.email}
+<b>ID:</b> ${data.user.id}
+<b>Sessão expira em:</b> ${new Date(data.session.expires_at).toLocaleString()}`;
+
+        // Tentar buscar dados do usuário
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+          
+        if (userError) {
+          resultEl.innerHTML += `\n\n<span class="error">❌ Erro ao buscar dados do usuário: ${userError.message}</span>`;
+          return;
+        }
+        
+        resultEl.innerHTML += `\n\n<b>Dados do usuário:</b>
+<b>Nome:</b> ${userData.name}
+<b>Status:</b> ${userData.status}
+<b>Acesso expira em:</b> ${new Date(userData.access_expires_at).toLocaleString()}
+<b>Cursos permitidos:</b> ${userData.allowed_courses?.length || 0}`;
+        
+      } catch (error) {
+        resultEl.innerHTML = `<span class="error">❌ Erro inesperado: ${error.message}</span>`;
+      }
+    }
+    
+    // Verificar localStorage
+    function checkLocalStorage() {
+      const localStorageEl = document.getElementById('localStorage');
+      const items = {};
+      
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        items[key] = localStorage.getItem(key);
+      }
+      
+      localStorageEl.innerHTML = JSON.stringify(items, null, 2);
+    }
+    
+    // Verificar sessão atual
+    async function checkSession() {
+      const sessionEl = document.getElementById('session');
+      sessionEl.innerHTML = 'Verificando sessão...';
+      
+      try {
+        const supabase = getSupabase();
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          sessionEl.innerHTML = `<span class="error">❌ Erro: ${error.message}</span>`;
+          return;
+        }
+        
+        if (!data.session) {
+          sessionEl.innerHTML = '<span class="error">❌ Nenhuma sessão ativa encontrada</span>';
+          return;
+        }
+        
+        sessionEl.innerHTML = `<span class="success">✅ Sessão ativa!</span>
+<b>Usuário:</b> ${data.session.user.email}
+<b>ID:</b> ${data.session.user.id}
+<b>Sessão expira em:</b> ${new Date(data.session.expires_at).toLocaleString()}`;
+        
+      } catch (error) {
+        sessionEl.innerHTML = `<span class="error">❌ Erro inesperado: ${error.message}</span>`;
+      }
+    }
+    
+    // Limpar localStorage
+    function clearStorage() {
+      localStorage.clear();
+      document.getElementById('localStorage').innerHTML = 'LocalStorage limpo!';
+    }
+    
+    // Fazer logout
+    async function signOut() {
+      try {
+        const supabase = getSupabase();
+        await supabase.auth.signOut();
+        document.getElementById('session').innerHTML = 'Logout realizado com sucesso!';
+      } catch (error) {
+        document.getElementById('session').innerHTML = `Erro ao fazer logout: ${error.message}`;
+      }
+    }
+    
+    // Verificar sessão ao carregar a página
+    window.onload = checkSession;
+  </script>
+</body>
+</html>

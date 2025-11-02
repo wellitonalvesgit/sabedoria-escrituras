@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Autenticação</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Teste de Autenticação Supabase</h1>
+    <div id="status"></div>
+    <button onclick="testAuth()">Testar Autenticação</button>
+    <button onclick="testLogin()">Testar Login</button>
+    <button onclick="testUserData()">Testar Dados do Usuário</button>
+
+    <script>
+        const supabaseUrl = 'https://aqvqpkmjdtzeoclndwhj.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwOTI2ODYsImV4cCI6MjA3NjY2ODY4Nn0.ZStT6hrlRhT3bigKWc3i6An_lL09R_t5gdZ4WIyyYyY'
+        
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+
+        async function testAuth() {
+            const statusDiv = document.getElementById('status')
+            statusDiv.innerHTML = 'Testando autenticação...'
+            
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession()
+                statusDiv.innerHTML = `
+                    <h3>Resultado da Sessão:</h3>
+                    <p>Erro: ${error ? error.message : 'Nenhum'}</p>
+                    <p>Sessão: ${session ? 'Encontrada' : 'Não encontrada'}</p>
+                    <p>User ID: ${session?.user?.id || 'N/A'}</p>
+                    <p>Email: ${session?.user?.email || 'N/A'}</p>
+                `
+            } catch (err) {
+                statusDiv.innerHTML = `<p style="color: red;">Erro: ${err.message}</p>`
+            }
+        }
+
+        async function testLogin() {
+            const statusDiv = document.getElementById('status')
+            statusDiv.innerHTML = 'Testando login...'
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: 'aluno@teste.com',
+                    password: '123456'
+                })
+                
+                statusDiv.innerHTML = `
+                    <h3>Resultado do Login:</h3>
+                    <p>Erro: ${error ? error.message : 'Nenhum'}</p>
+                    <p>User: ${data?.user ? 'Encontrado' : 'Não encontrado'}</p>
+                    <p>User ID: ${data?.user?.id || 'N/A'}</p>
+                    <p>Email: ${data?.user?.email || 'N/A'}</p>
+                `
+            } catch (err) {
+                statusDiv.innerHTML = `<p style="color: red;">Erro: ${err.message}</p>`
+            }
+        }
+
+        async function testUserData() {
+            const statusDiv = document.getElementById('status')
+            statusDiv.innerHTML = 'Testando dados do usuário...'
+            
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                
+                if (!session?.user) {
+                    statusDiv.innerHTML = '<p style="color: red;">Nenhuma sessão ativa</p>'
+                    return
+                }
+
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single()
+
+                statusDiv.innerHTML = `
+                    <h3>Dados do Usuário na Tabela:</h3>
+                    <p>Erro: ${userError ? userError.message : 'Nenhum'}</p>
+                    <p>User Data: ${userData ? 'Encontrado' : 'Não encontrado'}</p>
+                    <p>Nome: ${userData?.name || 'N/A'}</p>
+                    <p>Email: ${userData?.email || 'N/A'}</p>
+                    <p>Role: ${userData?.role || 'N/A'}</p>
+                `
+            } catch (err) {
+                statusDiv.innerHTML = `<p style="color: red;">Erro: ${err.message}</p>`
+            }
+        }
+    </script>
+</body>
+</html>

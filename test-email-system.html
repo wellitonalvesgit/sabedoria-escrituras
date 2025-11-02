@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Sistema de Emails</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #F3C77A;
+            color: black;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background 0.2s;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #FFD88A;
+        }
+        .button.blue {
+            background: #3498db;
+            color: white;
+        }
+        .button.blue:hover {
+            background: #2980b9;
+        }
+        .button.green {
+            background: #27ae60;
+            color: white;
+        }
+        .button.green:hover {
+            background: #229954;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .user-list {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .user-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 4px;
+            border-left: 4px solid #F3C77A;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste - Sistema de Emails e Usuários</h1>
+        
+        <div class="info">
+            <strong>📋 Instruções:</strong>
+            <ol>
+                <li>Teste o envio de email para verificar se está funcionando</li>
+                <li>Liste os usuários criados para verificar se foram salvos</li>
+                <li>Teste o login com as credenciais dos usuários criados</li>
+                <li>Teste o sistema de esqueci senha</li>
+                <li>Teste o link mágico</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h2>📧 Teste 1: Envio de Email</h2>
+            <p>Teste se o sistema de email está funcionando:</p>
+            <input type="email" id="testEmail" placeholder="Digite seu email para teste" />
+            <input type="text" id="testName" placeholder="Nome para o teste" />
+            <button class="button blue" onclick="testEmail()">
+                📧 Testar Envio de Email
+            </button>
+            <div id="emailStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>👥 Teste 2: Listar Usuários</h2>
+            <p>Veja os usuários criados no sistema:</p>
+            <button class="button" onclick="listUsers()">
+                👥 Listar Usuários
+            </button>
+            <div id="usersList"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔐 Teste 3: Login com Usuários Criados</h2>
+            <p>Teste o login com os usuários que você criou:</p>
+            <button class="button" onclick="window.open('http://localhost:3000/login', '_blank')">
+                🚀 Abrir Página de Login
+            </button>
+            <p><strong>Dica:</strong> Use o email e senha que você viu na listagem de usuários</p>
+        </div>
+
+        <div class="test-section">
+            <h2>🔑 Teste 4: Esqueci Minha Senha</h2>
+            <p>Teste o sistema de recuperação de senha:</p>
+            <input type="email" id="forgotEmail" placeholder="Email para recuperar senha" />
+            <button class="button green" onclick="testForgotPassword()">
+                🔑 Testar Esqueci Senha
+            </button>
+            <div id="forgotStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>✨ Teste 5: Link Mágico</h2>
+            <p>Teste o envio de link mágico:</p>
+            <input type="email" id="magicEmail" placeholder="Email para link mágico" />
+            <button class="button blue" onclick="testMagicLink()">
+                ✨ Testar Link Mágico
+            </button>
+            <div id="magicStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🛠️ Teste 6: Criar Novo Usuário</h2>
+            <p>Crie um novo usuário para testar:</p>
+            <input type="text" id="newUserName" placeholder="Nome do usuário" />
+            <input type="email" id="newUserEmail" placeholder="Email do usuário" />
+            <select id="newUserRole">
+                <option value="student">Estudante</option>
+                <option value="moderator">Moderador</option>
+                <option value="admin">Administrador</option>
+            </select>
+            <input type="number" id="newUserDays" placeholder="Dias de acesso" value="30" />
+            <button class="button green" onclick="createUser()">
+                👤 Criar Usuário
+            </button>
+            <div id="createStatus"></div>
+        </div>
+
+        <h2>🔧 Status do Sistema:</h2>
+        <div id="systemStatus"></div>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        async function testEmail() {
+            const email = document.getElementById('testEmail').value;
+            const name = document.getElementById('testName').value;
+            const statusDiv = document.getElementById('emailStatus');
+            
+            if (!email) {
+                statusDiv.innerHTML = '<div class="error">❌ Por favor, digite um email</div>';
+                return;
+            }
+
+            statusDiv.innerHTML = '<div class="info">📧 Testando envio de email...</div>';
+
+            try {
+                const response = await fetch('http://localhost:3000/api/test-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, name }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerHTML = '<div class="success">✅ ' + data.message + '</div>';
+                    if (data.details) {
+                        statusDiv.innerHTML += '<div class="info">📊 Detalhes: ' + JSON.stringify(data.details, null, 2) + '</div>';
+                    }
+                } else {
+                    statusDiv.innerHTML = '<div class="error">❌ ' + data.error + '</div>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="error">❌ Erro ao testar email: ' + error.message + '</div>';
+            }
+        }
+
+        async function listUsers() {
+            const statusDiv = document.getElementById('usersList');
+            statusDiv.innerHTML = '<div class="info">👥 Carregando usuários...</div>';
+
+            try {
+                const response = await fetch('http://localhost:3000/api/users');
+                const data = await response.json();
+
+                if (response.ok) {
+                    let html = '<div class="user-list">';
+                    html += '<h3>Usuários no Sistema:</h3>';
+                    
+                    if (data.users && data.users.length > 0) {
+                        data.users.forEach(user => {
+                            html += `<div class="user-item">
+                                <strong>${user.name}</strong> (${user.email})<br>
+                                <small>Role: ${user.role} | Status: ${user.status}</small>
+                            </div>`;
+                        });
+                    } else {
+                        html += '<p>Nenhum usuário encontrado</p>';
+                    }
+                    
+                    html += '</div>';
+                    statusDiv.innerHTML = html;
+                } else {
+                    statusDiv.innerHTML = '<div class="error">❌ Erro ao carregar usuários: ' + data.error + '</div>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="error">❌ Erro ao carregar usuários: ' + error.message + '</div>';
+            }
+        }
+
+        async function testForgotPassword() {
+            const email = document.getElementById('forgotEmail').value;
+            const statusDiv = document.getElementById('forgotStatus');
+            
+            if (!email) {
+                statusDiv.innerHTML = '<div class="error">❌ Por favor, digite um email</div>';
+                return;
+            }
+
+            statusDiv.innerHTML = '<div class="info">🔑 Enviando email de recuperação...</div>';
+
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerHTML = '<div class="success">✅ ' + data.message + '</div>';
+                } else {
+                    statusDiv.innerHTML = '<div class="error">❌ ' + data.error + '</div>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="error">❌ Erro ao enviar recuperação: ' + error.message + '</div>';
+            }
+        }
+
+        async function testMagicLink() {
+            const email = document.getElementById('magicEmail').value;
+            const statusDiv = document.getElementById('magicStatus');
+            
+            if (!email) {
+                statusDiv.innerHTML = '<div class="error">❌ Por favor, digite um email</div>';
+                return;
+            }
+
+            statusDiv.innerHTML = '<div class="info">✨ Enviando link mágico...</div>';
+
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/magic-link', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerHTML = '<div class="success">✅ ' + data.message + '</div>';
+                } else {
+                    statusDiv.innerHTML = '<div class="error">❌ ' + data.error + '</div>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="error">❌ Erro ao enviar link mágico: ' + error.message + '</div>';
+            }
+        }
+
+        async function createUser() {
+            const name = document.getElementById('newUserName').value;
+            const email = document.getElementById('newUserEmail').value;
+            const role = document.getElementById('newUserRole').value;
+            const days = document.getElementById('newUserDays').value;
+            const statusDiv = document.getElementById('createStatus');
+            
+            if (!name || !email) {
+                statusDiv.innerHTML = '<div class="error">❌ Nome e email são obrigatórios</div>';
+                return;
+            }
+
+            statusDiv.innerHTML = '<div class="info">👤 Criando usuário...</div>';
+
+            try {
+                const response = await fetch('http://localhost:3000/api/users/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        name, 
+                        email, 
+                        role, 
+                        access_days: parseInt(days),
+                        send_email: true
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerHTML = '<div class="success">✅ Usuário criado com sucesso!</div>';
+                    if (data.password) {
+                        statusDiv.innerHTML += '<div class="info">🔑 Senha provisória: ' + data.password + '</div>';
+                    }
+                    if (data.email_sent) {
+                        statusDiv.innerHTML += '<div class="success">📧 Email enviado com sucesso!</div>';
+                    } else {
+                        statusDiv.innerHTML += '<div class="error">⚠️ Email não foi enviado</div>';
+                    }
+                } else {
+                    statusDiv.innerHTML = '<div class="error">❌ ' + data.error + '</div>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="error">❌ Erro ao criar usuário: ' + error.message + '</div>';
+            }
+        }
+
+        // Verificar se o servidor está rodando
+        fetch('http://localhost:3000/api/users')
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('status').innerHTML = 
+                        '<div class="success">✅ Servidor está rodando e API está funcionando!</div>';
+                } else {
+                    document.getElementById('status').innerHTML = 
+                        '<div class="error">❌ Servidor está rodando mas API retornou erro: ' + response.status + '</div>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('status').innerHTML = 
+                    '<div class="error">❌ Erro ao conectar com o servidor: ' + error.message + '</div>';
+            });
+    </script>
+</body>
+</html>
