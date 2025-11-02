@@ -135,7 +135,7 @@ export default function NewCoursePage() {
             </div>
             <div className="flex items-center gap-3">
               <Link href="/admin/courses">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="hover:bg-accent hover:text-accent-foreground hover:border-accent-foreground/20">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Cancelar
                 </Button>

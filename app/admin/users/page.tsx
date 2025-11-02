@@ -300,7 +300,7 @@ export default function AdminUsersPage() {
             </div>
             <div className="flex items-center gap-3">
               <Link href="/admin">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="hover:bg-accent hover:text-accent-foreground hover:border-accent-foreground/20">
                   Voltar ao Admin
                 </Button>
               </Link>

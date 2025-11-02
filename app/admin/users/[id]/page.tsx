@@ -187,7 +187,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           <h1 className="text-2xl font-bold text-foreground mb-2">Usuário não encontrado</h1>
           <p className="text-muted-foreground mb-4">{error || 'O usuário solicitado não existe'}</p>
           <Link href="/admin/users">
-            <Button>Voltar aos Usuários</Button>
+            <Button className="hover:bg-primary/90">Voltar aos Usuários</Button>
           </Link>
         </div>
       </div>

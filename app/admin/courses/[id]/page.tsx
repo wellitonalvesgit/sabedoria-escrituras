@@ -171,7 +171,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
           <h1 className="text-2xl font-bold text-foreground mb-2">Curso não encontrado</h1>
           <p className="text-muted-foreground mb-4">{error || 'O curso solicitado não existe'}</p>
           <Link href="/admin/courses">
-            <Button>Voltar aos Cursos</Button>
+            <Button className="hover:bg-primary/90">Voltar aos Cursos</Button>
           </Link>
         </div>
       </div>
@@ -495,13 +495,13 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
             </div>
             <div className="flex items-center gap-3">
               <Link href="/admin/courses">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="hover:bg-accent hover:text-accent-foreground hover:border-accent-foreground/20">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Voltar aos Cursos
                 </Button>
               </Link>
               <Link href={`/course/${courseId}`}>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="hover:bg-accent hover:text-accent-foreground hover:border-accent-foreground/20">
                   <Eye className="mr-2 h-4 w-4" />
                   Visualizar
                 </Button>
