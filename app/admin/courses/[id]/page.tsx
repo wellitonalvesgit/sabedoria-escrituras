@@ -62,7 +62,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
     reading_time_minutes: 0,
     pages: 0,
     cover_url: "",
-    is_free: false
+    is_free: false,
+    status: "published"
   })
 
   const [editingPDF, setEditingPDF] = useState<string | null>(null)
@@ -89,41 +90,17 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
       setLoading(true)
       console.log('Buscando curso com ID:', courseId)
 
-      // Buscar dados diretamente do Supabase
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
+      // Usar API com parâmetro admin=true para buscar todos os cursos, independente do status
+      const response = await fetch(`/api/courses/${courseId}?admin=true`)
       
-      console.log('Buscando curso diretamente do Supabase...')
-      
-      const { data: course, error } = await supabase
-        .from('courses')
-        .select(`
-          *,
-          course_pdfs (
-            id,
-            volume,
-            title,
-            url,
-            pages,
-            reading_time_minutes,
-            text_content,
-            use_auto_conversion,
-            display_order,
-            cover_url
-          ),
-          course_categories (
-            category_id
-          )
-        `)
-        .eq('id', courseId)
-        .single()
-
-      if (error) {
-        console.error('Erro ao buscar curso do Supabase:', error)
-        throw new Error('Curso não encontrado')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Curso não encontrado')
       }
 
-      console.log('Curso encontrado diretamente:', course)
+      const { course } = await response.json()
+      
+      console.log('Curso encontrado:', course)
       
       if (!course) {
         throw new Error('Dados do curso não encontrados')
@@ -138,7 +115,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         reading_time_minutes: course.reading_time_minutes || 0,
         pages: course.pages || 0,
         cover_url: course.cover_url || "",
-        is_free: course.is_free || false
+        is_free: course.is_free || false,
+        status: course.status || "published"
       })
       
       // Carregar categorias do curso

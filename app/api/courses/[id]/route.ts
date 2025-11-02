@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
@@ -10,9 +11,10 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
   try {
     const cookieStore = await cookies()
 
-    const supabase = createServerClient(
+    // Primeiro verificar sessão com ANON_KEY
+    const supabaseAnon = createServerClient(
       SUPABASE_CONFIG.url,
-      SUPABASE_CONFIG.serviceRoleKey,
+      SUPABASE_CONFIG.anonKey,
       {
         cookies: {
           getAll() {
@@ -27,17 +29,55 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
       }
     )
 
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return false
+    const { data: { user }, error: userError } = await supabaseAnon.auth.getUser()
+    
+    if (userError) {
+      console.error('❌ Erro ao obter usuário:', userError)
+      return false
+    }
+    
+    if (!user) {
+      console.log('⚠️ Usuário não autenticado')
+      return false
+    }
 
-    const { data: userData } = await supabase
+    console.log('👤 Usuário autenticado:', user.id)
+
+    // Depois verificar role usando SERVICE_ROLE_KEY para bypass RLS
+    const adminClient = createClient(
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    const { data: userData, error: roleError } = await adminClient
       .from('users')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
-    return userData?.role === 'admin'
-  } catch {
+    if (roleError) {
+      console.error('❌ Erro ao verificar role:', roleError)
+      return false
+    }
+    
+    if (!userData) {
+      console.log('⚠️ Dados do usuário não encontrados')
+      return false
+    }
+
+    console.log('🔑 Role do usuário:', userData.role)
+    const isAdminUser = userData.role === 'admin'
+    console.log(isAdminUser ? '✅ Usuário é admin' : '❌ Usuário NÃO é admin')
+    
+    return isAdminUser
+  } catch (error) {
+    console.error('❌ Erro ao verificar admin:', error)
     return false
   }
 }
@@ -45,8 +85,18 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
+    const { searchParams } = new URL(request.url)
+    const isAdminRequest = searchParams.get('admin') === 'true'
 
-    const { data: course, error } = await supabase
+    // Para admin, usar supabaseAdmin e não filtrar por status
+    // Para usuários normais, usar supabase e filtrar apenas published
+    const client = isAdminRequest ? supabaseAdmin : supabase
+    
+    if (!client) {
+      throw new Error('Supabase client not configured')
+    }
+
+    let query = client
       .from('courses')
       .select(`
         *,
@@ -60,15 +110,34 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           text_content,
           use_auto_conversion,
           display_order,
-          cover_url
+          cover_url,
+          youtube_url
+        ),
+        course_categories (
+          category_id,
+          categories (
+            id,
+            name,
+            slug,
+            color
+          )
         )
       `)
       .eq('id', id)
-      .eq('status', 'published')
-      .single()
+    
+    // Filtrar por status apenas se não for admin
+    if (!isAdminRequest) {
+      query = query.eq('status', 'published')
+    }
+    
+    const { data: course, error } = await query.single()
 
     if (error) {
       console.error('Erro ao buscar curso:', error)
+      return NextResponse.json({ error: 'Curso não encontrado' }, { status: 404 })
+    }
+
+    if (!course) {
       return NextResponse.json({ error: 'Curso não encontrado' }, { status: 404 })
     }
 
@@ -93,23 +162,70 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { title, description, author, category, pages, reading_time_minutes, cover_url, is_free, status } = body
 
-    // Usar supabaseAdmin para bypassar RLS
-    const client = supabaseAdmin || supabase
+    // SEMPRE usar supabaseAdmin para bypassar RLS em operações admin
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not configured')
+    }
 
-    const { data: course, error } = await client
+    // Buscar curso atual para verificar se título mudou (e atualizar slug se necessário)
+    const { data: currentCourse } = await supabaseAdmin
       .from('courses')
-      .update({
-        title,
-        description,
-        author,
-        category,
-        pages,
-        reading_time_minutes,
-        cover_url,
-        is_free: is_free || false,
-        status: status || 'published',
-        updated_at: new Date().toISOString()
-      })
+      .select('title, slug')
+      .eq('id', id)
+      .single()
+
+    let updateData: any = {
+      title,
+      description,
+      author: author || null,
+      category: category || null,
+      pages: pages || 0,
+      reading_time_minutes: reading_time_minutes || 0,
+      cover_url: cover_url || null,
+      is_free: is_free || false,
+      status: status || 'published',
+      updated_at: new Date().toISOString()
+    }
+
+    // Atualizar slug se título mudou
+    if (currentCourse && title && title !== currentCourse.title) {
+      // Gerar novo slug baseado no título
+      const generateSlug = (text: string): string => {
+        return text
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '')
+      }
+
+      let newSlug = generateSlug(title)
+      let slugExists = true
+      let counter = 1
+
+      // Verificar se slug já existe (exceto para o curso atual)
+      while (slugExists) {
+        const { data: existingCourse } = await supabaseAdmin
+          .from('courses')
+          .select('id')
+          .eq('slug', newSlug)
+          .neq('id', id)
+          .single()
+
+        if (!existingCourse) {
+          slugExists = false
+        } else {
+          newSlug = `${generateSlug(title)}-${counter}`
+          counter++
+        }
+      }
+
+      updateData.slug = newSlug
+    }
+
+    const { data: course, error } = await supabaseAdmin
+      .from('courses')
+      .update(updateData)
       .eq('id', id)
       .select()
       .single()
@@ -141,23 +257,25 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     const { id } = await params
 
-    // Usar supabaseAdmin para bypassar RLS
-    const client = supabaseAdmin || supabase
+    // SEMPRE usar supabaseAdmin para bypassar RLS
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not configured')
+    }
 
     // Deletar PDFs primeiro (cascade pode não estar configurado)
-    await client
+    await supabaseAdmin
       .from('course_pdfs')
       .delete()
       .eq('course_id', id)
 
     // Deletar categorias do curso
-    await client
+    await supabaseAdmin
       .from('course_categories')
       .delete()
       .eq('course_id', id)
 
     // Deletar curso
-    const { error } = await client
+    const { error } = await supabaseAdmin
       .from('courses')
       .delete()
       .eq('id', id)

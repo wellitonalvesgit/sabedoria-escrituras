@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
-import { supabase } from '@/lib/supabase'
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
@@ -10,9 +10,10 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
   try {
     const cookieStore = await cookies()
 
-    const supabase = createServerClient(
+    // Primeiro verificar sessão com ANON_KEY
+    const supabaseAnon = createServerClient(
       SUPABASE_CONFIG.url,
-      SUPABASE_CONFIG.serviceRoleKey,
+      SUPABASE_CONFIG.anonKey,
       {
         cookies: {
           getAll() {
@@ -27,17 +28,55 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
       }
     )
 
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return false
+    const { data: { user }, error: userError } = await supabaseAnon.auth.getUser()
+    
+    if (userError) {
+      console.error('❌ Erro ao obter usuário:', userError)
+      return false
+    }
+    
+    if (!user) {
+      console.log('⚠️ Usuário não autenticado')
+      return false
+    }
 
-    const { data: userData } = await supabase
+    console.log('👤 Usuário autenticado:', user.id)
+
+    // Depois verificar role usando SERVICE_ROLE_KEY para bypass RLS
+    const adminClient = createClient(
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    const { data: userData, error: roleError } = await adminClient
       .from('users')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
-    return userData?.role === 'admin'
-  } catch {
+    if (roleError) {
+      console.error('❌ Erro ao verificar role:', roleError)
+      return false
+    }
+    
+    if (!userData) {
+      console.log('⚠️ Dados do usuário não encontrados')
+      return false
+    }
+
+    console.log('🔑 Role do usuário:', userData.role)
+    const isAdminUser = userData.role === 'admin'
+    console.log(isAdminUser ? '✅ Usuário é admin' : '❌ Usuário NÃO é admin')
+    
+    return isAdminUser
+  } catch (error) {
+    console.error('Erro ao verificar admin:', error)
     return false
   }
 }
@@ -55,11 +94,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const { volume, title, url, pages, reading_time_minutes, text_content, use_auto_conversion, cover_url } = body
 
-    // Usar supabaseAdmin para bypassar RLS
-    const client = supabaseAdmin || supabase
+    // SEMPRE usar supabaseAdmin para bypassar RLS
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not configured')
+    }
 
     // Verificar se curso existe
-    const { data: course } = await client
+    const { data: course } = await supabaseAdmin
       .from('courses')
       .select('id')
       .eq('id', courseId)
@@ -70,7 +111,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Buscar o maior display_order atual
-    const { data: pdfs } = await client
+    const { data: pdfs } = await supabaseAdmin
       .from('course_pdfs')
       .select('display_order')
       .eq('course_id', courseId)
@@ -80,7 +121,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const nextOrder = pdfs && pdfs.length > 0 ? (pdfs[0].display_order + 1) : 0
 
     // Inserir PDF
-    const { data: pdf, error } = await client
+    const { data: pdf, error } = await supabaseAdmin
       .from('course_pdfs')
       .insert({
         course_id: courseId,

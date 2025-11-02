@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
-import { supabase } from '@/lib/supabase'
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
@@ -9,51 +8,75 @@ import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 // Função auxiliar para verificar se usuário é admin
 async function isAdmin(request: NextRequest): Promise<boolean> {
   try {
-    // 1) Tentar via Authorization header (Bearer token) — funciona melhor no App Router
-    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const anonClient = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
-        global: { headers: { Authorization: authHeader } },
-        auth: { persistSession: false, autoRefreshToken: false }
-      })
-
-      const { data: userResp } = await anonClient.auth.getUser()
-      const userId = userResp?.user?.id
-      if (!userId) return false
-
-      const client = supabaseAdmin || anonClient
-      const { data: userData } = await client
-        .from('users')
-        .select('role')
-        .eq('id', userId)
-        .single()
-
-      if (userData?.role === 'admin') return true
-    }
-
-    // 2) Fallback para cookies (quando sessão está em cookies HTTP)
     const cookieStore = await cookies()
-    const cookieClient = createServerClient(
+
+    // Primeiro verificar sessão com ANON_KEY
+    const supabaseAnon = createServerClient(
       SUPABASE_CONFIG.url,
-      SUPABASE_CONFIG.serviceRoleKey,
+      SUPABASE_CONFIG.anonKey,
       {
         cookies: {
-          getAll() { return cookieStore.getAll() },
-          setAll(cookiesToSet) { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) },
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
         },
       }
     )
-    const { data: { session } } = await cookieClient.auth.getSession()
-    if (!session) return false
 
-    const { data: userData } = await (supabaseAdmin || cookieClient)
+    const { data: { user }, error: userError } = await supabaseAnon.auth.getUser()
+    
+    if (userError) {
+      console.error('❌ Erro ao obter usuário:', userError)
+      return false
+    }
+    
+    if (!user) {
+      console.log('⚠️ Usuário não autenticado')
+      return false
+    }
+
+    console.log('👤 Usuário autenticado:', user.id)
+
+    // Depois verificar role usando SERVICE_ROLE_KEY para bypass RLS
+    const adminClient = createClient(
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    const { data: userData, error: roleError } = await adminClient
       .from('users')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
-    return userData?.role === 'admin'
-  } catch {
+    if (roleError) {
+      console.error('❌ Erro ao verificar role:', roleError)
+      return false
+    }
+    
+    if (!userData) {
+      console.log('⚠️ Dados do usuário não encontrados')
+      return false
+    }
+
+    console.log('🔑 Role do usuário:', userData.role)
+    const isAdminUser = userData.role === 'admin'
+    console.log(isAdminUser ? '✅ Usuário é admin' : '❌ Usuário NÃO é admin')
+    
+    return isAdminUser
+  } catch (error) {
+    console.error('Erro ao verificar admin:', error)
     return false
   }
 }
@@ -74,8 +97,10 @@ export async function PUT(
 
     const { volume, title, url, pages, reading_time_minutes, text_content, use_auto_conversion, display_order, cover_url, youtube_url } = body
 
-    // Usar supabaseAdmin para bypassar RLS
-    const client = supabaseAdmin || supabase
+    // SEMPRE usar supabaseAdmin para bypassar RLS
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not configured')
+    }
 
     const updateData: any = {
       volume,
@@ -94,7 +119,7 @@ export async function PUT(
       updateData.display_order = display_order
     }
 
-    const { data: pdf, error } = await client
+    const { data: pdf, error } = await supabaseAdmin
       .from('course_pdfs')
       .update(updateData)
       .eq('id', pdfId)
@@ -132,10 +157,12 @@ export async function DELETE(
 
     const { id: courseId, pdfId } = await params
 
-    // Usar supabaseAdmin para bypassar RLS
-    const client = supabaseAdmin || supabase
+    // SEMPRE usar supabaseAdmin para bypassar RLS
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not configured')
+    }
 
-    const { error } = await client
+    const { error } = await supabaseAdmin
       .from('course_pdfs')
       .delete()
       .eq('id', pdfId)
