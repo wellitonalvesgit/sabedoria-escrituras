@@ -152,10 +152,21 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 // PUT /api/courses/[id] - Atualizar curso (apenas admins)
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    console.log('🔐 PUT /api/courses/[id] - Iniciando verificação de admin...')
+    
     // Verificar se é admin
-    if (!await isAdmin(request)) {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+    const adminCheck = await isAdmin(request)
+    console.log('🔐 Resultado da verificação admin:', adminCheck)
+    
+    if (!adminCheck) {
+      console.error('❌ Acesso negado: usuário não é admin')
+      return NextResponse.json({ 
+        error: 'Acesso negado. Você precisa ser administrador para realizar esta ação.',
+        code: 'FORBIDDEN'
+      }, { status: 403 })
     }
+    
+    console.log('✅ Admin verificado, continuando com atualização...')
 
     const { id } = await params
     const body = await request.json()

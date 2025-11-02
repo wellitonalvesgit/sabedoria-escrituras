@@ -91,7 +91,9 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
       console.log('Buscando curso com ID:', courseId)
 
       // Usar API com parâmetro admin=true para buscar todos os cursos, independente do status
-      const response = await fetch(`/api/courses/${courseId}?admin=true`)
+      const response = await fetch(`/api/courses/${courseId}?admin=true`, {
+        credentials: 'include' // Incluir cookies na requisição
+      })
       
       if (!response.ok) {
         const errorData = await response.json()
@@ -163,11 +165,13 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
       console.log('🏷️ Categorias selecionadas:', selectedCategories)
 
       // Salvar curso via API (server-side com SERVICE_ROLE_KEY)
+      // IMPORTANTE: incluir credentials para enviar cookies de autenticação
       const courseResponse = await fetch(`/api/courses/${courseId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // Incluir cookies na requisição
         body: JSON.stringify(editedCourse)
       })
 
@@ -185,6 +189,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // Incluir cookies na requisição
         body: JSON.stringify({
           categoryIds: selectedCategories
         })
@@ -215,6 +220,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // Incluir cookies na requisição
         body: JSON.stringify(newPDF)
       })
 
@@ -254,6 +260,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // Incluir cookies na requisição
         body: JSON.stringify({
           volume: editingPDFData.volume,
           title: editingPDFData.title,
@@ -304,6 +311,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // Incluir cookies na requisição
         body: JSON.stringify(duplicatedPDF)
       })
 
@@ -369,7 +377,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
     try {
       // Remover PDF via API (server-side com SERVICE_ROLE_KEY)
       const response = await fetch(`/api/courses/${courseId}/pdfs/${pdfId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include' // Incluir cookies na requisição
       })
 
       if (!response.ok) {
@@ -435,6 +444,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // Incluir cookies na requisição
         body: JSON.stringify({
           courseId,
           coverUrl: result.fileUrl
@@ -731,6 +741,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                               headers: {
                                                 'Content-Type': 'application/json'
                                               },
+                                              credentials: 'include', // Incluir cookies na requisição
                                               body: JSON.stringify({
                                                 coverUrl: result.fileUrl
                                               })
