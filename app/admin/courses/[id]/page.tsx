@@ -483,13 +483,13 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
             </div>
             <div className="flex items-center gap-3">
               <Link href="/admin/courses">
-                <Button variant="outline" size="sm" className="hover:bg-accent hover:text-accent-foreground hover:border-accent-foreground/20">
+                <Button variant="outline" size="sm" className="hover:bg-primary/10 hover:text-primary hover:border-primary/30">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Voltar aos Cursos
                 </Button>
               </Link>
               <Link href={`/course/${courseId}`}>
-                <Button variant="outline" size="sm" className="hover:bg-accent hover:text-accent-foreground hover:border-accent-foreground/20">
+                <Button variant="outline" size="sm" className="hover:bg-primary/10 hover:text-primary hover:border-primary/30">
                   <Eye className="mr-2 h-4 w-4" />
                   Visualizar
                 </Button>
