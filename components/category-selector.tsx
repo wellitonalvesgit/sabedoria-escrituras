@@ -37,17 +37,15 @@ export function CategorySelector({ selectedCategories, onChange, multiple = true
   const fetchCategories = async () => {
     try {
       setLoading(true)
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
+      // Usar API em vez de importar supabase-admin diretamente
+      const response = await fetch('/api/categories')
 
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('display_order', { ascending: true })
+      if (!response.ok) {
+        throw new Error('Erro ao buscar categorias')
+      }
 
-      if (error) throw error
-
-      setCategories(data || [])
+      const { categories } = await response.json()
+      setCategories(categories || [])
     } catch (err) {
       console.error('Erro ao carregar categorias:', err)
     } finally {

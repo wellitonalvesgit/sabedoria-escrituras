@@ -56,17 +56,17 @@ export default function AdminIntegrationsPage() {
   const fetchIntegrations = async () => {
     try {
       setLoading(true)
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
+      // Usar API em vez de importar supabase-admin diretamente
+      const response = await fetch('/api/integrations', {
+        credentials: 'include' // Incluir cookies na requisição
+      })
 
-      const { data, error } = await supabase
-        .from('integrations')
-        .select('*')
-        .order('category', { ascending: true })
-        .order('display_name', { ascending: true })
+      if (!response.ok) {
+        throw new Error('Erro ao buscar integrações')
+      }
 
-      if (error) throw error
-      setIntegrations(data || [])
+      const { integrations } = await response.json()
+      setIntegrations(integrations || [])
     } catch (err) {
       console.error('Erro ao carregar integrações:', err)
     } finally {
@@ -76,15 +76,22 @@ export default function AdminIntegrationsPage() {
 
   const handleToggleIntegration = async (integration: Integration) => {
     try {
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
+      // Usar API em vez de importar supabase-admin diretamente
+      const response = await fetch('/api/integrations', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // Incluir cookies na requisição
+        body: JSON.stringify({
+          id: integration.id,
+          is_enabled: !integration.is_enabled
+        })
+      })
 
-      const { error } = await supabase
-        .from('integrations')
-        .update({ is_enabled: !integration.is_enabled })
-        .eq('id', integration.id)
-
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar integração')
+      }
 
       await fetchIntegrations()
     } catch (err) {
@@ -106,13 +113,12 @@ export default function AdminIntegrationsPage() {
 
     try {
       setSaving(true)
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
 
       // Separar credenciais sensíveis do config público
       const { api_key, api_secret, ...publicConfig } = configData
 
       const updates: any = {
+        id: configDialog.id,
         config: publicConfig
       }
 
@@ -122,12 +128,19 @@ export default function AdminIntegrationsPage() {
         updates.credentials_encrypted = JSON.stringify({ api_key, api_secret })
       }
 
-      const { error } = await supabase
-        .from('integrations')
-        .update(updates)
-        .eq('id', configDialog.id)
+      // Usar API em vez de importar supabase-admin diretamente
+      const response = await fetch('/api/integrations', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // Incluir cookies na requisição
+        body: JSON.stringify(updates)
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error('Erro ao salvar configuração')
+      }
 
       alert('Configuração salva com sucesso!')
       setConfigDialog(null)
@@ -143,17 +156,19 @@ export default function AdminIntegrationsPage() {
     try {
       setTesting(integration.id)
 
-      // Atualizar status para "testando"
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
-
-      await supabase
-        .from('integrations')
-        .update({
+      // Atualizar status para "testando" via API
+      await fetch('/api/integrations', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // Incluir cookies na requisição
+        body: JSON.stringify({
+          id: integration.id,
           last_test_status: 'pending',
           last_test_at: new Date().toISOString()
         })
-        .eq('id', integration.id)
+      })
 
       // Chamar API de teste
       const response = await fetch(`/api/integrations/${integration.name}/test`, {
@@ -162,15 +177,20 @@ export default function AdminIntegrationsPage() {
 
       const result = await response.json()
 
-      // Atualizar com resultado
-      await supabase
-        .from('integrations')
-        .update({
+      // Atualizar com resultado via API
+      await fetch('/api/integrations', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // Incluir cookies na requisição
+        body: JSON.stringify({
+          id: integration.id,
           last_test_status: result.success ? 'success' : 'failed',
           last_test_message: result.message,
           last_test_at: new Date().toISOString()
         })
-        .eq('id', integration.id)
+      })
 
       await fetchIntegrations()
 

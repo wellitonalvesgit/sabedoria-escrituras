@@ -34,3 +34,4 @@ next-env.d.ts
 CRIAR-*.md
 EXECUTE-*.md
 server.log
+.env

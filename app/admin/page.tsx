@@ -1,6 +1,6 @@
 "use client"
 
-import { BookOpen, Plus, Edit, Trash2, Upload, FileText, Users, BarChart3, Tag, Plug, CreditCard, Wallet } from "lucide-react"
+import { BookOpen, Plus, Edit, Trash2, Upload, FileText, Users, BarChart3, Tag, Plug, CreditCard, Wallet, User, LogOut, CheckCircle2, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -14,9 +14,18 @@ interface Course {
   course_pdfs: any[]
 }
 
+interface UserInfo {
+  id: string
+  email: string
+  name?: string
+  role?: string
+}
+
 export default function AdminPage() {
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
@@ -24,6 +33,7 @@ export default function AdminPage() {
   })
 
   useEffect(() => {
+    fetchUserInfo()
     fetchCourses()
     fetchStats()
   }, [])
@@ -51,6 +61,44 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error)
+    }
+  }
+
+  const fetchUserInfo = async () => {
+    try {
+      setAuthLoading(true)
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('👤 Informações do usuário:', data)
+        setUserInfo(data.user || null)
+      } else {
+        console.error('❌ Erro ao buscar informações do usuário:', response.status)
+        setUserInfo(null)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao buscar informações do usuário:', error)
+      setUserInfo(null)
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/signout', {
+        method: 'POST',
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        window.location.href = '/login'
+      }
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error)
     }
   }
 
@@ -86,11 +134,52 @@ export default function AdminPage() {
                 Área Administrativa
               </Badge>
             </div>
-            <Link href="/">
-              <Button variant="outline" size="sm">
-                Voltar ao Site
-              </Button>
-            </Link>
+            <div className="flex items-center gap-3">
+              {/* Informações do usuário */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/40">
+                {authLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                    <span className="text-sm text-muted-foreground">Verificando...</span>
+                  </div>
+                ) : userInfo ? (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{userInfo.email}</span>
+                        {userInfo.role && (
+                          <Badge variant={userInfo.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
+                            {userInfo.role}
+                          </Badge>
+                        )}
+                      </div>
+                      {userInfo.name && (
+                        <span className="text-xs text-muted-foreground">{userInfo.name}</span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    <span className="text-sm text-red-500">Não autenticado</span>
+                  </div>
+                )}
+              </div>
+              
+              {userInfo && (
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-1" />
+                  Sair
+                </Button>
+              )}
+              
+              <Link href="/">
+                <Button variant="outline" size="sm">
+                  Voltar ao Site
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

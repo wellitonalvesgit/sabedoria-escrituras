@@ -55,17 +55,15 @@ export default function AdminCategoriesPage() {
   const fetchCategories = async () => {
     try {
       setLoading(true)
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
+      // Usar API em vez de importar supabase-admin diretamente
+      const response = await fetch('/api/categories')
 
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('display_order', { ascending: true })
+      if (!response.ok) {
+        throw new Error('Erro ao buscar categorias')
+      }
 
-      if (error) throw error
-
-      setCategories(data || [])
+      const { categories } = await response.json()
+      setCategories(categories || [])
     } catch (err) {
       setError((err as Error).message)
     } finally {
@@ -107,47 +105,37 @@ export default function AdminCategoriesPage() {
         return
       }
 
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
-
-      // Gerar slug
-      const slug = formData.name
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '')
-
-      if (editingCategory) {
-        // Atualizar
-        const { error } = await supabase
-          .from('categories')
-          .update({
+      // Usar API em vez de importar supabase-admin diretamente
+      const method = editingCategory ? 'PUT' : 'POST'
+      const body = editingCategory
+        ? {
+            id: editingCategory.id,
             name: formData.name,
-            slug,
             description: formData.description || null,
             icon: formData.icon,
             color: formData.color,
             display_as_carousel: formData.display_as_carousel,
-          })
-          .eq('id', editingCategory.id)
-
-        if (error) throw error
-      } else {
-        // Criar
-        const { error } = await supabase
-          .from('categories')
-          .insert({
+          }
+        : {
             name: formData.name,
-            slug,
             description: formData.description || null,
             icon: formData.icon,
             color: formData.color,
-            display_order: categories.length,
             display_as_carousel: formData.display_as_carousel,
-          })
+          }
 
-        if (error) throw error
+      const response = await fetch('/api/categories', {
+        method,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // Incluir cookies na requisição
+        body: JSON.stringify(body)
+      })
+
+      if (!response.ok) {
+        const result = await response.json()
+        throw new Error(result.error || 'Erro ao salvar categoria')
       }
 
       setShowDialog(false)
@@ -163,15 +151,16 @@ export default function AdminCategoriesPage() {
     if (!confirm(`Tem certeza que deseja deletar a categoria "${category.name}"?`)) return
 
     try {
-      const { getSupabaseClient } = await import('@/lib/supabase-admin')
-      const supabase = getSupabaseClient()
+      // Usar API em vez de importar supabase-admin diretamente
+      const response = await fetch(`/api/categories?id=${category.id}`, {
+        method: 'DELETE',
+        credentials: 'include' // Incluir cookies na requisição
+      })
 
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', category.id)
-
-      if (error) throw error
+      if (!response.ok) {
+        const result = await response.json()
+        throw new Error(result.error || 'Erro ao deletar categoria')
+      }
 
       await fetchCategories()
     } catch (err) {

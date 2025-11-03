@@ -920,30 +920,29 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                 checked={pdf.use_auto_conversion !== false}
                                 onCheckedChange={async (checked) => {
                                   try {
-                                    // Atualizar o PDF com nova configuração
-                                    const updatedPDFs = course.course_pdfs.map(p => 
-                                      p.id === pdf.id ? { ...p, use_auto_conversion: checked } : p
-                                    )
+                                    // Atualizar configuração via API (server-side com SERVICE_ROLE_KEY)
+                                    const response = await fetch(`/api/courses/${courseId}/pdfs/${pdf.id}`, {
+                                      method: 'PUT',
+                                      headers: {
+                                        'Content-Type': 'application/json'
+                                      },
+                                      credentials: 'include', // Incluir cookies na requisição
+                                      body: JSON.stringify({
+                                        volume: pdf.volume,
+                                        title: pdf.title,
+                                        url: pdf.url,
+                                        pages: pdf.pages,
+                                        reading_time_minutes: pdf.reading_time_minutes,
+                                        text_content: pdf.text_content,
+                                        use_auto_conversion: checked,
+                                        cover_url: pdf.cover_url || null
+                                      })
+                                    })
 
-                                    // Atualizar configuração diretamente no Supabase
-                                    const { getSupabaseClient } = await import('@/lib/supabase-admin')
-                                    const supabase = getSupabaseClient()
-                                    
-                                    const { error } = await supabase
-                                      .from('course_pdfs')
-                                      .update({ use_auto_conversion: checked })
-                                      .eq('id', pdf.id)
-                                    
-                                    if (error) {
-                                      throw new Error('Erro ao atualizar configuração')
-                                    }
-                                    
-                                    const response = { ok: true }
-                                    
                                     if (!response.ok) {
                                       throw new Error('Erro ao atualizar configuração')
                                     }
-                                    
+
                                     await fetchCourse() // Recarregar dados
                                   } catch (err) {
                                     alert('Erro ao atualizar configuração')
@@ -968,30 +967,29 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                 value={pdf.text_content || ""}
                                 onChange={async (e) => {
                                   try {
-                                    // Atualizar o PDF com novo texto
-                                    const updatedPDFs = course.course_pdfs.map(p => 
-                                      p.id === pdf.id ? { ...p, text_content: e.target.value } : p
-                                    )
+                                    // Atualizar texto via API (server-side com SERVICE_ROLE_KEY)
+                                    const response = await fetch(`/api/courses/${courseId}/pdfs/${pdf.id}`, {
+                                      method: 'PUT',
+                                      headers: {
+                                        'Content-Type': 'application/json'
+                                      },
+                                      credentials: 'include', // Incluir cookies na requisição
+                                      body: JSON.stringify({
+                                        volume: pdf.volume,
+                                        title: pdf.title,
+                                        url: pdf.url,
+                                        pages: pdf.pages,
+                                        reading_time_minutes: pdf.reading_time_minutes,
+                                        text_content: e.target.value,
+                                        use_auto_conversion: pdf.use_auto_conversion,
+                                        cover_url: pdf.cover_url || null
+                                      })
+                                    })
 
-                                    // Atualizar texto diretamente no Supabase
-                                    const { getSupabaseClient } = await import('@/lib/supabase-admin')
-                                    const supabase = getSupabaseClient()
-                                    
-                                    const { error } = await supabase
-                                      .from('course_pdfs')
-                                      .update({ text_content: e.target.value })
-                                      .eq('id', pdf.id)
-                                    
-                                    if (error) {
-                                      throw new Error('Erro ao salvar texto')
-                                    }
-                                    
-                                    const response = { ok: true }
-                                    
                                     if (!response.ok) {
                                       throw new Error('Erro ao salvar texto')
                                     }
-                                    
+
                                     await fetchCourse() // Recarregar dados
                                   } catch (err) {
                                     alert('Erro ao salvar texto')
@@ -1035,30 +1033,29 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                 variant="outline"
                                 onClick={async () => {
                                   try {
-                                    // Limpar o texto do PDF
-                                    const updatedPDFs = course.course_pdfs.map(p => 
-                                      p.id === pdf.id ? { ...p, text_content: null } : p
-                                    )
+                                    // Limpar texto via API (server-side com SERVICE_ROLE_KEY)
+                                    const response = await fetch(`/api/courses/${courseId}/pdfs/${pdf.id}`, {
+                                      method: 'PUT',
+                                      headers: {
+                                        'Content-Type': 'application/json'
+                                      },
+                                      credentials: 'include', // Incluir cookies na requisição
+                                      body: JSON.stringify({
+                                        volume: pdf.volume,
+                                        title: pdf.title,
+                                        url: pdf.url,
+                                        pages: pdf.pages,
+                                        reading_time_minutes: pdf.reading_time_minutes,
+                                        text_content: null,
+                                        use_auto_conversion: pdf.use_auto_conversion,
+                                        cover_url: pdf.cover_url || null
+                                      })
+                                    })
 
-                                    // Limpar texto diretamente no Supabase
-                                    const { getSupabaseClient } = await import('@/lib/supabase-admin')
-                                    const supabase = getSupabaseClient()
-                                    
-                                    const { error } = await supabase
-                                      .from('course_pdfs')
-                                      .update({ text_content: null })
-                                      .eq('id', pdf.id)
-                                    
-                                    if (error) {
-                                      throw new Error('Erro ao limpar texto')
-                                    }
-                                    
-                                    const response = { ok: true }
-                                    
                                     if (!response.ok) {
                                       throw new Error('Erro ao limpar texto')
                                     }
-                                    
+
                                     await fetchCourse() // Recarregar dados
                                   } catch (err) {
                                     alert('Erro ao limpar texto')
