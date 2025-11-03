@@ -78,10 +78,10 @@ export default function AdminSubscriptionsPage() {
 
     // Calcular receita mensal (assinaturas ativas)
     const monthlyRevenue = subs
-      .filter(s => s.status === 'active')
+      .filter(s => s.status === 'active' && s.subscription_plans)
       .reduce((acc, s) => {
-        const price = s.subscription_plans.price_monthly ||
-                     (s.subscription_plans.price_yearly / 12) || 0
+        const price = s.subscription_plans?.price_monthly ||
+                     (s.subscription_plans?.price_yearly / 12) || 0
         return acc + price
       }, 0)
 
@@ -98,9 +98,14 @@ export default function AdminSubscriptionsPage() {
 
   const getFilteredSubscriptions = () => {
     return subscriptions.filter(sub => {
+      // Verificar se users existe antes de acessar propriedades
+      if (!sub.users) {
+        return false
+      }
+
       const matchesSearch =
-        sub.users.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sub.users.email.toLowerCase().includes(searchTerm.toLowerCase())
+        sub.users.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sub.users.email?.toLowerCase().includes(searchTerm.toLowerCase())
 
       const matchesStatus =
         statusFilter === "all" || sub.status === statusFilter
@@ -306,9 +311,9 @@ export default function AdminSubscriptionsPage() {
                   ) : (
                     filteredSubscriptions.map((sub) => {
                       const daysLeft = calculateDaysLeft(sub.current_period_end)
-                      const price = sub.subscription_plans.price_monthly > 0
+                      const price = sub.subscription_plans?.price_monthly > 0
                         ? `R$ ${sub.subscription_plans.price_monthly}/mês`
-                        : sub.subscription_plans.price_yearly > 0
+                        : sub.subscription_plans?.price_yearly > 0
                         ? `R$ ${sub.subscription_plans.price_yearly}/ano`
                         : 'Grátis'
 
@@ -316,12 +321,12 @@ export default function AdminSubscriptionsPage() {
                         <tr key={sub.id} className="border-b hover:bg-muted/50">
                           <td className="p-4">
                             <div>
-                              <p className="font-medium">{sub.users.name}</p>
-                              <p className="text-sm text-muted-foreground">{sub.users.email}</p>
+                              <p className="font-medium">{sub.users?.name || 'Usuário não encontrado'}</p>
+                              <p className="text-sm text-muted-foreground">{sub.users?.email || '-'}</p>
                             </div>
                           </td>
                           <td className="p-4">
-                            <Badge variant="outline">{sub.subscription_plans.display_name}</Badge>
+                            <Badge variant="outline">{sub.subscription_plans?.display_name || 'Sem plano'}</Badge>
                           </td>
                           <td className="p-4">{getStatusBadge(sub.status)}</td>
                           <td className="p-4">{price}</td>

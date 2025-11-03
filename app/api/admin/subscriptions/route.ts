@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,8 +10,8 @@ export async function GET(request: NextRequest) {
 
     // Auth com ANON_KEY
     const supabaseAnon = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.anonKey,
       {
         cookies: {
           getAll() {
@@ -33,21 +35,15 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Operations com SERVICE_ROLE_KEY
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    // Operations com SERVICE_ROLE_KEY usando createClient (não createServerClient)
+    const supabase = createClient(
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey,
       {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options)
-            })
-          },
-        },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
       }
     )
 
