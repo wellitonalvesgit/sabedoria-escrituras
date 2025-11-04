@@ -21,7 +21,7 @@ ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # Gateway de pagamento para infoprodutores
 KORVEX_PUBLIC_KEY=oseias01fab_3fsgxpo0jjk6iccb
 KORVEX_PRIVATE_KEY=inyug04lxkve178wrd7nbps81ndnep4rb7q0esasvi2vjvp8dduyny4cuv26chf2
-KORVEX_API_URL=https://api.korvex.com.br/v1
+   KORVEX_API_URL=https://app.korvex.com.br/api/v1
 KORVEX_SANDBOX=true
 
 # Asaas Payment Gateway Configuration (Alternativa)
@@ -30,7 +30,9 @@ ASAAS_API_URL=https://www.asaas.com/api/v3
 ASAAS_SANDBOX=true
 
 # Site Configuration
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+# Em produção, use: https://app.paulocartas.com.br
+# Em desenvolvimento, use: http://localhost:3000
+NEXT_PUBLIC_SITE_URL=https://app.paulocartas.com.br
 NEXT_PUBLIC_EMAIL_DOMAIN=paulocartas.com.br
 ```
 
@@ -137,9 +139,11 @@ O projeto agora suporta integração com o gateway de pagamento Korvex, ideal pa
 
 3. **Configure o webhook:**
    - No painel da Korvex, configure o webhook para:
-   - URL: `https://seudominio.com/api/webhooks/korvex`
+   - URL: `https://app.paulocartas.com.br/api/webhooks/korvex`
    - Eventos: `TRANSACTION_CREATED`, `TRANSACTION_PAID`, `TRANSACTION_CANCELED`, `TRANSACTION_REFUNDED`
    - Copie o token gerado e adicione ao `.env` como `KORVEX_WEBHOOK_TOKEN`
+   
+   ⚠️ **IMPORTANTE**: Use o domínio `app.paulocartas.com.br` (não `paulocartas.com.br`)
 
 ### Uso - Checkout da Korvex
 
