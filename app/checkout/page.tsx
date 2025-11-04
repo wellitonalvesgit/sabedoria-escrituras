@@ -85,27 +85,39 @@ function CheckoutContent() {
     setProcessing(true)
 
     try {
-      const response = await fetch('/api/subscriptions/create', {
+      // Criar checkout na Korvex
+      const response = await fetch('/api/korvex/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plan_name: planName,
           cycle,
-          payment_method: paymentMethod.toUpperCase(),
-          customer_data: userData
+          payment_method: paymentMethod.toUpperCase()
         })
       })
 
       const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao processar pagamento')
+        throw new Error(result.error || 'Erro ao criar checkout')
       }
 
-      // Redirecionar para página de sucesso com dados do pagamento
-      router.push(`/checkout/success?payment_id=${result.payment_id}&method=${paymentMethod}`)
+      // Se tem URL do checkout, redirecionar para o checkout da Korvex
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl
+        return
+      }
+
+      // Se é PIX e tem QR Code, redirecionar para página de pagamento PIX
+      if (result.pix && paymentMethod === 'pix') {
+        router.push(`/checkout/pix?transactionId=${result.transactionId}&identifier=${result.identifier}`)
+        return
+      }
+
+      // Fallback: redirecionar para callback
+      router.push(`/checkout/korvex/callback?transactionId=${result.transactionId}&identifier=${result.identifier}`)
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Erro ao processar pagamento')
+      alert(error instanceof Error ? error.message : 'Erro ao processar checkout')
     } finally {
       setProcessing(false)
     }

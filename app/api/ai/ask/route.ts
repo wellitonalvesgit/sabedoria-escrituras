@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { askQuestionAboutContext } from '@/lib/claude'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
 /**
  * POST /api/ai/ask
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     // Autenticação
     const cookieStore = await cookies()
     const supabaseAnon = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      SUPABASE_CONFIG.url,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
@@ -49,8 +50,8 @@ export async function POST(request: NextRequest) {
 
     // Buscar conteúdo do PDF
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey,
       {
         cookies: {
           getAll: () => cookieStore.getAll(),

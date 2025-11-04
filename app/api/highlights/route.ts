@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
 // GET /api/highlights - Listar marcações do usuário autenticado
 export async function GET(request: NextRequest) {
@@ -9,7 +10,7 @@ export async function GET(request: NextRequest) {
 
     // ANON_KEY apenas para autenticação
     const supabaseAnon = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      SUPABASE_CONFIG.url,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
@@ -34,8 +35,8 @@ export async function GET(request: NextRequest) {
 
     // SERVICE_ROLE_KEY para operações no banco
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey,
       {
         cookies: {
           getAll() {
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     // ANON_KEY apenas para autenticação
     const supabaseAnon = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      SUPABASE_CONFIG.url,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
@@ -114,8 +115,8 @@ export async function POST(request: NextRequest) {
 
     // SERVICE_ROLE_KEY para operações no banco
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey,
       {
         cookies: {
           getAll() {

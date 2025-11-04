@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
 /**
  * Busca a assinatura atual do usuário
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     // Usar ANON_KEY para verificar autenticação
     const supabaseAnon = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      SUPABASE_CONFIG.url,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
@@ -41,8 +42,8 @@ export async function GET(request: NextRequest) {
 
     // Usar SERVICE_ROLE_KEY para bypassar RLS e melhorar performance
     const supabaseAdmin = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey,
       {
         cookies: {
           getAll() {

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
 // GET /api/users - Listar todos os usuários
 export async function GET(request: NextRequest) {
   try {
     // Usar configuração segura do Supabase
     const client = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey,
       {
       auth: {
         autoRefreshToken: false,
@@ -91,8 +92,8 @@ export async function POST(request: NextRequest) {
   try {
     // Usar configuração segura do Supabase
     const client = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey,
       {
         auth: {
           autoRefreshToken: false,

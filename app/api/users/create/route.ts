@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendEmail, generateNewUserEmailTemplate } from '@/lib/email'
 import { sendEmailResend, generateSimpleEmailTemplate } from '@/lib/email-resend'
+import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
 /**
  * Gera senha provisória aleatória de 8 caracteres
@@ -68,8 +69,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar cliente admin com SERVICE_ROLE_KEY
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    const supabaseUrl = SUPABASE_CONFIG.url
+    const supabaseServiceRoleKey = SUPABASE_CONFIG.serviceRoleKey
 
     console.log('🔧 Configuração Supabase:')
     console.log('URL:', supabaseUrl ? '✅ Configurada' : '❌ Não configurada')

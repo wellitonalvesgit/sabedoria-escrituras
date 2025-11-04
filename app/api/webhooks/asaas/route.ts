@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
 /**
  * Webhook do Asaas
@@ -27,8 +28,8 @@ export async function POST(request: NextRequest) {
 
     // Criar cliente Supabase com service role (bypass RLS)
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey
     )
 
     const { event, payment } = body

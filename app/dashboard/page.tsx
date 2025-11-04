@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { BookOpen, Search, User, Menu, Loader2, Shield, Clock, Filter, X } from "lucide-react"
+import { BookOpen, Search, User, Menu, Loader2, Shield, Clock, Filter, X, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { PointsDisplay } from "@/components/points-display"
@@ -76,7 +76,8 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const { user, loading: userLoading, sessionValid, hasAccessToCourse, isAccessExpired } = useCurrentUser()
+  const [refreshing, setRefreshing] = useState(false)
+  const { user, loading: userLoading, sessionValid, hasAccessToCourse, isAccessExpired, refreshUserData } = useCurrentUser()
 
   useEffect(() => {
     if (!userLoading) {
@@ -161,6 +162,19 @@ export default function DashboardPage() {
       setCategories(data.categories || [])
     } catch (err) {
       console.error('Erro ao carregar categorias:', err)
+    }
+  }
+
+  const handleRefreshPermissions = async () => {
+    try {
+      setRefreshing(true)
+      await refreshUserData()
+      // Recarregar os cursos para atualizar o status de acesso
+      await fetchCourses()
+    } catch (err) {
+      console.error('Erro ao atualizar permissões:', err)
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -259,13 +273,23 @@ export default function DashboardPage() {
               </Button>
               <ThemeToggle />
               <PointsDisplay />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 hover:bg-primary/10 hover:text-primary"
+                onClick={handleRefreshPermissions}
+                disabled={refreshing}
+                title="Atualizar permissões"
+              >
+                <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
+              </Button>
               <Link href="/settings">
                 <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-primary/10 hover:text-primary">
                   <User className="h-5 w-5" />
                 </Button>
               </Link>
               <LogoutButton user={user ? { name: user.name, email: user.email, role: user.role } : undefined} />
-              <MobileDrawer 
+              <MobileDrawer
                 user={user ? { name: user.name, email: user.email, role: user.role } : undefined}
                 currentPath="/dashboard"
               />

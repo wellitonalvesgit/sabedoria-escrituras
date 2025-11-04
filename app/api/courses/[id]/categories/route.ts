@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
 /**
  * Atualiza as categorias de um curso
@@ -21,8 +22,8 @@ export async function PUT(
     // Usar SERVICE_ROLE_KEY direto para ter permissões de admin completas
     // Não usar createServerClient pois ele herda autenticação do usuário
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey,
       {
         auth: {
           autoRefreshToken: false,

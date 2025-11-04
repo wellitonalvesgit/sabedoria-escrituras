@@ -88,6 +88,10 @@ export function useCurrentUser() {
     await sessionManager.signOut()
   }
 
+  const refreshUserData = async () => {
+    await sessionManager.refreshUserData()
+  }
+
   return {
     user,
     loading,
@@ -98,6 +102,7 @@ export function useCurrentUser() {
     getAccessDaysRemaining,
     getFormattedTimeUntilExpiration,
     refreshSession,
+    refreshUserData,
     signOut
   }
 }

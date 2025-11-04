@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { getAsaasService } from '@/lib/asaas'
+import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
 /**
  * Cancela a assinatura do usuário
@@ -13,8 +14,8 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies()
 
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      SUPABASE_CONFIG.url,
+      SUPABASE_CONFIG.serviceRoleKey,
       {
         cookies: {
           getAll() {

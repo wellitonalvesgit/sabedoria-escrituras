@@ -24,7 +24,7 @@ class SessionManager {
 
   // Cache de dados do usuário para melhor performance
   private userCache: { data: User | null, timestamp: number } | null = null
-  private readonly USER_CACHE_TTL = 10 * 1000 // 10 segundos (reduzido para evitar cache desatualizado)
+  private readonly USER_CACHE_TTL = 2 * 1000 // 2 segundos (reduzido para atualização rápida de permissões)
 
   private constructor() {
     // Inicializar imediatamente para melhor performance
