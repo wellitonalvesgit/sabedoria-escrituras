@@ -67,10 +67,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Buscar todos os planos
+    // Buscar apenas planos ativos
     const { data: plans, error } = await supabase
       .from('subscription_plans')
       .select('*')
+      .eq('is_active', true)
       .order('sort_order', { ascending: true })
 
     if (error) {
