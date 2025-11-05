@@ -15,8 +15,6 @@ import { GoogleDriveLink } from "@/components/google-drive-link"
 import { ImageUpload } from "@/components/image-upload"
 import { CategorySelector } from "@/components/category-selector"
 import { VolumeCoverUpload } from "@/components/volume-cover-upload"
-import { VolumeAudioUpload } from "@/components/volume-audio-upload"
-import { YouTubeUrlManager } from "@/components/youtube-url-manager"
 import Link from "next/link"
 
 interface CoursePDF {
@@ -249,7 +247,13 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
 
   const handleEditPDF = (pdf: CoursePDF) => {
     setEditingPDF(pdf.id)
-    setEditingPDFData({ ...pdf })
+    setEditingPDFData({
+      ...pdf,
+      text_content: pdf.text_content || '',
+      use_auto_conversion: pdf.use_auto_conversion !== false,
+      youtube_url: pdf.youtube_url || '',
+      audio_url: pdf.audio_url || ''
+    })
   }
 
   const handleSavePDF = async () => {
@@ -271,7 +275,9 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
           reading_time_minutes: editingPDFData.reading_time_minutes,
           text_content: editingPDFData.text_content,
           use_auto_conversion: editingPDFData.use_auto_conversion,
-          cover_url: editingPDFData.cover_url || null
+          cover_url: editingPDFData.cover_url || null,
+          youtube_url: editingPDFData.youtube_url || null,
+          audio_url: editingPDFData.audio_url || null
         })
       })
 
@@ -782,6 +788,115 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                 </div>
                               </div>
 
+                              {/* URL do YouTube */}
+                              <div className="md:col-span-2">
+                                <Label htmlFor={`edit-youtube-${pdf.id}`}>URL do YouTube (Opcional)</Label>
+                                <Input
+                                  id={`edit-youtube-${pdf.id}`}
+                                  value={editingPDFData?.youtube_url || ''}
+                                  onChange={(e) => setEditingPDFData(prev => prev ? { ...prev, youtube_url: e.target.value } : null)}
+                                  placeholder="https://www.youtube.com/watch?v=..."
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Cole a URL do vídeo do YouTube relacionado a este volume
+                                </p>
+                              </div>
+
+                              {/* Upload de Áudio MP3 */}
+                              <div className="md:col-span-2">
+                                <Label>Áudio MP3 do Volume (Opcional)</Label>
+                                <div className="space-y-2">
+                                  {editingPDFData?.audio_url && (
+                                    <div className="flex items-center gap-2 p-2 bg-muted rounded">
+                                      <Volume2 className="h-4 w-4 text-primary" />
+                                      <span className="text-sm text-muted-foreground flex-1">
+                                        Áudio configurado
+                                      </span>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => window.open(editingPDFData.audio_url, '_blank')}
+                                      >
+                                        Ouvir
+                                      </Button>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <input
+                                      type="file"
+                                      id={`audio-upload-${pdf.id}`}
+                                      accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg"
+                                      className="hidden"
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0]
+                                        if (!file) return
+
+                                        // Validar tipo de arquivo
+                                        const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg']
+                                        if (!validTypes.includes(file.type)) {
+                                          alert('Por favor, selecione um arquivo de áudio válido (MP3, WAV ou OGG)')
+                                          return
+                                        }
+
+                                        // Validar tamanho (máximo 50MB)
+                                        if (file.size > 50 * 1024 * 1024) {
+                                          alert('O arquivo de áudio deve ter no máximo 50MB')
+                                          return
+                                        }
+
+                                        try {
+                                          const formData = new FormData()
+                                          formData.append('file', file)
+                                          formData.append('volumeId', pdf.id)
+                                          formData.append('courseId', courseId)
+
+                                          const response = await fetch('/api/upload/volume-audio', {
+                                            method: 'POST',
+                                            body: formData,
+                                          })
+
+                                          const result = await response.json()
+
+                                          if (!result.success) {
+                                            throw new Error(result.error)
+                                          }
+
+                                          // Atualizar o estado local
+                                          setEditingPDFData(prev => prev ? { ...prev, audio_url: result.fileUrl } : null)
+                                          alert("Áudio do volume atualizado com sucesso!")
+                                        } catch (error) {
+                                          console.error('Erro no upload:', error)
+                                          alert("Erro ao fazer upload do áudio: " + (error as Error).message)
+                                        }
+                                      }}
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full"
+                                      onClick={() => {
+                                        const input = document.getElementById(`audio-upload-${pdf.id}`) as HTMLInputElement
+                                        input?.click()
+                                      }}
+                                    >
+                                      <Upload className="mr-2 h-4 w-4" />
+                                      {editingPDFData?.audio_url ? 'Trocar Áudio' : 'Enviar Áudio MP3'}
+                                    </Button>
+                                  </div>
+                                  {editingPDFData?.audio_url && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full text-destructive hover:text-destructive"
+                                      onClick={() => setEditingPDFData(prev => prev ? { ...prev, audio_url: undefined } : null)}
+                                    >
+                                      Remover Áudio
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
                                   <Label htmlFor={`edit-pages-${pdf.id}`}>Páginas</Label>
@@ -1189,74 +1304,6 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
               </CardContent>
             </Card>
 
-            {/* YouTube Videos Management */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Youtube className="h-5 w-5 text-red-600" />
-                  Gerenciar Vídeos dos Volumes
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Adicione vídeos do YouTube para cada volume. Os usuários poderão escolher entre assistir na plataforma (embed) ou abrir no YouTube.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {course.course_pdfs.map((pdf) => (
-                    <YouTubeUrlManager
-                      key={pdf.id}
-                      volumeId={pdf.id}
-                      courseId={courseId}
-                      currentYoutubeUrl={pdf.youtube_url}
-                      volumeTitle={pdf.title}
-                      volumeNumber={pdf.volume}
-                      onUrlUpdate={(url) => {
-                        console.log('URL do YouTube atualizada:', url)
-                        fetchCourse() // Recarregar dados
-                      }}
-                      onUrlRemove={() => {
-                        console.log('URL do YouTube removida')
-                        fetchCourse() // Recarregar dados
-                      }}
-                    />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Audio Management */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Volume2 className="h-5 w-5 text-[#F3C77A]" />
-                  Gerenciar Áudios dos Volumes (MP3)
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Faça upload de arquivos MP3 para adicionar narração aos volumes. Os usuários poderão escutar enquanto leem.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {course.course_pdfs.map((pdf) => (
-                    <VolumeAudioUpload
-                      key={pdf.id}
-                      volumeId={pdf.id}
-                      courseId={courseId}
-                      currentAudioUrl={pdf.audio_url}
-                      volumeTitle={pdf.title}
-                      onUploadSuccess={(url) => {
-                        console.log('Áudio do volume atualizado:', url)
-                        fetchCourse() // Recarregar dados
-                      }}
-                      onUploadError={(error) => {
-                        console.error('Erro ao fazer upload do áudio:', error)
-                        alert('Erro ao fazer upload do áudio: ' + error)
-                      }}
-                    />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Course Preview */}
