@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import { CourseCard } from "@/components/course-card"
-import { HeroSection } from "@/components/hero-section"
 import { CourseStats } from "@/components/course-stats"
 import { CategorySelector } from "@/components/category-selector"
 import { CategoryCarousel } from "@/components/category-carousel"
@@ -316,8 +315,6 @@ export default function DashboardPage() {
       </nav>
 
       <div className="mx-auto max-w-7xl px-6 pt-24 pb-8 lg:px-8">
-        <HeroSection />
-
         {/* Alertas de Acesso */}
         {isAccessExpired() && (
           <Alert className="mb-6 border-orange-500 bg-orange-500/10">

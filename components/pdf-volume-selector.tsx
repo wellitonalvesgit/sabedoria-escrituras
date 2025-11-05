@@ -131,76 +131,139 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
               {selectedPDF.pages || 20} páginas • {(selectedPDF as any).readingTimeMinutes || (selectedPDF as any).reading_time_minutes || 30} minutos de leitura
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Botões de Ação */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {/* Ver PDF */}
-              <Button
-                onClick={() => window.open(selectedPDF.url, '_blank')}
-                className="w-full bg-[#F3C77A] text-black hover:bg-[#F3C77A]/90"
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                Ver PDF
-              </Button>
+          <CardContent className="space-y-6">
+            {/* Seção: Como você quer estudar este volume? */}
+            <div>
+              <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-[#F3C77A]" />
+                Como você quer estudar este volume?
+              </h3>
 
-              {/* Ver Modo Kindle */}
-              <Button
-                onClick={() => {
-                  // Implementar abertura em modo kindle
-                  window.open(selectedPDF.url, '_blank')
-                }}
-                variant="outline"
-                className="w-full border-[#F3C77A] text-[#F3C77A] hover:bg-[#F3C77A] hover:text-black"
-              >
-                <BookOpen className="mr-2 h-4 w-4" />
-                Modo Kindle
-              </Button>
-
-              {/* Download */}
-              <Button
-                onClick={() => {
-                  const link = document.createElement("a")
-                  link.href = selectedPDF.url
-                  link.download = `${selectedPDF.title}.pdf`
-                  document.body.appendChild(link)
-                  link.click()
-                  document.body.removeChild(link)
-                }}
-                variant="outline"
-                className="w-full border-[#F3C77A] text-[#F3C77A] hover:bg-[#F3C77A] hover:text-black"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download
-              </Button>
-
-              {/* Vídeo (YouTube) */}
-              {(selectedPDF as any).youtube_url && (
-                <Button
-                  onClick={() => window.open((selectedPDF as any).youtube_url, '_blank')}
-                  variant="outline"
-                  className="w-full border-[#F3C77A] text-[#F3C77A] hover:bg-[#F3C77A] hover:text-black"
+              {/* Grid de Opções Principais */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Opção 1: Visualização Original (PDF) */}
+                <button
+                  onClick={() => onSelectPDF(selectedPDF)}
+                  className="group relative overflow-hidden rounded-xl border-2 border-[#2E261D] bg-gradient-to-br from-[#16130F] to-[#2E261D] p-4 text-left transition-all hover:border-[#F3C77A] hover:shadow-lg hover:shadow-[#F3C77A]/20"
                 >
-                  <Play className="mr-2 h-4 w-4" />
-                  Vídeo
-                </Button>
-              )}
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#F3C77A]/10 group-hover:bg-[#F3C77A]/20">
+                      <FileText className="h-6 w-6 text-[#F3C77A]" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-foreground group-hover:text-[#F3C77A]">📖 Visualização Original</h4>
+                      <p className="text-xs text-muted-foreground mt-1">Leia o PDF com layout e imagens originais</p>
+                    </div>
+                  </div>
+                </button>
 
-              {/* MP3 (Áudio) */}
-              {(selectedPDF as any).audio_url && (
-                <Button
-                  onClick={() => window.open((selectedPDF as any).audio_url, '_blank')}
-                  variant="outline"
-                  className="w-full border-[#F3C77A] text-[#F3C77A] hover:bg-[#F3C77A] hover:text-black"
+                {/* Opção 2: Modo Kindle */}
+                <button
+                  onClick={() => onSelectPDF(selectedPDF)}
+                  className="group relative overflow-hidden rounded-xl border-2 border-[#2E261D] bg-gradient-to-br from-[#16130F] to-[#2E261D] p-4 text-left transition-all hover:border-[#F3C77A] hover:shadow-lg hover:shadow-[#F3C77A]/20"
                 >
-                  <Volume2 className="mr-2 h-4 w-4" />
-                  MP3
-                </Button>
-              )}
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#F3C77A]/10 group-hover:bg-[#F3C77A]/20">
+                      <BookOpen className="h-6 w-6 text-[#F3C77A]" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-foreground group-hover:text-[#F3C77A]">📱 Modo Kindle</h4>
+                      <p className="text-xs text-muted-foreground mt-1">Leitura otimizada com controles de luz e fonte</p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Opção 3: Download PDF */}
+                <button
+                  onClick={() => {
+                    const link = document.createElement("a")
+                    link.href = selectedPDF.url
+                    link.download = `${selectedPDF.title}.pdf`
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                  }}
+                  className="group relative overflow-hidden rounded-xl border-2 border-[#2E261D] bg-gradient-to-br from-[#16130F] to-[#2E261D] p-4 text-left transition-all hover:border-[#F3C77A] hover:shadow-lg hover:shadow-[#F3C77A]/20"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#F3C77A]/10 group-hover:bg-[#F3C77A]/20">
+                      <Download className="h-6 w-6 text-[#F3C77A]" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-foreground group-hover:text-[#F3C77A]">⬇️ Download PDF</h4>
+                      <p className="text-xs text-muted-foreground mt-1">Baixe o arquivo para leitura offline</p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Opção 4: Ver Vídeo (condicional) */}
+                {(selectedPDF as any).youtube_url && (
+                  <button
+                    onClick={() => {
+                      const videoSection = document.getElementById('video-player-section')
+                      videoSection?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }}
+                    className="group relative overflow-hidden rounded-xl border-2 border-[#2E261D] bg-gradient-to-br from-[#16130F] to-[#2E261D] p-4 text-left transition-all hover:border-[#F3C77A] hover:shadow-lg hover:shadow-[#F3C77A]/20"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#F3C77A]/10 group-hover:bg-[#F3C77A]/20">
+                        <Play className="h-6 w-6 text-[#F3C77A]" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground group-hover:text-[#F3C77A]">🎥 Ver Vídeo</h4>
+                        <p className="text-xs text-muted-foreground mt-1">Assista ao vídeo explicativo no YouTube</p>
+                      </div>
+                    </div>
+                  </button>
+                )}
+
+                {/* Opção 5: Escutar Áudio (condicional) */}
+                {(selectedPDF as any).audio_url && (
+                  <button
+                    onClick={() => {
+                      const audioSection = document.getElementById('audio-player-section')
+                      audioSection?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }}
+                    className="group relative overflow-hidden rounded-xl border-2 border-[#2E261D] bg-gradient-to-br from-[#16130F] to-[#2E261D] p-4 text-left transition-all hover:border-[#F3C77A] hover:shadow-lg hover:shadow-[#F3C77A]/20"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#F3C77A]/10 group-hover:bg-[#F3C77A]/20">
+                        <Volume2 className="h-6 w-6 text-[#F3C77A]" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground group-hover:text-[#F3C77A]">🎧 Escutar Áudio</h4>
+                        <p className="text-xs text-muted-foreground mt-1">Ouça a narração em MP3</p>
+                      </div>
+                    </div>
+                  </button>
+                )}
+              </div>
+
+              {/* Indicador de recursos disponíveis */}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">Disponível neste volume:</span>
+                <Badge variant="outline" className="text-xs border-[#F3C77A]/30 text-[#F3C77A]">
+                  <FileText className="h-3 w-3 mr-1" />
+                  PDF
+                </Badge>
+                {(selectedPDF as any).youtube_url && (
+                  <Badge variant="outline" className="text-xs border-[#F3C77A]/30 text-[#F3C77A]">
+                    <Play className="h-3 w-3 mr-1" />
+                    Vídeo
+                  </Badge>
+                )}
+                {(selectedPDF as any).audio_url && (
+                  <Badge variant="outline" className="text-xs border-[#F3C77A]/30 text-[#F3C77A]">
+                    <Volume2 className="h-3 w-3 mr-1" />
+                    Áudio
+                  </Badge>
+                )}
+              </div>
             </div>
 
             {/* Player de Vídeo do YouTube (Embed) */}
             {(selectedPDF as any).youtube_url && (
-              <div className="pt-4 border-t border-[#2E261D]">
+              <div id="video-player-section" className="pt-4 border-t border-[#2E261D]">
                 <div className="flex items-center gap-2 mb-3">
                   <Play className="h-4 w-4 text-[#F3C77A]" />
                   <h4 className="font-semibold text-sm text-foreground">Assistir Vídeo</h4>
@@ -216,7 +279,7 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
 
             {/* Player de Áudio (MP3) */}
             {(selectedPDF as any).audio_url && (
-              <div className="pt-4 border-t border-[#2E261D]">
+              <div id="audio-player-section" className="pt-4 border-t border-[#2E261D]">
                 <div className="flex items-center gap-2 mb-3">
                   <Volume2 className="h-4 w-4 text-[#F3C77A]" />
                   <h4 className="font-semibold text-sm text-foreground">Escutar Áudio</h4>

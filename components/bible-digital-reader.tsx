@@ -32,11 +32,11 @@ export const BibleDigitalReader = ({
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
   const [startTime] = useState(() => Date.now())
-  const [soundEnabled, setSoundEnabled] = useState(true)
   const [direction, setDirection] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [extractedText, setExtractedText] = useState<string>("")
   const [showSettings, setShowSettings] = useState(false)
+  const [currentReadingMode, setCurrentReadingMode] = useState<'light' | 'sepia' | 'dark' | 'night' | 'paper'>(readingMode)
   const [bookmarks, setBookmarks] = useState<number[]>([])
   const [fontSize, setFontSize] = useState(18)
   const [lineHeight, setLineHeight] = useState(1.8)
@@ -64,7 +64,6 @@ export const BibleDigitalReader = ({
   } = usePageProgress()
 
   const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
-  const pageFlipAudioRef = useRef<HTMLAudioElement | null>(null)
   const autoScrollRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const textContainerRef = useRef<HTMLDivElement | null>(null)
 
@@ -107,7 +106,7 @@ export const BibleDigitalReader = ({
     }
   }
 
-  const currentTemp = readingTemperatures[readingMode]
+  const currentTemp = readingTemperatures[currentReadingMode]
 
   // Carregar configurações salvas do localStorage
   useEffect(() => {
@@ -163,59 +162,12 @@ export const BibleDigitalReader = ({
           return
         }
 
-        // Prioridade 2: Verificar se conversão automática está habilitada
-        if (pdfData?.use_auto_conversion === false) {
-          console.log('Conversão automática desabilitada - aguardando configuração do admin')
-          setExtractedText('Este conteúdo está sendo preparado pelo administrador.\n\nPor favor, volte mais tarde ou entre em contato com o responsável pelo curso.')
-          setIsLoading(false)
-          return
-        }
-
-        // Prioridade 3: Conversão automática DESABILITADA por padrão
-        console.log('Conversão automática desabilitada por padrão - usando texto pré-configurado')
+        // Prioridade 2: Conversão automática DESABILITADA (não funciona corretamente)
+        // Admin deve configurar o texto manualmente no campo text_content
+        console.log('ℹ️ Conversão automática desabilitada - aguardando texto configurado pelo admin')
         setExtractedText('Este conteúdo está sendo preparado pelo administrador.\n\nPor favor, volte mais tarde ou entre em contato com o responsável pelo curso.')
         setIsLoading(false)
         return
-
-        // CÓDIGO DE CONVERSÃO AUTOMÁTICA COMENTADO
-        // Descomente apenas se necessário ativar conversão automática
-        /*
-        console.log('Tentando conversão automática do PDF:', pdfUrl)
-
-        const response = await fetch('/api/convert-pdf', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ pdfUrl }),
-        })
-
-        console.log('Status da resposta:', response.status)
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error('Erro HTTP:', response.status, errorText)
-          throw new Error(`Erro HTTP ${response.status}: ${errorText}`)
-        }
-
-        const data = await response.json()
-
-        console.log('Resposta da API:', data)
-
-        if (data.success) {
-          console.log(`PDF convertido com sucesso: ${data.text.length} caracteres`)
-          setExtractedText(data.text)
-        } else {
-          console.warn('API retornou erro:', data)
-
-          // Se houver texto mesmo com erro (caso de PDF de imagens)
-          if (data.text) {
-            setExtractedText(data.text)
-          } else {
-            throw new Error(data.error || data.details || 'Erro na conversão')
-          }
-        }
-        */
 
       } catch (error) {
         console.error('Erro ao carregar texto:', error)
@@ -244,11 +196,6 @@ export const BibleDigitalReader = ({
     }
   }, [courseId, pdfId, isLoading, loadPageProgress, savedPage])
 
-  useEffect(() => {
-    pageFlipAudioRef.current = new Audio()
-    pageFlipAudioRef.current.volume = 0.3
-    pageFlipAudioRef.current.src = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGGe77OeeSwwPUKXi8LdjHAU5k9jyzHksBSR3yPDekEALFF+16+qnVRQKRp/h8r9sIQYsgc7y2Ik2CBhnu+znm0sMD1Cl4vC3YxwFOZPY8sx5LAUkd8jw3pBACxRftevqp1UUCkaf4fK/bCEGLIHO8tmJNggYZ7vs55tLDA9QpeLwt2McBTmT2PLMeSwFJHfI8N6QQAsUX7Xr6qdVFApGn+Hyv2whBiyBzvLZiTYIGGe77OebSwwPUKXi8LdjHAU5k9jyzHksBSR3yPDekEALFF+16+qnVRQKRp/h8r9sIQYsgc7y2Yk2CBhnu+znm0sMD1Cl4vC3Yw="
-  }, [])
 
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -320,12 +267,6 @@ export const BibleDigitalReader = ({
     return () => clearInterval(scrollInterval)
   }, [courseId, pdfId, totalPages, currentPage, savePageProgress])
 
-  const playPageFlipSound = () => {
-    if (soundEnabled && pageFlipAudioRef.current) {
-      pageFlipAudioRef.current.currentTime = 0
-      pageFlipAudioRef.current.play().catch(() => {})
-    }
-  }
 
   const toggleBookmark = () => {
     if (bookmarks.includes(currentPage)) {
@@ -592,20 +533,73 @@ export const BibleDigitalReader = ({
             </Button>
           )}
 
+          {/* Seletor de Temperatura de Leitura */}
           <div className="flex items-center gap-2">
             <Palette className="h-4 w-4 text-[#F3C77A]" />
-            <span className="text-sm text-[#BCB19F]">Modo:</span>
-            <span className="text-sm font-medium text-[#F3C77A] capitalize">{readingMode}</span>
-            <span className="text-xs text-muted-foreground">({currentTemp.description})</span>
+            <span className="text-sm text-[#BCB19F]">Temperatura:</span>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setCurrentReadingMode('light')}
+                className={`rounded-full px-3 py-1 text-xs transition-all ${
+                  currentReadingMode === 'light'
+                    ? 'bg-[#F3C77A] text-black font-semibold shadow-md'
+                    : 'border border-[#2E261D] text-[#BCB19F] hover:border-[#F3C77A]'
+                }`}
+                title="Luz natural - ideal para leitura diurna"
+              >
+                <Sun className="h-3 w-3 inline mr-1" />
+                Claro
+              </button>
+              <button
+                onClick={() => setCurrentReadingMode('sepia')}
+                className={`rounded-full px-3 py-1 text-xs transition-all ${
+                  currentReadingMode === 'sepia'
+                    ? 'bg-[#F3C77A] text-black font-semibold shadow-md'
+                    : 'border border-[#2E261D] text-[#BCB19F] hover:border-[#F3C77A]'
+                }`}
+                title="Tom sépia - reduz fadiga ocular"
+              >
+                <Palette className="h-3 w-3 inline mr-1" />
+                Sépia
+              </button>
+              <button
+                onClick={() => setCurrentReadingMode('dark')}
+                className={`rounded-full px-3 py-1 text-xs transition-all ${
+                  currentReadingMode === 'dark'
+                    ? 'bg-[#F3C77A] text-black font-semibold shadow-md'
+                    : 'border border-[#2E261D] text-[#BCB19F] hover:border-[#F3C77A]'
+                }`}
+                title="Modo escuro - confortável para leitura noturna"
+              >
+                <Moon className="h-3 w-3 inline mr-1" />
+                Escuro
+              </button>
+              <button
+                onClick={() => setCurrentReadingMode('night')}
+                className={`rounded-full px-3 py-1 text-xs transition-all ${
+                  currentReadingMode === 'night'
+                    ? 'bg-[#F3C77A] text-black font-semibold shadow-md'
+                    : 'border border-[#2E261D] text-[#BCB19F] hover:border-[#F3C77A]'
+                }`}
+                title="Modo noturno - proteção total dos olhos"
+              >
+                <Moon className="h-3 w-3 inline mr-1" />
+                Noite
+              </button>
+              <button
+                onClick={() => setCurrentReadingMode('paper')}
+                className={`rounded-full px-3 py-1 text-xs transition-all ${
+                  currentReadingMode === 'paper'
+                    ? 'bg-[#F3C77A] text-black font-semibold shadow-md'
+                    : 'border border-[#2E261D] text-[#BCB19F] hover:border-[#F3C77A]'
+                }`}
+                title="Papel - experiência de leitura tradicional"
+              >
+                <FileText className="h-3 w-3 inline mr-1" />
+                Papel
+              </button>
+            </div>
           </div>
-
-          <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className="flex items-center gap-2 rounded-full border border-[#2E261D] px-3 py-1 text-xs text-[#BCB19F] transition-colors hover:border-[#F3C77A]"
-          >
-            {soundEnabled ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
-            Som {soundEnabled ? "ligado" : "desligado"}
-          </button>
 
           <button
             onClick={() => setAutoScroll(!autoScroll)}

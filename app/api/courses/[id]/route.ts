@@ -172,7 +172,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params
     const body = await request.json()
 
-    const { title, description, author, category, pages, reading_time_minutes, cover_url, is_free, status } = body
+    const { title, description, author, category, pages, reading_time_minutes, cover_url, checkout_url, is_free, status } = body
 
     // SEMPRE usar supabaseAdmin para bypassar RLS em operações admin
     if (!supabaseAdmin) {
@@ -194,6 +194,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       pages: pages || 0,
       reading_time_minutes: reading_time_minutes || 0,
       cover_url: cover_url || null,
+      checkout_url: checkout_url || null,
       is_free: is_free || false,
       status: status || 'published',
       updated_at: new Date().toISOString()

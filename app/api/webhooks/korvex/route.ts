@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
     const transactionIdentifier = body.transaction.identifier
 
     let existingPayment = null
+    let existingCoursePurchase = null
 
     // Tentar buscar por transaction.id (korvex_payment_id)
     if (transactionId) {
@@ -151,6 +152,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Verificar se é compra individual de curso (buscar em user_course_purchases)
+    if (transactionId) {
+      const { data, error } = await supabase
+        .from('user_course_purchases')
+        .select('*')
+        .eq('payment_id', transactionId)
+        .single()
+
+      if (!error && data) {
+        existingCoursePurchase = data
+      }
+    }
+
     // Processar evento conforme documentação oficial
     switch (body.event) {
       case 'TRANSACTION_CREATED':
@@ -160,7 +174,12 @@ export async function POST(request: NextRequest) {
 
       case 'TRANSACTION_PAID':
         console.log('✅ Transação paga:', transactionId)
-        await handleTransactionPaid(supabase, existingPayment, body)
+        // Se é compra de curso, processar separadamente
+        if (existingCoursePurchase) {
+          await handleCoursePurchasePaid(supabase, existingCoursePurchase, body)
+        } else {
+          await handleTransactionPaid(supabase, existingPayment, body)
+        }
         break
 
       case 'TRANSACTION_CANCELED':
@@ -487,6 +506,84 @@ async function handleTransactionRefunded(
   }
 
   console.log('✅ Transação estornada')
+}
+
+async function handleCoursePurchasePaid(
+  supabase: any,
+  existingPurchase: any,
+  payload: KorvexWebhookPayload
+) {
+  const transaction = payload.transaction
+
+  if (transaction.status === 'COMPLETED') {
+    // Atualizar compra do curso para completed
+    await supabase
+      .from('user_course_purchases')
+      .update({
+        payment_status: 'completed',
+        purchase_date: transaction.payedAt || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingPurchase.id)
+
+    console.log('✅ Compra do curso confirmada:', existingPurchase.course_id)
+    console.log('✅ Usuário agora tem acesso ao curso:', existingPurchase.user_id)
+
+    // Buscar dados do usuário e curso para enviar email
+    const { data: userData } = await supabase
+      .from('users')
+      .select('name, email')
+      .eq('id', existingPurchase.user_id)
+      .single()
+
+    const { data: courseData } = await supabase
+      .from('courses')
+      .select('title, price')
+      .eq('id', existingPurchase.course_id)
+      .single()
+
+    if (userData && courseData) {
+      // Enviar email de confirmação via Resend
+      try {
+        const { generateCoursePurchaseEmailTemplate } = await import('@/lib/email-templates')
+        const { sendEmailResend } = await import('@/lib/email-resend')
+
+        const emailTemplate = generateCoursePurchaseEmailTemplate(
+          userData.name,
+          courseData.title,
+          Number(existingPurchase.amount || courseData.price || 0),
+          transaction.payedAt || new Date().toISOString()
+        )
+
+        console.log('📧 Preparando envio de email via Resend para:', userData.email)
+        const emailSent = await sendEmailResend({
+          to: userData.email,
+          subject: emailTemplate.subject,
+          html: emailTemplate.html,
+          text: emailTemplate.text
+        })
+
+        if (emailSent) {
+          console.log('✅ Email de confirmação enviado com sucesso via Resend para:', userData.email)
+        } else {
+          console.error('❌ Falha ao enviar email de confirmação via Resend')
+        }
+      } catch (error) {
+        console.error('❌ Erro ao enviar email de confirmação via Resend:', error)
+      }
+    }
+  } else if (transaction.status === 'FAILED') {
+    // Atualizar compra do curso para failed
+    await supabase
+      .from('user_course_purchases')
+      .update({
+        payment_status: 'failed',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingPurchase.id)
+
+    console.log('❌ Compra do curso falhou:', existingPurchase.course_id)
+  }
 }
 
 // Método GET para verificar se webhook está funcionando

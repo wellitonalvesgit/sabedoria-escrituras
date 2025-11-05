@@ -7,15 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
+import { CoursePurchaseButton } from "@/components/course-purchase-button"
 
 interface AccessCheckResult {
   canAccess: boolean
   reason?: 'free_course' | 'premium_access' | 'trial_access' | 'admin_access' | 'no_access'
   message?: string
+  category?: string
   course?: {
     id: string
     title: string
     is_free: boolean
+    price?: number | null
   }
   subscription?: {
     status: string
@@ -26,6 +29,16 @@ interface AccessCheckResult {
 
 interface PremiumAccessGateProps {
   courseId: string
+  course?: {
+    id: string
+    title: string
+    price?: number
+    course_categories?: Array<{
+      categories: {
+        slug: string
+      }
+    }>
+  }
   children: React.ReactNode
 }
 
@@ -33,7 +46,7 @@ interface PremiumAccessGateProps {
 const accessCache = new Map<string, { result: AccessCheckResult, timestamp: number }>()
 const CACHE_TTL = 2 * 1000 // 2 segundos (reduzido para atualização rápida de permissões)
 
-export function PremiumAccessGate({ courseId, children }: PremiumAccessGateProps) {
+export function PremiumAccessGate({ courseId, course, children }: PremiumAccessGateProps) {
   const [checking, setChecking] = useState(true)
   const [accessResult, setAccessResult] = useState<AccessCheckResult | null>(null)
 
@@ -167,6 +180,10 @@ export function PremiumAccessGate({ courseId, children }: PremiumAccessGateProps
   }
 
   // Se não tem acesso, mostrar bloqueio
+  const categorySlug = accessResult?.category || course?.course_categories?.[0]?.categories?.slug
+  const isArsenalEspiritual = categorySlug === 'arsenal-espiritual'
+  const coursePrice = course?.price ?? accessResult?.course?.price
+
   return (
     <div className="flex items-center justify-center min-h-[600px] p-6">
       <Card className="max-w-2xl w-full border-2 border-dashed">
@@ -176,72 +193,103 @@ export function PremiumAccessGate({ courseId, children }: PremiumAccessGateProps
               <Lock className="h-12 w-12 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl">Conteúdo Premium</CardTitle>
+          <CardTitle className="text-2xl">
+            {isArsenalEspiritual ? 'Curso Vendido Separadamente' : 'Conteúdo Premium'}
+          </CardTitle>
           <CardDescription className="text-base">
             {accessResult?.message || 'Este curso requer uma assinatura premium para acesso'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Se for Arsenal Espiritual, mostrar opção de compra individual */}
+          {isArsenalEspiritual && coursePrice && (
+            <div className="p-6 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+              <div className="text-center space-y-4">
+                <h3 className="text-2xl font-bold">Compre este curso</h3>
+                <p className="text-3xl font-bold text-primary">
+                  R$ {coursePrice.toFixed(2).replace('.', ',')}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Acesso vitalício após a compra
+                </p>
+                <CoursePurchaseButton
+                  courseId={courseId}
+                  courseTitle={course?.title || accessResult?.course?.title || 'Curso'}
+                  price={coursePrice}
+                  className="w-full"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Benefícios */}
-          <div className="space-y-3">
-            <h3 className="font-semibold flex items-center gap-2">
-              <Crown className="h-5 w-5 text-amber-500" />
-              Com a Assinatura Premium você tem:
-            </h3>
-            <ul className="space-y-2">
-              {[
-                'Acesso ilimitado a todos os cursos premium',
-                'Novos cursos adicionados mensalmente',
-                'Sistema de marcação e resumos (tipo Kindle)',
-                'Sistema de gamificação e pontos',
-                'Certificados de conclusão',
-                'Suporte prioritário'
-              ].map((benefit, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span>{benefit}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {!isArsenalEspiritual && (
+            <div className="space-y-3">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Crown className="h-5 w-5 text-amber-500" />
+                Com a Assinatura Premium você tem:
+              </h3>
+              <ul className="space-y-2">
+                {[
+                  'Acesso ilimitado a todos os cursos premium',
+                  'Novos cursos adicionados mensalmente',
+                  'Sistema de marcação e resumos (tipo Kindle)',
+                  'Sistema de gamificação e pontos',
+                  'Certificados de conclusão',
+                  'Suporte prioritário'
+                ].map((benefit, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Período de Teste */}
-          <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="h-5 w-5 text-primary" />
-              <h4 className="font-semibold">Teste Grátis por 30 Dias</h4>
+          {!isArsenalEspiritual && (
+            <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="h-5 w-5 text-primary" />
+                <h4 className="font-semibold">Teste Grátis por 30 Dias</h4>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Experimente todos os recursos premium sem compromisso. Cancele quando quiser!
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Experimente todos os recursos premium sem compromisso. Cancele quando quiser!
-            </p>
-          </div>
+          )}
 
-          {/* Preço */}
-          <div className="text-center space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground">A partir de</p>
-              <p className="text-3xl font-bold">R$ 29,90<span className="text-lg font-normal text-muted-foreground">/mês</span></p>
-              <p className="text-xs text-muted-foreground mt-1">ou R$ 297/ano (economize 17%)</p>
-            </div>
+          {/* Preço e Botões */}
+          {!isArsenalEspiritual && (
+            <div className="text-center space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground">A partir de</p>
+                <p className="text-3xl font-bold">R$ 29,90<span className="text-lg font-normal text-muted-foreground">/mês</span></p>
+                <p className="text-xs text-muted-foreground mt-1">ou R$ 297/ano (economize 17%)</p>
+              </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link href="/pricing" className="flex-1">
-                <Button size="lg" className="w-full">
-                  <Crown className="mr-2 h-5 w-5" />
-                  Iniciar Teste Grátis
-                </Button>
-              </Link>
-              <Link href="/dashboard" className="flex-1">
-                <Button size="lg" variant="outline" className="w-full">
-                  Voltar ao Dashboard
-                </Button>
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link href="/pricing" className="flex-1">
+                  <Button size="lg" className="w-full">
+                    <Crown className="mr-2 h-5 w-5" />
+                    Iniciar Teste Grátis
+                  </Button>
+                </Link>
+                <Link href="/dashboard" className="flex-1">
+                  <Button size="lg" variant="outline" className="w-full">
+                    Voltar ao Dashboard
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Footer */}
           <p className="text-xs text-center text-muted-foreground">
-            Sem taxas ocultas • Cancele a qualquer momento • Suporte em português
+            {isArsenalEspiritual
+              ? 'Pagamento seguro via Korvex • Acesso vitalício após confirmação'
+              : 'Sem taxas ocultas • Cancele a qualquer momento • Suporte em português'}
           </p>
         </CardContent>
       </Card>

@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
         reading_time_minutes,
         cover_url,
         status,
+        price,
         created_at,
         updated_at,
         course_pdfs (

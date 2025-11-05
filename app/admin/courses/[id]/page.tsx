@@ -61,6 +61,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
     reading_time_minutes: 0,
     pages: 0,
     cover_url: "",
+    checkout_url: "",
     is_free: false,
     status: "published"
   })
@@ -116,6 +117,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         reading_time_minutes: course.reading_time_minutes || 0,
         pages: course.pages || 0,
         cover_url: course.cover_url || "",
+        checkout_url: (course as any).checkout_url || "",
         is_free: course.is_free || false,
         status: course.status || "published"
       })
@@ -562,6 +564,20 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                     onChange={(e) => setEditedCourse(prev => ({ ...prev, description: e.target.value }))}
                     rows={4}
                   />
+                </div>
+
+                <div>
+                  <Label htmlFor="checkout_url">URL de Checkout (Corvex/Stripe/etc)</Label>
+                  <Input
+                    id="checkout_url"
+                    type="url"
+                    value={editedCourse.checkout_url}
+                    onChange={(e) => setEditedCourse(prev => ({ ...prev, checkout_url: e.target.value }))}
+                    placeholder="https://checkout.corvex.com.br/..."
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    URL para compra do curso ou upgrade de plano. Será usada nos botões de "Comprar" ou "Fazer Upgrade"
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/30">

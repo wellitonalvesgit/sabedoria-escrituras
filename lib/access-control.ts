@@ -65,16 +65,13 @@ export async function userHasPremiumAccess(userId: string): Promise<boolean> {
 /**
  * Verifica se o usuário pode acessar um curso específico
  *
- * Sistema de prioridade de acesso:
+ * NOVA LÓGICA (Sistema de 3 Categorias):
  * 1. Admin: acesso total
- * 2. Usuário inativo ou bloqueado: sem acesso
- * 3. Acesso expirado (access_expires_at): sem acesso
- * 4. Curso bloqueado (blocked_courses): sem acesso
- * 5. Curso gratuito (is_free): acesso liberado
- * 6. Período de teste válido (access_expires_at): acesso liberado
- * 7. Curso na lista de permitidos (allowed_courses): acesso liberado
- * 8. Tem assinatura ativa ou trial: acesso liberado
- * 9. Caso contrário: sem acesso
+ * 2. Curso gratuito (is_free): acesso liberado
+ * 3. Arsenal Espiritual: APENAS com compra individual
+ * 4. Cartas de Paulo: Plano Básico (2 meses) OU Premium (vitalício)
+ * 5. Bônus: APENAS Plano Premium (vitalício)
+ * 6. Compras individuais: acesso vitalício ao curso comprado
  */
 export async function userCanAccessCourse(
   userId: string,
@@ -82,10 +79,12 @@ export async function userCanAccessCourse(
   supabaseClient?: any
 ): Promise<{
   canAccess: boolean
-  reason?: 'free_course' | 'premium_access' | 'trial_access' | 'admin_access' | 'no_access'
+  reason?: 'free_course' | 'premium_access' | 'basic_access' | 'individual_purchase' | 'admin_access' | 'no_access' | 'upgrade_required'
   message?: string
   course?: any
   subscription?: any
+  category?: string
+  planType?: 'basic' | 'premium' | null
 }> {
   // Se não foi passado um cliente, criar um novo
   let supabase = supabaseClient
@@ -110,10 +109,21 @@ export async function userCanAccessCourse(
     )
   }
 
-  // Buscar curso
-  const { data: course, error: courseError } = await supabase
+  // Buscar curso com categoria
+  const { data: course } = await supabase
     .from('courses')
-    .select('id, title, is_free')
+    .select(`
+      id,
+      title,
+      is_free,
+      course_categories (
+        categories (
+          id,
+          name,
+          slug
+        )
+      )
+    `)
     .eq('id', courseId)
     .single()
 
@@ -126,9 +136,9 @@ export async function userCanAccessCourse(
   }
 
   // Buscar dados do usuário
-  const { data: userData, error: userError } = await supabase
+  const { data: userData } = await supabase
     .from('users')
-    .select('id, status, role, access_expires_at, allowed_courses, blocked_courses')
+    .select('id, status, role')
     .eq('id', userId)
     .single()
 
@@ -140,7 +150,7 @@ export async function userCanAccessCourse(
     }
   }
 
-  // 1. Verificar se o usuário é admin
+  // 1. Admin tem acesso total
   if (userData.role === 'admin') {
     return {
       canAccess: true,
@@ -150,7 +160,7 @@ export async function userCanAccessCourse(
     }
   }
 
-  // 2. Verificar se o usuário está ativo
+  // 2. Usuário inativo = sem acesso
   if (userData.status !== 'active') {
     return {
       canAccess: false,
@@ -160,30 +170,7 @@ export async function userCanAccessCourse(
     }
   }
 
-  // 3. Verificar se o acesso não expirou
-  let hasValidAccessPeriod = false
-  if (userData.access_expires_at) {
-    const expirationDate = new Date(userData.access_expires_at)
-    const now = new Date()
-
-    if (expirationDate < now) {
-      // Acesso expirado, mas continue para verificar outras formas de acesso
-    } else {
-      hasValidAccessPeriod = true
-    }
-  }
-
-  // 4. Verificar se o curso está na lista de cursos bloqueados
-  if (userData.blocked_courses && userData.blocked_courses.includes(courseId)) {
-    return {
-      canAccess: false,
-      reason: 'no_access',
-      message: 'Acesso bloqueado para este curso',
-      course
-    }
-  }
-
-  // 5. Se o curso é gratuito, qualquer um pode acessar
+  // 3. Curso gratuito = acesso liberado
   if (course.is_free) {
     return {
       canAccess: true,
@@ -193,114 +180,102 @@ export async function userCanAccessCourse(
     }
   }
 
-  // 6. PRIORIDADE: Se tem lista de cursos permitidos ESPECÍFICOS, usar APENAS essa lista
-  const hasSpecificAllowedCourses = userData.allowed_courses && userData.allowed_courses.length > 0
+  // 4. Usar função SQL para verificar acesso
+  const { data: accessResult, error } = await supabase
+    .rpc('check_user_course_access', {
+      p_user_id: userId,
+      p_course_id: courseId
+    })
 
-  if (hasSpecificAllowedCourses) {
-    const isCourseInAllowedList = userData.allowed_courses.includes(courseId)
-
-    if (isCourseInAllowedList) {
-      return {
-        canAccess: true,
-        reason: 'premium_access',
-        message: 'Acesso permitido',
-        course
-      }
-    } else {
-      return {
-        canAccess: false,
-        reason: 'no_access',
-        message: 'Este curso não está disponível para você',
-        course
-      }
-    }
-  }
-
-  // 7. Se NÃO tem lista específica, usar período de acesso (trial/premium geral)
-  if (hasValidAccessPeriod) {
+  if (error) {
+    console.error('Erro ao verificar acesso:', error)
     return {
-      canAccess: true,
-      reason: 'trial_access',
-      message: `Acesso via período de teste (válido até ${new Date(userData.access_expires_at!).toLocaleDateString('pt-BR')})`,
+      canAccess: false,
+      reason: 'no_access',
+      message: 'Erro ao verificar acesso',
       course
     }
   }
 
-  // 8. Verificar se tem assinatura ativa
-  const { data: subscription, error: subError } = await supabase
+  // Buscar assinatura e categoria para mensagens detalhadas
+  const { data: subscription } = await supabase
     .from('subscriptions')
-    .select('status, trial_ends_at, current_period_end, plan:subscription_plans(name, allowed_courses)')
-    .eq('user_id', userData.id)
+    .select(`
+      status,
+      trial_ends_at,
+      current_period_end,
+      plan_expires_at,
+      plan:subscription_plans(name, plan_type, duration_days)
+    `)
+    .eq('user_id', userId)
     .in('status', ['trial', 'active'])
     .order('created_at', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
 
-  if (subscription) {
-    const now = new Date()
-    const plan = subscription.plan as any
+  const category = course.course_categories?.[0]?.categories?.slug || null
+  const planType = subscription?.plan?.plan_type || null
 
-    // Verificar se é trial válido
-    if (subscription.status === 'trial' && subscription.trial_ends_at) {
-      const trialEnd = new Date(subscription.trial_ends_at)
-      if (now <= trialEnd) {
-        // Verificar se o plano tem lista de cursos permitidos
-        if (plan?.allowed_courses && Array.isArray(plan.allowed_courses)) {
-          if (!plan.allowed_courses.includes(courseId)) {
-            return {
-              canAccess: false,
-              reason: 'no_access',
-              message: 'Este curso não está incluído no seu plano. Faça upgrade para acessar todos os cursos.',
-              course,
-              subscription
-            }
-          }
-        }
+  // Se tem acesso, determinar razão
+  if (accessResult) {
+    let reason: any = 'premium_access'
+    let message = 'Você tem acesso a este curso'
 
-        return {
-          canAccess: true,
-          reason: 'trial_access',
-          message: 'Acesso via período de teste',
-          course,
-          subscription
-        }
-      }
+    // Verificar se é compra individual
+    const { data: purchase } = await supabase
+      .from('user_course_purchases')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('course_id', courseId)
+      .eq('is_active', true)
+      .eq('payment_status', 'completed')
+      .maybeSingle()
+
+    if (purchase) {
+      reason = 'individual_purchase'
+      message = 'Você comprou este curso'
+    } else if (planType === 'basic') {
+      reason = 'basic_access'
+      message = 'Incluído no seu Plano Básico'
+    } else if (planType === 'premium') {
+      reason = 'premium_access'
+      message = 'Incluído no seu Plano Premium'
     }
 
-    // Verificar se assinatura ativa está dentro do período
-    if (subscription.status === 'active' && subscription.current_period_end) {
-      const periodEnd = new Date(subscription.current_period_end)
-      if (now <= periodEnd) {
-        // Verificar se o plano tem lista de cursos permitidos
-        if (plan?.allowed_courses && Array.isArray(plan.allowed_courses)) {
-          if (!plan.allowed_courses.includes(courseId)) {
-            return {
-              canAccess: false,
-              reason: 'no_access',
-              message: 'Este curso não está incluído no seu plano. Faça upgrade para Premium para acessar todos os cursos.',
-              course,
-              subscription
-            }
-          }
-        }
-
-        return {
-          canAccess: true,
-          reason: 'premium_access',
-          message: 'Assinatura ativa',
-          course,
-          subscription
-        }
-      }
+    return {
+      canAccess: true,
+      reason,
+      message,
+      course,
+      subscription,
+      category,
+      planType
     }
   }
 
-  // 9. Por padrão, negar acesso
+  // Se não tem acesso, fornecer mensagem específica por categoria
+  let message = 'Você não tem acesso a este curso'
+
+  if (category === 'arsenal-espiritual') {
+    message = 'Este curso é vendido separadamente. Clique em "Comprar" para adquirir.'
+  } else if (category === 'bonus') {
+    message = 'Este curso está disponível apenas no Plano Premium. Faça upgrade para ter acesso.'
+  } else if (category === 'cartas-de-paulo') {
+    if (!planType) {
+      message = 'Adquira o Plano Básico ou Premium para acessar este curso.'
+    } else {
+      message = 'Seu acesso expirou. Renove seu plano para continuar.'
+    }
+  }
+
   return {
     canAccess: false,
-    reason: 'no_access',
-    message: 'Este curso requer assinatura premium',
-    course
+    reason: category === 'bonus' && planType === 'basic' ? 'upgrade_required' : 'no_access',
+    message,
+    course,
+    subscription,
+    category,
+    planType
   }
 }
 

@@ -226,7 +226,15 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
           </Button>
         </div>
 
-        <PremiumAccessGate courseId={course.id}>
+        <PremiumAccessGate 
+          courseId={course.id}
+          course={{
+            id: course.id,
+            title: course.title,
+            price: (course as any).price,
+            course_categories: course.course_categories
+          }}
+        >
           {!showPDFReader ? (
           <div className="mb-8">
             <div className="mb-6">

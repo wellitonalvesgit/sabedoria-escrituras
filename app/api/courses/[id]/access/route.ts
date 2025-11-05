@@ -76,6 +76,22 @@ export async function GET(
       })
     }
 
+    // Buscar dados completos do curso (incluindo categoria e preço)
+    const { data: courseData } = await supabase
+      .from('courses')
+      .select(`
+        id,
+        title,
+        price,
+        course_categories (
+          categories (
+            slug
+          )
+        )
+      `)
+      .eq('id', courseId)
+      .single()
+
     // Usar a função correta que verifica allowed_courses, blocked_courses, etc.
     const accessResult = await userCanAccessCourse(user.id, courseId, supabase)
 
@@ -83,10 +99,12 @@ export async function GET(
       canAccess: accessResult.canAccess,
       reason: accessResult.reason || 'no_access',
       message: accessResult.message,
+      category: accessResult.category,
       course: accessResult.course ? {
         id: accessResult.course.id,
         title: accessResult.course.title,
-        is_free: accessResult.course.is_free
+        is_free: accessResult.course.is_free,
+        price: courseData?.price || null
       } : undefined,
       subscription: accessResult.subscription ? {
         status: accessResult.subscription.status,
