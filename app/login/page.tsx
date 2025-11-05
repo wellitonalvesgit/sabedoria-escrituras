@@ -73,7 +73,7 @@ export default function LoginPage() {
                 <Sparkles className="h-2 w-2 text-primary-foreground" />
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-foreground">Sabedoria das Escrituras</h1>
+            <h1 className="text-3xl font-bold text-foreground">As Cartas de Paulo</h1>
           </div>
           <p className="text-muted-foreground">Entre com suas credenciais para acessar a plataforma</p>
         </div>

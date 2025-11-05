@@ -47,7 +47,7 @@ export function MobileDrawer({ user, currentPath = "/dashboard" }: MobileDrawerP
   const handleLogout = () => {
     localStorage.removeItem('user')
     sessionStorage.clear()
-    window.location.href = '/landing'
+    window.location.href = '/login'
   }
 
   return (
@@ -67,7 +67,7 @@ export function MobileDrawer({ user, currentPath = "/dashboard" }: MobileDrawerP
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary">
                     <BookOpen className="h-4 w-4 text-primary-foreground" />
                   </div>
-                  <span className="text-lg font-semibold">Sabedoria das Escrituras</span>
+                  <span className="text-lg font-semibold">As Cartas de Paulo</span>
                 </div>
               </SheetTitle>
               <Button
@@ -187,7 +187,7 @@ export function MobileDrawer({ user, currentPath = "/dashboard" }: MobileDrawerP
           {/* Footer do Drawer */}
           <div className="pt-4 border-t">
             <p className="text-xs text-center text-muted-foreground">
-              Sabedoria das Escrituras © 2024
+              As Cartas de Paulo © 2024
             </p>
           </div>
         </div>

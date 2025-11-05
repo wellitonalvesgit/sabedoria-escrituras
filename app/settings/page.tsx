@@ -288,7 +288,7 @@ export default function SettingsPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-2">Usuário não encontrado</h1>
           <p className="text-muted-foreground mb-4">Faça login para acessar suas configurações</p>
-          <Link href="/landing">
+          <Link href="/login">
             <Button>Fazer Login</Button>
           </Link>
         </div>

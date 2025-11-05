@@ -64,12 +64,12 @@ export function CongratulationsModal({
       if (navigator.share) {
         await navigator.share({
           title: `Concluí o curso "${courseTitle}"!`,
-          text: `Acabei de concluir o curso "${courseTitle}" na plataforma Sabedoria das Escrituras! 🎓`,
+          text: `Acabei de concluir o curso "${courseTitle}" na plataforma As Cartas de Paulo! 🎓`,
           url: window.location.origin
         })
       } else {
         // Fallback para copiar para clipboard
-        const text = `Concluí o curso "${courseTitle}" na Sabedoria das Escrituras! 🎓`
+        const text = `Concluí o curso "${courseTitle}" na As Cartas de Paulo! 🎓`
         await navigator.clipboard.writeText(text)
         alert('Link copiado para a área de transferência!')
       }

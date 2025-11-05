@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     const success = await sendEmailResend({
       to,
-      subject: '🧪 Teste de Email - Sabedoria das Escrituras',
+      subject: '🧪 Teste de Email - As Cartas de Paulo',
       html: '<h1>Teste de Email</h1><p>Email funcionando via Resend!</p>',
       text: 'Teste de Email - Email funcionando via Resend!'
     })

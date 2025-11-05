@@ -189,7 +189,7 @@ export default function RankingPage() {
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
                   <BookOpen className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <span className="text-xl font-semibold tracking-tight">Sabedoria das Escrituras</span>
+                <span className="text-xl font-semibold tracking-tight">As Cartas de Paulo</span>
               </Link>
 
               <div className="hidden md:flex items-center gap-6">

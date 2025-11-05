@@ -25,7 +25,7 @@ export async function sendEmailResend({ to, subject, html, text }: EmailData): P
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Sabedoria das Escrituras <noreply@paulocartas.com.br>',
+        from: 'As Cartas de Paulo <noreply@paulocartas.com.br>',
         to: [to],
         subject,
         html,
@@ -57,12 +57,12 @@ export function generateSimpleEmailTemplate(
   temporaryPassword: string,
   accessDays: number
 ): { subject: string; html: string; text: string } {
-  const subject = `🎓 Bem-vindo à Sabedoria das Escrituras!`
+  const subject = `🎓 Bem-vindo à As Cartas de Paulo!`
   
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #F3C77A;">
-        <h1 style="color: #F3C77A; font-size: 28px; margin: 0;">📚 Sabedoria das Escrituras</h1>
+        <h1 style="color: #F3C77A; font-size: 28px; margin: 0;">📚 As Cartas de Paulo</h1>
         <h2 style="color: #2c3e50; font-size: 24px; margin: 10px 0;">Bem-vindo, ${name}!</h2>
       </div>
 
@@ -107,14 +107,14 @@ export function generateSimpleEmailTemplate(
 
       <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 14px;">
         <p>Se você tiver alguma dúvida, não hesite em entrar em contato conosco.</p>
-        <p><strong>Equipe Sabedoria das Escrituras</strong></p>
+        <p><strong>Equipe As Cartas de Paulo</strong></p>
         <p>📧 Email: contato@sabedoriaescrituras.com</p>
       </div>
     </div>
   `
 
   const text = `
-Bem-vindo à Sabedoria das Escrituras!
+Bem-vindo à As Cartas de Paulo!
 
 Olá ${name},
 
@@ -142,7 +142,7 @@ O QUE VOCÊ ENCONTRARÁ:
 
 Se você tiver alguma dúvida, não hesite em entrar em contato conosco.
 
-Equipe Sabedoria das Escrituras
+Equipe As Cartas de Paulo
 Email: contato@sabedoriaescrituras.com
   `
 

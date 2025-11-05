@@ -83,7 +83,7 @@ export function generateNewUserEmailTemplate(
   temporaryPassword: string,
   accessDays: number
 ): { subject: string; html: string; text: string } {
-  const subject = `🎓 Bem-vindo à Sabedoria das Escrituras!`
+  const subject = `🎓 Bem-vindo à As Cartas de Paulo!`
   
   const html = `
     <!DOCTYPE html>
@@ -91,7 +91,7 @@ export function generateNewUserEmailTemplate(
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bem-vindo à Sabedoria das Escrituras</title>
+        <title>Bem-vindo à As Cartas de Paulo</title>
         <style>
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -200,7 +200,7 @@ export function generateNewUserEmailTemplate(
     <body>
         <div class="container">
             <div class="header">
-                <div class="logo">📚 Sabedoria das Escrituras</div>
+                <div class="logo">📚 As Cartas de Paulo</div>
                 <h1 class="welcome">Bem-vindo, ${name}!</h1>
             </div>
 
@@ -251,7 +251,7 @@ export function generateNewUserEmailTemplate(
 
             <div class="footer">
                 <p>Se você tiver alguma dúvida, não hesite em entrar em contato conosco.</p>
-                <p><strong>Equipe Sabedoria das Escrituras</strong></p>
+                <p><strong>Equipe As Cartas de Paulo</strong></p>
                 <p>📧 Email: contato@sabedoriaescrituras.com</p>
             </div>
         </div>
@@ -260,7 +260,7 @@ export function generateNewUserEmailTemplate(
   `
 
   const text = `
-Bem-vindo à Sabedoria das Escrituras!
+Bem-vindo à As Cartas de Paulo!
 
 Olá ${name},
 
@@ -288,7 +288,7 @@ O QUE VOCÊ ENCONTRARÁ:
 
 Se você tiver alguma dúvida, não hesite em entrar em contato conosco.
 
-Equipe Sabedoria das Escrituras
+Equipe As Cartas de Paulo
 Email: contato@sabedoriaescrituras.com
   `
 

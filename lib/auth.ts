@@ -310,11 +310,11 @@ export async function sendAccessCode(email: string) {
     
     const emailResult = await sendEmailResend({
       to: email,
-      subject: '🔑 Código de Acesso - Sabedoria das Escrituras',
+      subject: '🔑 Código de Acesso - As Cartas de Paulo',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #F3C77A;">
-            <h1 style="color: #F3C77A; font-size: 28px; margin: 0;">📚 Sabedoria das Escrituras</h1>
+            <h1 style="color: #F3C77A; font-size: 28px; margin: 0;">📚 As Cartas de Paulo</h1>
             <h2 style="color: #2c3e50; font-size: 24px; margin: 10px 0;">Código de Acesso</h2>
           </div>
 
@@ -341,12 +341,12 @@ export async function sendAccessCode(email: string) {
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 14px;">
             <p>Se você não solicitou este código, ignore este email.</p>
-            <p><strong>Equipe Sabedoria das Escrituras</strong></p>
+            <p><strong>Equipe As Cartas de Paulo</strong></p>
           </div>
         </div>
       `,
       text: `
-        Código de Acesso - Sabedoria das Escrituras
+        Código de Acesso - As Cartas de Paulo
         
         Olá!
         
@@ -361,7 +361,7 @@ export async function sendAccessCode(email: string) {
         
         Se você não solicitou este código, ignore este email.
         
-        Equipe Sabedoria das Escrituras
+        Equipe As Cartas de Paulo
       `
     })
 

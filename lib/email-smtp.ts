@@ -117,7 +117,7 @@ export function generateEmailTemplate(
   accessDays: number
 ): { subject: string; html: string; text: string } {
   
-  const subject = `🎉 Bem-vindo à Sabedoria das Escrituras!`
+  const subject = `🎉 Bem-vindo à As Cartas de Paulo!`
   
   const html = `
 <!DOCTYPE html>
@@ -125,7 +125,7 @@ export function generateEmailTemplate(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bem-vindo à Sabedoria das Escrituras</title>
+    <title>Bem-vindo à As Cartas de Paulo</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -219,13 +219,13 @@ export function generateEmailTemplate(
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">📚 Sabedoria das Escrituras</div>
+            <div class="logo">📚 As Cartas de Paulo</div>
             <p>Plataforma de Estudos Bíblicos</p>
         </div>
 
         <h2>🎉 Olá, ${name}!</h2>
         
-        <p>É com grande alegria que damos as boas-vindas à <strong>Sabedoria das Escrituras</strong>! Sua conta foi criada com sucesso e você já pode começar sua jornada de estudos bíblicos.</p>
+        <p>É com grande alegria que damos as boas-vindas à <strong>As Cartas de Paulo</strong>! Sua conta foi criada com sucesso e você já pode começar sua jornada de estudos bíblicos.</p>
 
         <div class="credentials">
             <h3>🔑 Suas Credenciais de Acesso</h3>
@@ -265,7 +265,7 @@ export function generateEmailTemplate(
         <p>Se você tiver alguma dúvida ou precisar de ajuda, não hesite em entrar em contato conosco. Estamos aqui para apoiar sua jornada de estudos!</p>
 
         <div class="footer">
-            <p><strong>Sabedoria das Escrituras</strong></p>
+            <p><strong>As Cartas de Paulo</strong></p>
             <p>📧 Suporte: ascartasdepailoo@gmail.com</p>
             <p>🌐 <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}">sabedoriaescrituras.com</a></p>
         </div>
@@ -274,11 +274,11 @@ export function generateEmailTemplate(
 </html>`
 
   const text = `
-Bem-vindo à Sabedoria das Escrituras!
+Bem-vindo à As Cartas de Paulo!
 
 Olá, ${name}!
 
-É com grande alegria que damos as boas-vindas à Sabedoria das Escrituras! Sua conta foi criada com sucesso.
+É com grande alegria que damos as boas-vindas à As Cartas de Paulo! Sua conta foi criada com sucesso.
 
 SUAS CREDENCIAIS DE ACESSO:
 Email: ${email}

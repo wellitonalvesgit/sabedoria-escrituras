@@ -93,8 +93,8 @@ export default function PricingPage() {
       }
 
       // Se é o plano gratuito, apenas confirmar
-      if (plan.name === 'free') {
-        alert('Você já está no plano gratuito com 30 dias de trial!')
+      if (plan.name === 'free' || plan.name === 'free-trial') {
+        alert('Você já está no plano gratuito com 7 dias de trial!')
         return
       }
 
@@ -108,8 +108,9 @@ export default function PricingPage() {
   }
 
   const getPlanPrice = (plan: Plan) => {
-    if (plan.name === 'free') return 0
-    return billingCycle === 'monthly' ? plan.price_monthly : plan.price_yearly
+    if (plan.name === 'free' || plan.name === 'free-trial') return 0
+    // Sempre usar price_monthly (que agora é o preço único)
+    return plan.price_monthly
   }
 
   const getPlanIcon = (planName: string) => {
@@ -151,7 +152,7 @@ export default function PricingPage() {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <Link href="/" className="text-xl font-semibold">
-              Sabedoria das Escrituras
+              As Cartas de Paulo
             </Link>
             <Link href="/dashboard">
               <Button variant="outline">Voltar ao Dashboard</Button>
@@ -167,7 +168,7 @@ export default function PricingPage() {
             Escolha seu plano
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Comece com 30 dias grátis. Cancele quando quiser.
+            Comece com 7 dias grátis. Escolha o plano ideal para você.
           </p>
 
           {isInTrial() && subscription && (
@@ -185,32 +186,6 @@ export default function PricingPage() {
           )}
         </div>
 
-        {/* Billing Toggle */}
-        <div className="flex justify-center mb-12">
-          <div className="inline-flex items-center bg-muted p-1 rounded-lg">
-            <button
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                billingCycle === 'monthly'
-                  ? 'bg-background shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Mensal
-            </button>
-            <button
-              onClick={() => setBillingCycle('yearly')}
-              className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                billingCycle === 'yearly'
-                  ? 'bg-background shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Anual
-              <Badge className="ml-2 bg-green-500 text-white">-17%</Badge>
-            </button>
-          </div>
-        </div>
 
         {/* Plans Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -252,14 +227,14 @@ export default function PricingPage() {
                         R$ {price.toFixed(2).replace('.', ',')}
                       </span>
                       {price > 0 && (
-                        <span className="text-muted-foreground">
-                          /{billingCycle === 'monthly' ? 'mês' : 'ano'}
+                        <span className="text-muted-foreground text-sm">
+                          /pagamento único
                         </span>
                       )}
                     </div>
                     {plan.trial_days > 0 && (
                       <p className="text-sm text-muted-foreground mt-2">
-                        {plan.trial_days} dias grátis para testar
+                        {plan.trial_days} dias de acesso gratuito
                       </p>
                     )}
                   </div>
@@ -311,19 +286,19 @@ export default function PricingPage() {
           <div className="space-y-6">
             <div>
               <h4 className="font-semibold mb-2">
-                Posso cancelar a qualquer momento?
+                Como funciona o acesso?
               </h4>
               <p className="text-muted-foreground">
-                Sim! Você pode cancelar sua assinatura a qualquer momento. Você
-                manterá o acesso até o final do período pago.
+                Todos os planos são pagamentos únicos. O plano Básico dá acesso por 2 meses,
+                e o plano Premium dá acesso vitalício sem necessidade de renovação.
               </p>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-2">Como funciona o trial?</h4>
+              <h4 className="font-semibold mb-2">Como funciona o plano gratuito?</h4>
               <p className="text-muted-foreground">
-                Todos os novos usuários ganham 30 dias de acesso completo
-                gratuitamente. Não é necessário cartão de crédito para começar.
+                Todos os novos usuários ganham 7 dias de acesso aos cursos gratuitos.
+                Não é necessário cartão de crédito para começar.
               </p>
             </div>
 
@@ -339,11 +314,11 @@ export default function PricingPage() {
 
             <div>
               <h4 className="font-semibold mb-2">
-                Qual a diferença entre mensal e anual?
+                Qual a diferença entre os planos?
               </h4>
               <p className="text-muted-foreground">
-                O plano anual oferece 17% de desconto (equivalente a 2 meses
-                grátis). Ambos dão acesso completo a todos os cursos.
+                O plano Básico oferece acesso por 2 meses (R$ 9,97). O plano Premium
+                oferece acesso vitalício a todos os cursos (R$ 19,97). Ambos são pagamentos únicos.
               </p>
             </div>
           </div>

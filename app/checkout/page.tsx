@@ -131,7 +131,8 @@ function CheckoutContent() {
 
   const getPrice = () => {
     if (!plan) return 0
-    return cycle === 'monthly' ? plan.price_monthly : plan.price_yearly
+    // Sempre retornar price_monthly (que agora é o preço único do plano)
+    return plan.price_monthly
   }
 
   if (loading) {
@@ -153,7 +154,7 @@ function CheckoutContent() {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             <Link href="/" className="text-xl font-semibold">
-              Sabedoria das Escrituras
+              As Cartas de Paulo
             </Link>
             <Link href="/pricing">
               <Button variant="outline" size="sm">

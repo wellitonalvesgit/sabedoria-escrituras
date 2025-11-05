@@ -1,4 +1,4 @@
-# 📚 Sabedoria das Escrituras - Sistema de Cursos Bíblicos
+# 📚 As Cartas de Paulo - Sistema de Cursos Bíblicos
 
 Sistema completo de cursos bíblicos desenvolvido com Next.js 15, Supabase e TypeScript.
 
@@ -14,7 +14,7 @@ Sistema completo de cursos bíblicos desenvolvido com Next.js 15, Supabase e Typ
 
 ### 📖 Cursos Incluídos
 
-#### Sabedoria das Escrituras (14 cursos)
+#### As Cartas de Paulo (14 cursos)
 - Estudos Bíblicos: Romanos, Coríntios, Apocalipse, Atos
 - Estudos Bíblicos: Coríntios, Filipenses, Hebreus
 - Estudos Bíblicos: Filipenses, Hebreus, João

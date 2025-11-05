@@ -131,7 +131,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F3C77A]">
               <BookOpen className="h-5 w-5 text-[#2c3e50]" />
             </div>
-            <span className="text-xl font-semibold text-[#2c3e50]">Sabedoria das Escrituras</span>
+            <span className="text-xl font-semibold text-[#2c3e50]">As Cartas de Paulo</span>
           </div>
           <CardTitle className="text-2xl font-bold text-[#2c3e50] flex items-center justify-center">
             <Sparkles className="h-6 w-6 text-[#F3C77A] mr-2" />

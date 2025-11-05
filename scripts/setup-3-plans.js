@@ -34,17 +34,16 @@ async function setup3Plans() {
   const newPlans = [
     {
       name: 'free-trial',
-      display_name: '🆓 Free Trial',
-      description: 'Teste gratuito por 7 dias - Acesso apenas a cursos gratuitos',
+      display_name: '🆓 Gratuito',
+      description: 'Plano gratuito por 7 dias - Acesso apenas a cursos gratuitos',
       price_monthly: 0,
       price_yearly: 0,
       trial_days: 7,
       duration_days: 7,
       features: [
-        '✅ 7 dias de acesso',
-        '✅ Cursos gratuitos apenas',
-        '✅ Sistema de gamificação',
-        '✅ Suporte por email'
+        'Cursos gratuitos',
+        'Trial de 7 dias',
+        'Suporte por email'
       ],
       is_active: true,
       sort_order: 1
@@ -52,15 +51,15 @@ async function setup3Plans() {
     {
       name: 'basico',
       display_name: '📦 Básico',
-      description: 'Acesso completo por 2 meses - Ideal para estudar cursos específicos',
-      price_monthly: 49.90,
+      description: 'Pagamento único de R$ 9,97 - Acesso por 2 meses',
+      price_monthly: 9.97,
       price_yearly: 0,
       trial_days: 0,
       duration_days: 60, // 2 meses = 60 dias
       features: [
-        '✅ 60 dias de acesso (2 meses)',
+        '✅ Acesso por 2 meses (60 dias)',
         '✅ TODOS os cursos',
-        '✅ Sistema de marcação (Kindle)',
+        '✅ Pagamento único',
         '✅ Sistema de gamificação',
         '✅ Certificados de conclusão',
         '✅ Suporte prioritário'
@@ -71,21 +70,19 @@ async function setup3Plans() {
     {
       name: 'premium',
       display_name: '💎 Premium',
-      description: 'Acesso ILIMITADO - Melhor custo-benefício para estudantes contínuos',
-      price_monthly: 29.90,
-      price_yearly: 297.00, // ~24,75/mês (economiza 17%)
+      description: 'Pagamento único de R$ 19,97 - Acesso vitalício a TODOS os cursos',
+      price_monthly: 19.97,
+      price_yearly: 0,
       trial_days: 0,
-      duration_days: null, // null = ilimitado
+      duration_days: null, // null = vitalício/ilimitado
       features: [
-        '✅ Acesso ILIMITADO vitalício',
-        '✅ TODOS os cursos',
-        '✅ Novos cursos todo mês',
-        '✅ Sistema de marcação (Kindle)',
+        '✅ Acesso VITALÍCIO (sem expiração)',
+        '✅ TODOS os cursos da plataforma',
+        '✅ Pagamento único',
+        '✅ Novos cursos incluídos',
         '✅ Sistema de gamificação',
         '✅ Certificados de conclusão',
-        '✅ Downloads ilimitados',
-        '✅ Suporte prioritário',
-        '💰 Pague mensal ou anual (17% desconto)'
+        '✅ Suporte prioritário'
       ],
       is_active: true,
       sort_order: 3
