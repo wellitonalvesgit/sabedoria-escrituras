@@ -44,6 +44,12 @@ interface User {
     payment_status: string
     is_active: boolean
   }>
+  user_course_purchases?: Array<{
+    id: string
+    course_id: string
+    payment_status: string
+    is_active: boolean
+  }>
 }
 
 interface Course {
@@ -101,11 +107,16 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const fetchUser = async () => {
     try {
       setLoading(true)
+      setError(null)
       const response = await fetch(`/api/users/${userId}`)
       if (!response.ok) {
-        throw new Error('Usuário não encontrado')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Erro ao carregar usuário')
       }
       const data = await response.json()
+      if (!data.user) {
+        throw new Error('Usuário não encontrado')
+      }
       setUser(data.user)
       // Limpar conflitos entre cursos permitidos e bloqueados
       const allowedCourses = data.user.allowed_courses || []
@@ -138,7 +149,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       )
       
       // Verificar compras individuais de cursos
-      const coursePurchases = data.user.course_purchases || []
+      const coursePurchases = data.user.user_course_purchases || data.user.course_purchases || []
       const arsenalEspiritual: Record<string, boolean> = {}
       arsenalEspiritualCourses.forEach(course => {
         arsenalEspiritual[course.id] = coursePurchases.some((purchase: any) => 
@@ -249,12 +260,26 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     )
   }
 
-  if (error || !user) {
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Erro ao carregar usuário</h1>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Link href="/admin/users">
+            <Button className="hover:bg-primary/90">Voltar aos Usuários</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-2">Usuário não encontrado</h1>
-          <p className="text-muted-foreground mb-4">{error || 'O usuário solicitado não existe'}</p>
+          <p className="text-muted-foreground mb-4">O usuário solicitado não existe</p>
           <Link href="/admin/users">
             <Button className="hover:bg-primary/90">Voltar aos Usuários</Button>
           </Link>

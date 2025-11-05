@@ -25,38 +25,61 @@ export async function GET(
       throw new Error('Supabase client not configured')
     }
 
-    const { data: user, error } = await client
+    // Primeiro buscar o usuário básico
+    const { data: user, error: userError } = await client
       .from('users')
-      .select(`
-        *,
-        subscriptions (
-          id,
-          plan_id,
-          status,
-          plan_expires_at,
-          subscription_plans (
-            id,
-            name,
-            plan_type,
-            duration_days
-          )
-        ),
-        user_course_purchases (
-          id,
-          course_id,
-          payment_status,
-          is_active
-        )
-      `)
+      .select('*')
       .eq('id', id)
       .single()
 
-    if (error) {
-      console.error('Erro ao buscar usuário:', error)
+    if (userError) {
+      console.error('Erro ao buscar usuário:', userError)
+      return NextResponse.json({ error: userError.message || 'Usuário não encontrado' }, { status: 404 })
+    }
+
+    if (!user) {
       return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
     }
 
-    return NextResponse.json({ user })
+    // Buscar subscriptions separadamente
+    const { data: subscriptions, error: subscriptionsError } = await client
+      .from('subscriptions')
+      .select(`
+        id,
+        plan_id,
+        status,
+        plan_expires_at,
+        subscription_plans (
+          id,
+          name,
+          plan_type,
+          duration_days
+        )
+      `)
+      .eq('user_id', id)
+
+    if (subscriptionsError) {
+      console.warn('Erro ao buscar subscriptions:', subscriptionsError)
+    }
+
+    // Buscar course purchases separadamente
+    const { data: coursePurchases, error: purchasesError } = await client
+      .from('user_course_purchases')
+      .select('id, course_id, payment_status, is_active')
+      .eq('user_id', id)
+
+    if (purchasesError) {
+      console.warn('Erro ao buscar course purchases:', purchasesError)
+    }
+
+    // Combinar dados
+    const userWithRelations = {
+      ...user,
+      subscriptions: subscriptions || [],
+      user_course_purchases: coursePurchases || []
+    }
+
+    return NextResponse.json({ user: userWithRelations })
   } catch (error) {
     console.error('Erro na API de busca de usuário:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
