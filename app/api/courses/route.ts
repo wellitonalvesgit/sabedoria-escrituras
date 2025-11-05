@@ -54,7 +54,8 @@ export async function GET(request: NextRequest) {
           use_auto_conversion,
           display_order,
           cover_url,
-          youtube_url
+          youtube_url,
+          audio_url
         ),
         course_categories (
           category_id,

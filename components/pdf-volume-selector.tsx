@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -17,6 +17,18 @@ interface PDFVolumeSelectorProps {
 
 export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeSelectorProps) => {
   const [hoveredVolume, setHoveredVolume] = useState<string | null>(null)
+
+  // Debug: verificar dados recebidos
+  useEffect(() => {
+    if (selectedPDF) {
+      console.log('🎯 PDF selecionado:', {
+        volume: selectedPDF.volume,
+        title: selectedPDF.title,
+        youtube_url: (selectedPDF as any).youtube_url,
+        audio_url: (selectedPDF as any).audio_url
+      })
+    }
+  }, [selectedPDF])
 
   return (
     <div className="space-y-6">
@@ -162,9 +174,9 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
               </Button>
 
               {/* Vídeo (YouTube) */}
-              {selectedPDF.youtube_url && (
+              {(selectedPDF as any).youtube_url && (
                 <Button
-                  onClick={() => window.open(selectedPDF.youtube_url, '_blank')}
+                  onClick={() => window.open((selectedPDF as any).youtube_url, '_blank')}
                   variant="outline"
                   className="w-full border-[#F3C77A] text-[#F3C77A] hover:bg-[#F3C77A] hover:text-black"
                 >
@@ -174,9 +186,9 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
               )}
 
               {/* MP3 (Áudio) */}
-              {selectedPDF.audio_url && (
+              {(selectedPDF as any).audio_url && (
                 <Button
-                  onClick={() => window.open(selectedPDF.audio_url, '_blank')}
+                  onClick={() => window.open((selectedPDF as any).audio_url, '_blank')}
                   variant="outline"
                   className="w-full border-[#F3C77A] text-[#F3C77A] hover:bg-[#F3C77A] hover:text-black"
                 >
@@ -187,14 +199,14 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
             </div>
 
             {/* Player de Vídeo do YouTube (Embed) */}
-            {selectedPDF.youtube_url && (
+            {(selectedPDF as any).youtube_url && (
               <div className="pt-4 border-t border-[#2E261D]">
                 <div className="flex items-center gap-2 mb-3">
                   <Play className="h-4 w-4 text-[#F3C77A]" />
                   <h4 className="font-semibold text-sm text-foreground">Assistir Vídeo</h4>
                 </div>
                 <YouTubeVideoPlayer
-                  youtubeUrl={selectedPDF.youtube_url}
+                  youtubeUrl={(selectedPDF as any).youtube_url}
                   volumeTitle={selectedPDF.title}
                   volumeNumber={selectedPDF.volume}
                   className="w-full"
@@ -203,7 +215,7 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
             )}
 
             {/* Player de Áudio (MP3) */}
-            {selectedPDF.audio_url && (
+            {(selectedPDF as any).audio_url && (
               <div className="pt-4 border-t border-[#2E261D]">
                 <div className="flex items-center gap-2 mb-3">
                   <Volume2 className="h-4 w-4 text-[#F3C77A]" />
@@ -216,7 +228,7 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
                     filter: 'hue-rotate(20deg) saturate(1.2)',
                   }}
                 >
-                  <source src={selectedPDF.audio_url} type="audio/mpeg" />
+                  <source src={(selectedPDF as any).audio_url} type="audio/mpeg" />
                   Seu navegador não suporta o elemento de áudio.
                 </audio>
               </div>

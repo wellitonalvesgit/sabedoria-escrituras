@@ -82,6 +82,18 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       
       if (response.ok) {
         const data = await response.json()
+        console.log('📚 Dados do curso recebidos:', data.course)
+        console.log('📄 PDFs do curso:', data.course?.course_pdfs)
+        // Verificar se os PDFs têm youtube_url e audio_url
+        if (data.course?.course_pdfs) {
+          data.course.course_pdfs.forEach((pdf: any, index: number) => {
+            console.log(`📋 PDF ${index + 1} (${pdf.volume}):`, {
+              youtube_url: pdf.youtube_url,
+              audio_url: pdf.audio_url,
+              title: pdf.title
+            })
+          })
+        }
         setCourse(data.course)
       }
     } catch (error) {

@@ -45,25 +45,56 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes)
 
     // Upload para Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-      .from('course-audios')
+    // Tentar primeiro o bucket 'course-audios', se não existir, usar 'course-files'
+    let bucketName = 'course-audios'
+    let { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+      .from(bucketName)
       .upload(filePath, buffer, {
         contentType: file.type,
         upsert: false
       })
 
+    // Se o bucket não existir, tentar 'course-files'
+    if (uploadError && (uploadError.message?.includes('not found') || uploadError.message?.includes('Bucket'))) {
+      console.log('⚠️ Bucket course-audios não encontrado, tentando course-files...')
+      bucketName = 'course-files'
+      const retry = await supabaseAdmin.storage
+        .from(bucketName)
+        .upload(filePath, buffer, {
+          contentType: file.type,
+          upsert: false
+        })
+      uploadData = retry.data
+      uploadError = retry.error
+    }
+
     if (uploadError) {
-      console.error('Erro no upload para Supabase:', uploadError)
+      console.error('❌ Erro no upload para Supabase:', uploadError)
       return NextResponse.json({
         success: false,
         error: 'Erro ao fazer upload do arquivo: ' + uploadError.message
       })
     }
 
+    console.log('✅ Upload realizado com sucesso no bucket:', bucketName, 'Caminho:', filePath)
+
     // Obter URL pública do arquivo
+    // IMPORTANTE: Se o bucket não for público, getPublicUrl ainda gera a URL,
+    // mas o acesso pode requerer autenticação. Para buckets públicos, funciona normalmente.
     const { data: urlData } = supabaseAdmin.storage
-      .from('course-audios')
+      .from(bucketName)
       .getPublicUrl(filePath)
+    
+    console.log('📎 URL pública gerada:', urlData.publicUrl)
+    
+    // Verificar se a URL foi gerada corretamente
+    if (!urlData?.publicUrl) {
+      console.error('❌ Erro: URL pública não foi gerada')
+      return NextResponse.json({
+        success: false,
+        error: 'Erro ao gerar URL pública do arquivo'
+      })
+    }
 
     // Atualizar o volume com o novo áudio
     const { error: updateError } = await supabaseAdmin
