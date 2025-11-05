@@ -268,6 +268,23 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Indicador de Status de Conexão */}
+              {user ? (
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                    {user.email}
+                  </span>
+                </div>
+              ) : (
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20">
+                  <div className="h-2 w-2 rounded-full bg-red-500" />
+                  <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                    Desconectado
+                  </span>
+                </div>
+              )}
+
               <Button variant="ghost" size="icon" className="h-9 w-9 hidden md:flex hover:bg-primary/10 hover:text-primary">
                 <Search className="h-5 w-5" />
               </Button>

@@ -31,7 +31,7 @@ interface PremiumAccessGateProps {
 
 // Cache em memória para otimização de performance
 const accessCache = new Map<string, { result: AccessCheckResult, timestamp: number }>()
-const CACHE_TTL = 10 * 1000 // 10 segundos (reduzido para evitar cache desatualizado)
+const CACHE_TTL = 2 * 1000 // 2 segundos (reduzido para atualização rápida de permissões)
 
 export function PremiumAccessGate({ courseId, children }: PremiumAccessGateProps) {
   const [checking, setChecking] = useState(true)
@@ -53,30 +53,17 @@ export function PremiumAccessGate({ courseId, children }: PremiumAccessGateProps
         return
       }
 
-      // Obter sessão
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (!session) {
-        const result = {
-          canAccess: false,
-          reason: 'no_access' as const,
-          message: 'Usuário não autenticado'
-        }
-        setAccessResult(result)
-        setChecking(false)
-        return
-      }
-
-      // Requisição com timeout de 5 segundos
+      // Requisição com timeout de 10 segundos
+      // IMPORTANTE: Não usar getSession() - cookies HTTP-only são enviados automaticamente
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000)
+      const timeoutId = setTimeout(() => controller.abort(), 10000)
 
       try {
         const response = await fetch(`/api/courses/${courseId}/access`, {
           headers: {
-            'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json'
           },
+          credentials: 'include', // CRÍTICO: Envia cookies automaticamente
           signal: controller.signal
         })
 
@@ -99,6 +86,7 @@ export function PremiumAccessGate({ courseId, children }: PremiumAccessGateProps
         }
       }
     } catch (error) {
+      console.error('[PremiumAccessGate] Erro ao verificar acesso:', error)
       setAccessResult({
         canAccess: false,
         reason: 'no_access',

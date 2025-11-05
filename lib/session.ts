@@ -45,55 +45,43 @@ class SessionManager {
 
   private async initializeSession() {
     try {
+      console.log('[SessionManager] Iniciando sessão...')
+
       // Verificar cache primeiro (otimização crítica)
       if (this.userCache && (Date.now() - this.userCache.timestamp) < this.USER_CACHE_TTL) {
+        console.log('[SessionManager] Usando cache (ainda válido)')
         this.updateSession({ user: this.userCache.data, loading: false })
         return
       }
 
-      // Verificar sessão do Supabase
-      const { data: { session } } = await supabase.auth.getSession()
+      console.log('[SessionManager] Cache expirado ou não existe, buscando dados do usuário via API...')
 
-      if (!session?.user) {
-        this.updateSession({ user: null, loading: false })
-        return
-      }
-
-      // Verificar expiração
-      if (session.expires_at && new Date(session.expires_at * 1000) < new Date()) {
-        await supabase.auth.signOut()
-        this.updateSession({ user: null, loading: false })
-        return
-      }
-
-      // Buscar dados do usuário via API (mais rápido que RLS)
-      const userData = await this.fetchUserData(session.access_token)
+      // CORREÇÃO: Buscar dados diretamente via API usando cookies (não depende de getSession)
+      // Isso funciona porque os cookies HTTP-only são enviados automaticamente
+      const userData = await this.fetchUserDataViaCookies()
 
       if (!userData || userData.status !== 'active') {
+        console.log('[SessionManager] Sem usuário ou usuário inativo')
         this.updateSession({ user: null, loading: false })
         return
       }
+
+      console.log('[SessionManager] ✅ Usuário carregado:', userData.email)
 
       // Atualizar cache e sessão
       this.userCache = { data: userData, timestamp: Date.now() }
       this.updateSession({
         user: userData,
         loading: false,
-        sessionId: session.access_token
+        sessionId: userData.id // Usar ID do usuário como sessionId
       })
 
-      // Listener para mudanças de autenticação
+      // Listener para mudanças de autenticação do Supabase
       supabase.auth.onAuthStateChange(async (event, newSession) => {
-        if (event === 'SIGNED_IN' && newSession?.user) {
-          const user = await this.fetchUserData(newSession.access_token)
-          if (user) {
-            this.userCache = { data: user, timestamp: Date.now() }
-            this.updateSession({
-              user,
-              loading: false,
-              sessionId: newSession.access_token
-            })
-          }
+        console.log('[SessionManager] Auth state changed:', event)
+        if (event === 'SIGNED_IN') {
+          // Recarregar dados do usuário
+          await this.refreshUserData()
         } else if (event === 'SIGNED_OUT') {
           this.userCache = null
           this.updateSession({ user: null, loading: false, sessionId: '' })
@@ -101,12 +89,53 @@ class SessionManager {
       })
 
     } catch (error) {
+      console.error('[SessionManager] Erro ao inicializar sessão:', error)
       this.updateSession({ user: null, loading: false })
     }
   }
 
+  // NOVO: Buscar dados do usuário via cookies (sem token explícito)
+  private async fetchUserDataViaCookies(): Promise<User | null> {
+    try {
+      console.log('[SessionManager] Buscando dados via cookies...')
+
+      const response = await fetch('/api/users/me', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // IMPORTANTE: Envia cookies automaticamente
+      })
+
+      console.log('[SessionManager] Status da resposta:', response.status)
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log('[SessionManager] Usuário não autenticado (401)')
+        } else {
+          console.error('[SessionManager] Erro ao buscar usuário. Status:', response.status)
+        }
+        return null
+      }
+
+      const data = await response.json()
+      console.log('[SessionManager] ✅ Dados recebidos:', {
+        email: data?.email,
+        allowed_courses: data?.allowed_courses,
+        allowed_courses_count: data?.allowed_courses?.length
+      })
+      return data || null
+    } catch (error) {
+      console.error('[SessionManager] Erro ao buscar dados do usuário:', error)
+      return null
+    }
+  }
+
+  // MANTIDO: Para compatibilidade com auth state change
   private async fetchUserData(token: string): Promise<User | null> {
     try {
+      console.log('[SessionManager] Buscando dados do usuário com token...')
+
       const response = await fetch('/api/users/me', {
         method: 'GET',
         headers: {
@@ -116,11 +145,13 @@ class SessionManager {
         credentials: 'include',
       })
 
-      if (!response.ok) return null
+      if (!response.ok) {
+        return null
+      }
 
       const data = await response.json()
       return data || null
-    } catch {
+    } catch (error) {
       return null
     }
   }
@@ -206,6 +237,7 @@ class SessionManager {
   }
 
   public async refreshUserData() {
+    console.log('[SessionManager] Forçando atualização dos dados do usuário...')
     this.userCache = null
     await this.initializeSession()
   }

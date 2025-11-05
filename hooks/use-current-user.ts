@@ -28,28 +28,35 @@ export function useCurrentUser() {
   // NOTA: Removido hasAccessToCategory - controle apenas por curso individual
 
   const hasAccessToCourse = (courseId: string): boolean => {
-    if (!user) return false
-    if (user.role === 'admin') return true
-    if (!sessionValid) return false
+    if (!user) {
+      return false
+    }
+    if (user.role === 'admin') {
+      return true
+    }
+    if (!sessionValid) {
+      return false
+    }
 
-    // Verificar se o curso não está bloqueado
-    if (user.blocked_courses && user.blocked_courses.includes(courseId)) return false
+    // 1. Verificar se o curso está bloqueado
+    if (user.blocked_courses && user.blocked_courses.includes(courseId)) {
+      return false
+    }
 
-    // NOVO: Verificar se o usuário tem período de acesso válido (access_expires_at)
-    // Isso dá acesso a todos os cursos durante o período de teste
+    // 2. Se tem lista de cursos permitidos ESPECÍFICOS, usar APENAS essa lista
+    if (user.allowed_courses && user.allowed_courses.length > 0) {
+      return user.allowed_courses.includes(courseId)
+    }
+
+    // 3. Se NÃO tem cursos específicos, usar período de acesso (trial/premium)
     if (user.access_expires_at) {
       const expirationDate = new Date(user.access_expires_at)
       const now = new Date()
-      if (expirationDate > now) {
-        return true // Acesso via período de teste válido
-      }
+      return expirationDate > now
     }
 
-    // Verificar se o curso está explicitamente permitido
-    if (user.allowed_courses && user.allowed_courses.includes(courseId)) return true
-
-    // Se não há cursos específicos permitidos, permitir todos (exceto bloqueados)
-    return !user.allowed_courses || user.allowed_courses.length === 0
+    // 4. Sem cursos específicos E sem período de acesso válido
+    return false
   }
 
   const isAccessExpired = (): boolean => {

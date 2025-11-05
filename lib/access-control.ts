@@ -110,16 +110,12 @@ export async function userCanAccessCourse(
     )
   }
 
-  console.log('🔍 [userCanAccessCourse] Verificando acesso:', { userId, courseId })
-
   // Buscar curso
   const { data: course, error: courseError } = await supabase
     .from('courses')
     .select('id, title, is_free')
     .eq('id', courseId)
     .single()
-
-  console.log('📚 [userCanAccessCourse] Curso encontrado:', { course, error: courseError })
 
   if (!course) {
     return {
@@ -135,18 +131,6 @@ export async function userCanAccessCourse(
     .select('id, status, role, access_expires_at, allowed_courses, blocked_courses')
     .eq('id', userId)
     .single()
-
-  console.log('👤 [userCanAccessCourse] Dados do usuário:', {
-    userData: {
-      id: userData?.id,
-      status: userData?.status,
-      role: userData?.role,
-      access_expires_at: userData?.access_expires_at,
-      allowed_courses: userData?.allowed_courses?.length || 0,
-      blocked_courses: userData?.blocked_courses?.length || 0
-    },
-    error: userError
-  })
 
   if (!userData) {
     return {
@@ -209,28 +193,35 @@ export async function userCanAccessCourse(
     }
   }
 
-  // 6. Se o usuário tem período de acesso válido (access_expires_at ainda não expirou)
-  // dar acesso a todos os cursos (sistema de trial de 30 dias)
+  // 6. PRIORIDADE: Se tem lista de cursos permitidos ESPECÍFICOS, usar APENAS essa lista
+  const hasSpecificAllowedCourses = userData.allowed_courses && userData.allowed_courses.length > 0
+
+  if (hasSpecificAllowedCourses) {
+    const isCourseInAllowedList = userData.allowed_courses.includes(courseId)
+
+    if (isCourseInAllowedList) {
+      return {
+        canAccess: true,
+        reason: 'premium_access',
+        message: 'Acesso permitido',
+        course
+      }
+    } else {
+      return {
+        canAccess: false,
+        reason: 'no_access',
+        message: 'Este curso não está disponível para você',
+        course
+      }
+    }
+  }
+
+  // 7. Se NÃO tem lista específica, usar período de acesso (trial/premium geral)
   if (hasValidAccessPeriod) {
-    console.log('✅ [userCanAccessCourse] Acesso concedido via período de teste válido')
     return {
       canAccess: true,
       reason: 'trial_access',
       message: `Acesso via período de teste (válido até ${new Date(userData.access_expires_at!).toLocaleDateString('pt-BR')})`,
-      course
-    }
-  }
-
-  // 7. Verificar se o curso está na lista de cursos permitidos
-  const isCourseInAllowedList = userData.allowed_courses && userData.allowed_courses.includes(courseId)
-  console.log('🔍 [userCanAccessCourse] Curso na lista de permitidos?', isCourseInAllowedList)
-
-  if (isCourseInAllowedList) {
-    console.log('✅ [userCanAccessCourse] Acesso concedido via lista de cursos permitidos')
-    return {
-      canAccess: true,
-      reason: 'premium_access',
-      message: 'Acesso permitido',
       course
     }
   }
@@ -245,8 +236,6 @@ export async function userCanAccessCourse(
     .limit(1)
     .single()
 
-  console.log('💳 [userCanAccessCourse] Assinatura encontrada:', { subscription, error: subError })
-
   if (subscription) {
     const now = new Date()
 
@@ -254,7 +243,6 @@ export async function userCanAccessCourse(
     if (subscription.status === 'trial' && subscription.trial_ends_at) {
       const trialEnd = new Date(subscription.trial_ends_at)
       if (now <= trialEnd) {
-        console.log('✅ [userCanAccessCourse] Acesso concedido via trial de assinatura')
         return {
           canAccess: true,
           reason: 'trial_access',
@@ -269,7 +257,6 @@ export async function userCanAccessCourse(
     if (subscription.status === 'active' && subscription.current_period_end) {
       const periodEnd = new Date(subscription.current_period_end)
       if (now <= periodEnd) {
-        console.log('✅ [userCanAccessCourse] Acesso concedido via assinatura ativa')
         return {
           canAccess: true,
           reason: 'premium_access',
@@ -282,7 +269,6 @@ export async function userCanAccessCourse(
   }
 
   // 9. Por padrão, negar acesso
-  console.log('❌ [userCanAccessCourse] Acesso negado - nenhuma condição atendida')
   return {
     canAccess: false,
     reason: 'no_access',

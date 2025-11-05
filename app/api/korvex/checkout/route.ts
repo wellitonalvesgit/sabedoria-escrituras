@@ -33,11 +33,19 @@ export async function POST(request: NextRequest) {
 
     // Buscar dados do usuário e plano
     const body = await request.json()
-    const { plan_name, cycle, payment_method = 'PIX' } = body
+    const { plan_name, cycle, payment_method = 'PIX', client: clientData } = body
 
     if (!plan_name || !cycle) {
       return NextResponse.json(
         { error: 'Dados incompletos' },
+        { status: 400 }
+      )
+    }
+
+    // Validar dados do cliente
+    if (!clientData || !clientData.name || !clientData.email || !clientData.cpf || !clientData.phone) {
+      return NextResponse.json(
+        { error: 'Dados do cliente incompletos' },
         { status: 400 }
       )
     }
@@ -101,10 +109,10 @@ export async function POST(request: NextRequest) {
       identifier,
       amount: Number(value),
       client: {
-        name: userData?.name || user.email?.split('@')[0] || 'Usuário',
-        email: user.email!,
-        phone: '(11) 99999-9999', // TODO: Coletar do usuário
-        document: '000.000.000-00' // TODO: Coletar do usuário
+        name: clientData.name,
+        email: clientData.email,
+        phone: clientData.phone,
+        document: clientData.cpf
       },
       products: [
         {

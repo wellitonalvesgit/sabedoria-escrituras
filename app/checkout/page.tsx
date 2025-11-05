@@ -92,7 +92,13 @@ function CheckoutContent() {
         body: JSON.stringify({
           plan_name: planName,
           cycle,
-          payment_method: paymentMethod.toUpperCase()
+          payment_method: paymentMethod.toUpperCase(),
+          client: {
+            name: userData.name,
+            email: userData.email,
+            cpf: userData.cpf,
+            phone: userData.phone
+          }
         })
       })
 

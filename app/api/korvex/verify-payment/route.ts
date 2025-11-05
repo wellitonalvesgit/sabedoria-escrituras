@@ -86,11 +86,12 @@ export async function GET(request: NextRequest) {
               })
               .eq('id', subscription.id)
 
-            // Atualizar acesso do usuário
+            // Atualizar acesso do usuário e limpar allowed_courses
             await supabase
               .from('users')
               .update({
                 access_expires_at: periodEnd.toISOString(),
+                allowed_courses: null, // Limpar lista específica para dar acesso total
                 updated_at: new Date().toISOString()
               })
               .eq('id', subscription.user_id)

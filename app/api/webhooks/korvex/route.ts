@@ -329,7 +329,7 @@ async function handleTransactionPaid(
 
       console.log('✅ Assinatura ativada:', subscription.id)
 
-      // Atualizar access_expires_at do usuário
+      // Atualizar access_expires_at do usuário e limpar allowed_courses
       if (subscription.user_id) {
         const periodEnd = updates.current_period_end || subscription.current_period_end
 
@@ -337,11 +337,13 @@ async function handleTransactionPaid(
           .from('users')
           .update({
             access_expires_at: periodEnd,
+            allowed_courses: null, // Limpar lista específica para dar acesso total
             updated_at: new Date().toISOString()
           })
           .eq('id', subscription.user_id)
 
         console.log('✅ Acesso do usuário atualizado até:', periodEnd)
+        console.log('✅ Lista de cursos permitidos limpa (acesso total)')
       }
     }
   } else {
@@ -411,16 +413,18 @@ async function handleTransactionPaid(
           .eq('id', existingPayment.id)
       }
 
-      // Atualizar acesso do usuário
+      // Atualizar acesso do usuário e limpar allowed_courses
       await supabase
         .from('users')
         .update({
           access_expires_at: periodEnd.toISOString(),
+          allowed_courses: null, // Limpar lista específica para dar acesso total
           updated_at: new Date().toISOString()
         })
         .eq('id', metadata.userId)
 
       console.log('✅ Assinatura criada e ativada:', updatedSubscription?.id)
+      console.log('✅ Lista de cursos permitidos limpa (acesso total)')
     }
   }
 
