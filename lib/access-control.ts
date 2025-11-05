@@ -229,7 +229,7 @@ export async function userCanAccessCourse(
   // 8. Verificar se tem assinatura ativa
   const { data: subscription, error: subError } = await supabase
     .from('subscriptions')
-    .select('status, trial_ends_at, current_period_end')
+    .select('status, trial_ends_at, current_period_end, plan:subscription_plans(name, allowed_courses)')
     .eq('user_id', userData.id)
     .in('status', ['trial', 'active'])
     .order('created_at', { ascending: false })
@@ -238,11 +238,25 @@ export async function userCanAccessCourse(
 
   if (subscription) {
     const now = new Date()
+    const plan = subscription.plan as any
 
     // Verificar se é trial válido
     if (subscription.status === 'trial' && subscription.trial_ends_at) {
       const trialEnd = new Date(subscription.trial_ends_at)
       if (now <= trialEnd) {
+        // Verificar se o plano tem lista de cursos permitidos
+        if (plan?.allowed_courses && Array.isArray(plan.allowed_courses)) {
+          if (!plan.allowed_courses.includes(courseId)) {
+            return {
+              canAccess: false,
+              reason: 'no_access',
+              message: 'Este curso não está incluído no seu plano. Faça upgrade para acessar todos os cursos.',
+              course,
+              subscription
+            }
+          }
+        }
+
         return {
           canAccess: true,
           reason: 'trial_access',
@@ -257,6 +271,19 @@ export async function userCanAccessCourse(
     if (subscription.status === 'active' && subscription.current_period_end) {
       const periodEnd = new Date(subscription.current_period_end)
       if (now <= periodEnd) {
+        // Verificar se o plano tem lista de cursos permitidos
+        if (plan?.allowed_courses && Array.isArray(plan.allowed_courses)) {
+          if (!plan.allowed_courses.includes(courseId)) {
+            return {
+              canAccess: false,
+              reason: 'no_access',
+              message: 'Este curso não está incluído no seu plano. Faça upgrade para Premium para acessar todos os cursos.',
+              course,
+              subscription
+            }
+          }
+        }
+
         return {
           canAccess: true,
           reason: 'premium_access',
