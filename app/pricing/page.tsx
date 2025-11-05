@@ -91,12 +91,6 @@ export default function PricingPage() {
         return
       }
 
-      // Se é o plano gratuito, apenas confirmar
-      if (plan.name === 'free' || plan.name === 'free-trial') {
-        alert('Você já está no plano gratuito com 7 dias de trial!')
-        return
-      }
-
       // Redirecionar para checkout
       router.push(`/checkout?plan=${plan.name}`)
     } catch (error) {
@@ -107,16 +101,12 @@ export default function PricingPage() {
   }
 
   const getPlanPrice = (plan: Plan) => {
-    if (plan.name === 'free' || plan.name === 'free-trial') return 0
     // Sempre usar price_monthly (que agora é o preço único)
     return plan.price_monthly
   }
 
   const getPlanIcon = (planName: string) => {
     switch (planName) {
-      case 'free':
-      case 'free-trial':
-        return <Gift className="h-8 w-8 text-blue-500" />
       case 'premium':
         return <Crown className="h-8 w-8 text-yellow-500" />
       case 'basico':
@@ -169,7 +159,7 @@ export default function PricingPage() {
             Escolha seu plano
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Comece com 7 dias grátis. Escolha o plano ideal para você.
+            Acesso completo aos cursos. Pagamento único, sem mensalidades.
           </p>
 
           {isInTrial() && subscription && (
@@ -266,8 +256,6 @@ export default function PricingPage() {
                       </>
                     ) : isCurrent ? (
                       'Plano Atual'
-                    ) : plan.name === 'free' ? (
-                      'Plano Gratuito'
                     ) : (
                       'Assinar Agora'
                     )}
@@ -292,14 +280,6 @@ export default function PricingPage() {
               <p className="text-muted-foreground">
                 Todos os planos são pagamentos únicos. O plano Básico dá acesso por 2 meses,
                 e o plano Premium dá acesso vitalício sem necessidade de renovação.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-2">Como funciona o plano gratuito?</h4>
-              <p className="text-muted-foreground">
-                Todos os novos usuários ganham 7 dias de acesso aos cursos gratuitos.
-                Não é necessário cartão de crédito para começar.
               </p>
             </div>
 
