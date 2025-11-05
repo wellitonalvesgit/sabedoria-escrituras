@@ -111,8 +111,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           use_auto_conversion,
           display_order,
           cover_url,
-          youtube_url,
-          audio_url
+          youtube_url
         ),
         course_categories (
           category_id,
