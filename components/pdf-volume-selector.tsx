@@ -90,7 +90,7 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  {pdf.readingTimeMinutes || 30} min
+                  {(pdf as any).readingTimeMinutes || (pdf as any).reading_time_minutes || 30} min
                 </div>
               </div>
             </CardHeader>
@@ -116,7 +116,7 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
               <CardTitle className="text-lg text-foreground">{selectedPDF.title}</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              {selectedPDF.pages || 20} páginas • {selectedPDF.readingTimeMinutes || 30} minutos de leitura
+              {selectedPDF.pages || 20} páginas • {(selectedPDF as any).readingTimeMinutes || (selectedPDF as any).reading_time_minutes || 30} minutos de leitura
             </p>
           </CardHeader>
           <CardContent className="space-y-4">

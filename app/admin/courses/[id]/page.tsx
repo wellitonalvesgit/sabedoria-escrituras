@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { use } from "react"
-import { ArrowLeft, Save, Plus, Trash2, Edit, Eye, FileText, Upload, Download, Loader2, Copy, ArrowUp, ArrowDown, Gift, Youtube, Image as ImageIcon, Volume2 } from "lucide-react"
+import { ArrowLeft, Save, Plus, Trash2, Edit, Eye, FileText, Upload, Download, Loader2, Copy, ArrowUp, ArrowDown, Gift, Youtube, Volume2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,7 +14,6 @@ import { PDFUpload } from "@/components/pdf-upload"
 import { GoogleDriveLink } from "@/components/google-drive-link"
 import { ImageUpload } from "@/components/image-upload"
 import { CategorySelector } from "@/components/category-selector"
-import { VolumeCoverUpload } from "@/components/volume-cover-upload"
 import Link from "next/link"
 
 interface CoursePDF {
@@ -1055,11 +1054,11 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                         cover_url: pdf.cover_url || null
                                       })
                                     })
-
+                                    
                                     if (!response.ok) {
                                       throw new Error('Erro ao atualizar configuração')
                                     }
-
+                                    
                                     await fetchCourse() // Recarregar dados
                                   } catch (err) {
                                     alert('Erro ao atualizar configuração')
@@ -1102,11 +1101,11 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                         cover_url: pdf.cover_url || null
                                       })
                                     })
-
+                                    
                                     if (!response.ok) {
                                       throw new Error('Erro ao salvar texto')
                                     }
-
+                                    
                                     await fetchCourse() // Recarregar dados
                                   } catch (err) {
                                     alert('Erro ao salvar texto')
@@ -1168,11 +1167,11 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                                         cover_url: pdf.cover_url || null
                                       })
                                     })
-
+                                    
                                     if (!response.ok) {
                                       throw new Error('Erro ao limpar texto')
                                     }
-
+                                    
                                     await fetchCourse() // Recarregar dados
                                   } catch (err) {
                                     alert('Erro ao limpar texto')
@@ -1270,39 +1269,6 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
               </CardContent>
             </Card>
 
-            {/* Volume Covers Management */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ImageIcon className="h-5 w-5" />
-                  Gerenciar Capas dos Volumes
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Personalize a capa de cada volume individualmente. Cada volume pode ter sua própria capa diferente da capa do curso.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {course.course_pdfs.map((pdf) => (
-                    <VolumeCoverUpload
-                      key={pdf.id}
-                      volumeId={pdf.id}
-                      courseId={courseId}
-                      currentCoverUrl={pdf.cover_url}
-                      volumeTitle={pdf.title}
-                      onUploadSuccess={(url) => {
-                        console.log('Capa do volume atualizada:', url)
-                        fetchCourse() // Recarregar dados
-                      }}
-                      onUploadError={(error) => {
-                        console.error('Erro ao fazer upload da capa:', error)
-                        alert('Erro ao fazer upload da capa: ' + error)
-                      }}
-                    />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
 
           </div>
 
