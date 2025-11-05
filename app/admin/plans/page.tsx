@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { BookOpen, Plus, Edit, Save, X, DollarSign, Calendar, Sparkles } from "lucide-react"
+import { BookOpen, Plus, Edit, Save, X, DollarSign, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -187,11 +187,11 @@ export default function AdminPlansPage() {
                 </CardHeader>
 
                 <CardContent className="space-y-6">
-                  {/* Preços */}
+                  {/* Preço Único */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <Label>Preço Mensal</Label>
+                      <Label>Valor Único</Label>
                     </div>
                     {isEditing ? (
                       <Input
@@ -203,24 +203,6 @@ export default function AdminPlansPage() {
                       />
                     ) : (
                       <p className="text-2xl font-bold">R$ {currentPlan.price_monthly.toFixed(2)}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <Label>Preço Anual</Label>
-                    </div>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={currentPlan.price_yearly}
-                        onChange={(e) => updateEditingPlan('price_yearly', parseFloat(e.target.value))}
-                        placeholder="R$ 0.00"
-                      />
-                    ) : (
-                      <p className="text-2xl font-bold">R$ {currentPlan.price_yearly.toFixed(2)}</p>
                     )}
                   </div>
 
@@ -253,24 +235,6 @@ export default function AdminPlansPage() {
                     )}
                   </div>
 
-                  {/* Trial */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-muted-foreground" />
-                      <Label>Período de Trial</Label>
-                    </div>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        value={currentPlan.trial_days}
-                        onChange={(e) => updateEditingPlan('trial_days', parseInt(e.target.value))}
-                        placeholder="0"
-                      />
-                    ) : (
-                      <p className="text-lg">{currentPlan.trial_days} dias</p>
-                    )}
-                  </div>
-
                   {/* Status */}
                   <div className="space-y-3 border-t pt-3">
                     <div className="flex items-center justify-between">
@@ -284,21 +248,6 @@ export default function AdminPlansPage() {
                         <Switch checked={currentPlan.is_active} disabled />
                       )}
                     </div>
-                  </div>
-
-                  {/* Features */}
-                  <div className="space-y-2 border-t pt-3">
-                    <Label>Recursos ({currentPlan.features.length})</Label>
-                    <ul className="text-sm space-y-1">
-                      {currentPlan.features.slice(0, 3).map((feature, idx) => (
-                        <li key={idx} className="text-muted-foreground">• {feature}</li>
-                      ))}
-                      {currentPlan.features.length > 3 && (
-                        <li className="text-muted-foreground italic">
-                          + {currentPlan.features.length - 3} recursos...
-                        </li>
-                      )}
-                    </ul>
                   </div>
 
                   {/* Ações */}
@@ -333,9 +282,8 @@ export default function AdminPlansPage() {
             <CardTitle>💡 Instruções</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>• <strong>Valor Único:</strong> Preço do plano (pagamento único, sem renovação)</p>
             <p>• <strong>Duração:</strong> Deixe vazio para acesso ILIMITADO, ou defina número de dias (ex: 60 = 2 meses)</p>
-            <p>• <strong>Trial:</strong> Período de teste gratuito em dias (ex: 7, 30)</p>
-            <p>• <strong>Preço Anual:</strong> Se zero, o plano não terá opção anual</p>
             <p>• <strong>Ativo/Inativo:</strong> Apenas planos ativos aparecem na página de pricing</p>
             <p className="pt-2 border-t">
               <strong>⚠️ Importante:</strong> Para adicionar a coluna duration_days no banco, execute no SQL do Supabase:
