@@ -11,7 +11,7 @@ import Image from "next/image"
 
 interface PDFVolumeSelectorProps {
   pdfs: CoursePDF[]
-  onSelectPDF: (pdf: CoursePDF) => void
+  onSelectPDF: (pdf: CoursePDF, mode?: 'original' | 'digital-magazine') => void
   selectedPDF?: CoursePDF
 }
 
@@ -143,7 +143,7 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Opção 1: Visualização Original (PDF) */}
                 <button
-                  onClick={() => onSelectPDF(selectedPDF)}
+                  onClick={() => onSelectPDF(selectedPDF, 'original')}
                   className="group relative overflow-hidden rounded-xl border-2 border-[#2E261D] bg-gradient-to-br from-[#16130F] to-[#2E261D] p-4 text-left transition-all hover:border-[#F3C77A] hover:shadow-lg hover:shadow-[#F3C77A]/20"
                 >
                   <div className="flex items-start gap-3">
@@ -159,7 +159,7 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
 
                 {/* Opção 2: Modo Kindle */}
                 <button
-                  onClick={() => onSelectPDF(selectedPDF)}
+                  onClick={() => onSelectPDF(selectedPDF, 'digital-magazine')}
                   className="group relative overflow-hidden rounded-xl border-2 border-[#2E261D] bg-gradient-to-br from-[#16130F] to-[#2E261D] p-4 text-left transition-all hover:border-[#F3C77A] hover:shadow-lg hover:shadow-[#F3C77A]/20"
                 >
                   <div className="flex items-start gap-3">

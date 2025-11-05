@@ -133,9 +133,14 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     }
   }
 
-  const handleSelectPDF = (pdf: CoursePDF) => {
+  const handleSelectPDF = (pdf: CoursePDF, mode?: 'original' | 'digital-magazine') => {
     setSelectedPDF(pdf)
     setShowPDFReader(true)
+    if (mode) {
+      setViewMode(mode)
+    } else {
+      setViewMode(undefined)
+    }
   }
 
   const handleSelectViewMode = (mode: 'original' | 'digital-magazine') => {
