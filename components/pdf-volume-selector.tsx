@@ -109,71 +109,120 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
       </div>
 
       {selectedPDF && (
-        <div className="mt-6 p-4 rounded-xl bg-[#16130F] border border-[#2E261D]">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-foreground">{selectedPDF.title}</h3>
-              <p className="text-sm text-muted-foreground">
-                {selectedPDF.pages || 20} páginas • {selectedPDF.readingTimeMinutes || 30} minutos de leitura
-              </p>
-            </div>
-            <Button
-              onClick={() => {
-                const link = document.createElement("a")
-                link.href = selectedPDF.url
-                link.download = `${selectedPDF.title}.pdf`
-                document.body.appendChild(link)
-                link.click()
-                document.body.removeChild(link)
-              }}
-              variant="outline"
-              size="sm"
-              className="border-[#F3C77A] text-[#F3C77A] hover:bg-[#F3C77A] hover:text-black"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Baixar PDF
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Player de Áudio (MP3) */}
-      {selectedPDF && selectedPDF.audio_url && (
         <Card className="mt-6 border-[#F3C77A]/30 bg-gradient-to-br from-[#16130F] to-[#2E261D]">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Volume2 className="h-5 w-5 text-[#F3C77A]" />
-              <CardTitle className="text-lg text-foreground">Escutar Áudio</CardTitle>
+              <BookOpen className="h-5 w-5 text-[#F3C77A]" />
+              <CardTitle className="text-lg text-foreground">{selectedPDF.title}</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              Narração do volume {selectedPDF.volume}
+              {selectedPDF.pages || 20} páginas • {selectedPDF.readingTimeMinutes || 30} minutos de leitura
             </p>
           </CardHeader>
-          <CardContent>
-            <audio
-              controls
-              className="w-full"
-              style={{
-                filter: 'hue-rotate(20deg) saturate(1.2)',
-              }}
-            >
-              <source src={selectedPDF.audio_url} type="audio/mpeg" />
-              Seu navegador não suporta o elemento de áudio.
-            </audio>
+          <CardContent className="space-y-4">
+            {/* Botões de Ação */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {/* Ver PDF */}
+              <Button
+                onClick={() => window.open(selectedPDF.url, '_blank')}
+                className="w-full bg-[#F3C77A] text-black hover:bg-[#F3C77A]/90"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Ver PDF
+              </Button>
+
+              {/* Ver Modo Kindle */}
+              <Button
+                onClick={() => {
+                  // Implementar abertura em modo kindle
+                  window.open(selectedPDF.url, '_blank')
+                }}
+                variant="outline"
+                className="w-full border-[#F3C77A] text-[#F3C77A] hover:bg-[#F3C77A] hover:text-black"
+              >
+                <BookOpen className="mr-2 h-4 w-4" />
+                Modo Kindle
+              </Button>
+
+              {/* Download */}
+              <Button
+                onClick={() => {
+                  const link = document.createElement("a")
+                  link.href = selectedPDF.url
+                  link.download = `${selectedPDF.title}.pdf`
+                  document.body.appendChild(link)
+                  link.click()
+                  document.body.removeChild(link)
+                }}
+                variant="outline"
+                className="w-full border-[#F3C77A] text-[#F3C77A] hover:bg-[#F3C77A] hover:text-black"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download
+              </Button>
+
+              {/* Vídeo (YouTube) */}
+              {selectedPDF.youtube_url && (
+                <Button
+                  onClick={() => window.open(selectedPDF.youtube_url, '_blank')}
+                  variant="outline"
+                  className="w-full border-[#F3C77A] text-[#F3C77A] hover:bg-[#F3C77A] hover:text-black"
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Vídeo
+                </Button>
+              )}
+
+              {/* MP3 (Áudio) */}
+              {selectedPDF.audio_url && (
+                <Button
+                  onClick={() => window.open(selectedPDF.audio_url, '_blank')}
+                  variant="outline"
+                  className="w-full border-[#F3C77A] text-[#F3C77A] hover:bg-[#F3C77A] hover:text-black"
+                >
+                  <Volume2 className="mr-2 h-4 w-4" />
+                  MP3
+                </Button>
+              )}
+            </div>
+
+            {/* Player de Vídeo do YouTube (Embed) */}
+            {selectedPDF.youtube_url && (
+              <div className="pt-4 border-t border-[#2E261D]">
+                <div className="flex items-center gap-2 mb-3">
+                  <Play className="h-4 w-4 text-[#F3C77A]" />
+                  <h4 className="font-semibold text-sm text-foreground">Assistir Vídeo</h4>
+                </div>
+                <YouTubeVideoPlayer
+                  youtubeUrl={selectedPDF.youtube_url}
+                  volumeTitle={selectedPDF.title}
+                  volumeNumber={selectedPDF.volume}
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            {/* Player de Áudio (MP3) */}
+            {selectedPDF.audio_url && (
+              <div className="pt-4 border-t border-[#2E261D]">
+                <div className="flex items-center gap-2 mb-3">
+                  <Volume2 className="h-4 w-4 text-[#F3C77A]" />
+                  <h4 className="font-semibold text-sm text-foreground">Escutar Áudio</h4>
+                </div>
+                <audio
+                  controls
+                  className="w-full"
+                  style={{
+                    filter: 'hue-rotate(20deg) saturate(1.2)',
+                  }}
+                >
+                  <source src={selectedPDF.audio_url} type="audio/mpeg" />
+                  Seu navegador não suporta o elemento de áudio.
+                </audio>
+              </div>
+            )}
           </CardContent>
         </Card>
-      )}
-
-      {/* Player de Vídeo do YouTube */}
-      {selectedPDF && selectedPDF.youtube_url && (
-        <div className="mt-6">
-          <YouTubeVideoPlayer
-            youtubeUrl={selectedPDF.youtube_url}
-            volumeTitle={selectedPDF.title}
-            volumeNumber={selectedPDF.volume}
-            className="w-full"
-          />
-        </div>
       )}
     </div>
   )
