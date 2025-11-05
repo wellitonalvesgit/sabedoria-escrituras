@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { BookOpen, Download, Clock, FileText, Play } from "lucide-react"
+import { BookOpen, Download, Clock, FileText, Play, Volume2 } from "lucide-react"
 import { CoursePDF } from "@/lib/courses-data"
 import { YouTubeVideoPlayer } from "@/components/youtube-video-player"
 import Image from "next/image"
@@ -135,6 +135,33 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
             </Button>
           </div>
         </div>
+      )}
+
+      {/* Player de Áudio (MP3) */}
+      {selectedPDF && selectedPDF.audio_url && (
+        <Card className="mt-6 border-[#F3C77A]/30 bg-gradient-to-br from-[#16130F] to-[#2E261D]">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Volume2 className="h-5 w-5 text-[#F3C77A]" />
+              <CardTitle className="text-lg text-foreground">Escutar Áudio</CardTitle>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              Narração do volume {selectedPDF.volume}
+            </p>
+          </CardHeader>
+          <CardContent>
+            <audio
+              controls
+              className="w-full"
+              style={{
+                filter: 'hue-rotate(20deg) saturate(1.2)',
+              }}
+            >
+              <source src={selectedPDF.audio_url} type="audio/mpeg" />
+              Seu navegador não suporta o elemento de áudio.
+            </audio>
+          </CardContent>
+        </Card>
       )}
 
       {/* Player de Vídeo do YouTube */}

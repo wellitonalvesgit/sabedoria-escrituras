@@ -8,6 +8,7 @@ export interface CoursePDF {
   useAutoConversion?: boolean  // Se true, tenta conversão automática; se false, usa textContent
   cover_url?: string  // URL da capa do volume
   youtube_url?: string  // URL do vídeo do YouTube
+  audio_url?: string  // URL do arquivo de áudio MP3 (narração/audiobook)
 }
 
 export interface Course {
