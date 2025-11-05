@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { use } from "react"
-import { ArrowLeft, Save, Plus, Trash2, Edit, Eye, FileText, Upload, Download, Loader2, Copy, ArrowUp, ArrowDown, Gift, Youtube, Image as ImageIcon } from "lucide-react"
+import { ArrowLeft, Save, Plus, Trash2, Edit, Eye, FileText, Upload, Download, Loader2, Copy, ArrowUp, ArrowDown, Gift, Youtube, Image as ImageIcon, Volume2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,7 @@ import { GoogleDriveLink } from "@/components/google-drive-link"
 import { ImageUpload } from "@/components/image-upload"
 import { CategorySelector } from "@/components/category-selector"
 import { VolumeCoverUpload } from "@/components/volume-cover-upload"
+import { VolumeAudioUpload } from "@/components/volume-audio-upload"
 import { YouTubeUrlManager } from "@/components/youtube-url-manager"
 import Link from "next/link"
 
@@ -30,6 +31,7 @@ interface CoursePDF {
   display_order: number
   cover_url?: string
   youtube_url?: string
+  audio_url?: string
 }
 
 interface Course {
@@ -1215,6 +1217,40 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                       onUrlRemove={() => {
                         console.log('URL do YouTube removida')
                         fetchCourse() // Recarregar dados
+                      }}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Audio Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Volume2 className="h-5 w-5 text-[#F3C77A]" />
+                  Gerenciar Áudios dos Volumes (MP3)
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Faça upload de arquivos MP3 para adicionar narração aos volumes. Os usuários poderão escutar enquanto leem.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {course.course_pdfs.map((pdf) => (
+                    <VolumeAudioUpload
+                      key={pdf.id}
+                      volumeId={pdf.id}
+                      courseId={courseId}
+                      currentAudioUrl={pdf.audio_url}
+                      volumeTitle={pdf.title}
+                      onUploadSuccess={(url) => {
+                        console.log('Áudio do volume atualizado:', url)
+                        fetchCourse() // Recarregar dados
+                      }}
+                      onUploadError={(error) => {
+                        console.error('Erro ao fazer upload do áudio:', error)
+                        alert('Erro ao fazer upload do áudio: ' + error)
                       }}
                     />
                   ))}
