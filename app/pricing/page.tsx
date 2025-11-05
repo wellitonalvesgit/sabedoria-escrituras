@@ -34,7 +34,6 @@ export default function PricingPage() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [loading, setLoading] = useState(true)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
   const [processing, setProcessing] = useState<string | null>(null)
 
   useEffect(() => {
@@ -99,7 +98,7 @@ export default function PricingPage() {
       }
 
       // Redirecionar para checkout
-      router.push(`/checkout?plan=${plan.name}&cycle=${billingCycle}`)
+      router.push(`/checkout?plan=${plan.name}`)
     } catch (error) {
       alert('Erro ao selecionar plano. Tente novamente.')
     } finally {
@@ -116,10 +115,12 @@ export default function PricingPage() {
   const getPlanIcon = (planName: string) => {
     switch (planName) {
       case 'free':
+      case 'free-trial':
         return <Gift className="h-8 w-8 text-blue-500" />
-      case 'premium-monthly':
-      case 'premium-yearly':
+      case 'premium':
         return <Crown className="h-8 w-8 text-yellow-500" />
+      case 'basico':
+        return <Sparkles className="h-8 w-8 text-purple-500" />
       default:
         return <Sparkles className="h-8 w-8 text-purple-500" />
     }

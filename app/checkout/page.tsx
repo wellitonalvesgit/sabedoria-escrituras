@@ -15,7 +15,6 @@ function CheckoutContent() {
   const router = useRouter()
 
   const planName = searchParams.get('plan')
-  const cycle = searchParams.get('cycle') || 'monthly'
 
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
@@ -91,7 +90,6 @@ function CheckoutContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plan_name: planName,
-          cycle,
           payment_method: paymentMethod.toUpperCase(),
           client: {
             name: userData.name,
@@ -306,13 +304,7 @@ function CheckoutContent() {
                 <div>
                   <div className="text-sm text-muted-foreground">Plano</div>
                   <div className="font-semibold">{plan.display_name}</div>
-                </div>
-
-                <div>
-                  <div className="text-sm text-muted-foreground">Ciclo</div>
-                  <div className="font-semibold">
-                    {cycle === 'monthly' ? 'Mensal' : 'Anual'}
-                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">Pagamento único</div>
                 </div>
 
                 {plan.trial_days > 0 && (
@@ -342,7 +334,7 @@ function CheckoutContent() {
                   </div>
 
                   <div className="text-xs text-muted-foreground mt-2">
-                    {cycle === 'monthly' ? 'Cobrado mensalmente' : 'Cobrado anualmente'}
+                    Pagamento único • Sem renovação automática
                   </div>
                 </div>
 
