@@ -95,7 +95,7 @@ export async function PUT(
     const { id: courseId, pdfId } = await params
     const body = await request.json()
 
-    const { volume, title, url, pages, reading_time_minutes, text_content, use_auto_conversion, display_order, cover_url, youtube_url, audio_url } = body
+    const { volume, title, url, pages, reading_time_minutes, text_content, use_auto_conversion, display_order, cover_url, youtube_url, audio_url, parent_volume_id } = body
 
     // SEMPRE usar supabaseAdmin para bypassar RLS
     if (!supabaseAdmin) {
@@ -112,7 +112,8 @@ export async function PUT(
       use_auto_conversion: use_auto_conversion !== false,
       cover_url: cover_url || null,
       youtube_url: youtube_url ?? undefined,
-      audio_url: audio_url ?? undefined
+      audio_url: audio_url ?? undefined,
+      parent_volume_id: parent_volume_id || null
     }
 
     // Só atualizar display_order se foi fornecido

@@ -85,6 +85,31 @@ export const OriginalPDFViewer = ({ pdfUrl, courseId, pdfId, onSessionUpdate }: 
     if (!containerRef.current) return
 
     try {
+      // Detectar se é mobile
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768
+      
+      if (isMobile) {
+        // No mobile, abrir PDF em nova janela para melhor experiência
+        const previewUrl = convertGoogleDriveToPreview(pdfUrl)
+        const newWindow = window.open(
+          `${previewUrl}#page=${currentPage}&toolbar=1&navpanes=1&scrollbar=1&zoom=page-fit`,
+          '_blank',
+          'fullscreen=yes'
+        )
+        if (newWindow) {
+          newWindow.focus()
+        } else {
+          // Fallback: tentar fullscreen normal se popup bloqueado
+          if (containerRef.current.requestFullscreen) {
+            await containerRef.current.requestFullscreen()
+          } else if ((containerRef.current as any).webkitRequestFullscreen) {
+            await (containerRef.current as any).webkitRequestFullscreen()
+          }
+        }
+        return
+      }
+
+      // Desktop: usar fullscreen normal
       if (!document.fullscreenElement) {
         if (containerRef.current.requestFullscreen) {
           await containerRef.current.requestFullscreen()
@@ -108,6 +133,9 @@ export const OriginalPDFViewer = ({ pdfUrl, courseId, pdfId, onSessionUpdate }: 
       }
     } catch (err) {
       console.error('Erro ao entrar/sair do modo tela cheia:', err)
+      // Fallback: abrir em nova janela
+      const previewUrl = convertGoogleDriveToPreview(pdfUrl)
+      window.open(`${previewUrl}#page=${currentPage}`, '_blank')
     }
   }
 
@@ -134,9 +162,9 @@ export const OriginalPDFViewer = ({ pdfUrl, courseId, pdfId, onSessionUpdate }: 
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 md:gap-6 px-4 md:px-0">
       {/* Controles do PDF */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#2E261D] bg-[#16130F] px-6 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 md:gap-4 rounded-xl md:rounded-2xl border border-[#2E261D] bg-[#16130F] px-3 md:px-6 py-3 md:py-4">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-[#BCB19F]">Zoom:</span>
@@ -239,18 +267,18 @@ export const OriginalPDFViewer = ({ pdfUrl, courseId, pdfId, onSessionUpdate }: 
         </motion.div>
 
         {/* Controles de Navegação */}
-        <div className="absolute bottom-8 left-8 right-8 flex items-center justify-between">
+        <div className="absolute bottom-4 md:bottom-8 left-4 md:left-8 right-4 md:right-8 flex items-center justify-between">
           <Button
             onClick={prevPage}
             disabled={currentPage === 1}
             variant="ghost"
             size="icon"
-            className="h-14 w-14 rounded-full bg-[#16130F]/90 text-[#F3C77A] backdrop-blur-sm hover:bg-[#16130F] disabled:opacity-30 shadow-xl"
+            className="h-10 w-10 md:h-14 md:w-14 rounded-full bg-[#16130F]/90 text-[#F3C77A] backdrop-blur-sm hover:bg-[#16130F] disabled:opacity-30 shadow-xl"
           >
-            <ChevronLeft className="h-7 w-7" />
+            <ChevronLeft className="h-5 w-5 md:h-7 md:w-7" />
           </Button>
 
-          <div className="rounded-full bg-[#16130F]/90 px-6 py-3 text-base font-semibold text-[#F3C77A] backdrop-blur-sm shadow-xl">
+          <div className="rounded-full bg-[#16130F]/90 px-3 md:px-6 py-2 md:py-3 text-sm md:text-base font-semibold text-[#F3C77A] backdrop-blur-sm shadow-xl">
             Página {currentPage} {totalPages > 0 && `de ${totalPages}`}
           </div>
 
@@ -259,9 +287,9 @@ export const OriginalPDFViewer = ({ pdfUrl, courseId, pdfId, onSessionUpdate }: 
             disabled={currentPage === totalPages}
             variant="ghost"
             size="icon"
-            className="h-14 w-14 rounded-full bg-[#16130F]/90 text-[#F3C77A] backdrop-blur-sm hover:bg-[#16130F] disabled:opacity-30 shadow-xl"
+            className="h-10 w-10 md:h-14 md:w-14 rounded-full bg-[#16130F]/90 text-[#F3C77A] backdrop-blur-sm hover:bg-[#16130F] disabled:opacity-30 shadow-xl"
           >
-            <ChevronRight className="h-7 w-7" />
+            <ChevronRight className="h-5 w-5 md:h-7 md:w-7" />
           </Button>
         </div>
       </div>

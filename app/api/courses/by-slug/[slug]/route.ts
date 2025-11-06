@@ -40,7 +40,8 @@ export async function GET(
           display_order,
           cover_url,
           youtube_url,
-          audio_url
+          audio_url,
+          parent_volume_id
         )
       `)
       .eq('slug', slug)

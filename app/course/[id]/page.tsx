@@ -4,6 +4,7 @@ import { BookOpen, ChevronLeft, User, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { PointsDisplay } from "@/components/points-display"
+import { MobileDrawer } from "@/components/mobile-drawer"
 import Link from "next/link"
 import { PDFVolumeSelector } from "@/components/pdf-volume-selector"
 import { ViewModeSelector } from "@/components/view-mode-selector"
@@ -165,14 +166,14 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   return (
     <div className="min-h-screen bg-background">
       <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-8">
-              <Link href="/" className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-                  <BookOpen className="h-5 w-5 text-primary-foreground" />
+        <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+          <div className="flex h-14 md:h-16 items-center justify-between">
+            <div className="flex items-center gap-4 md:gap-8">
+              <Link href="/dashboard" className="flex items-center gap-2">
+                <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-xl bg-primary">
+                  <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
                 </div>
-                <span className="text-xl font-semibold tracking-tight">As Cartas de Paulo</span>
+                <span className="text-lg md:text-xl font-semibold tracking-tight hidden sm:inline">As Cartas de Paulo</span>
               </Link>
 
               <div className="hidden md:flex items-center gap-6">
@@ -200,12 +201,15 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
             <div className="flex items-center gap-3">
               <ThemeToggle />
               <PointsDisplay />
-              <Button variant="ghost" size="icon" className="h-9 w-9">
-                <User className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden">
-                <Menu className="h-5 w-5" />
-              </Button>
+              <Link href="/settings" className="hidden md:block">
+                <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-primary/10 hover:text-primary">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+              <MobileDrawer
+                user={user ? { name: user.name || user.email, email: user.email, role: user.role || 'student' } : undefined}
+                currentPath={`/course/${courseId}`}
+              />
             </div>
           </div>
         </div>

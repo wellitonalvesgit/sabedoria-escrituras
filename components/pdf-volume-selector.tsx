@@ -31,13 +31,13 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
   }, [selectedPDF])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 md:px-0">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-foreground mb-2">Conteúdo do Curso</h2>
-        <p className="text-muted-foreground">Selecione um volume para começar sua leitura</p>
+        <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">Conteúdo do Curso</h2>
+        <p className="text-sm md:text-base text-muted-foreground">Selecione um volume para começar sua leitura</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {pdfs.map((pdf, index) => (
           <Card
             key={pdf.volume}
@@ -109,7 +109,11 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
             
             <CardContent className="pt-0">
               <Button
-                className="w-full"
+                className={`w-full ${
+                  selectedPDF?.volume === pdf.volume 
+                    ? "" 
+                    : "md:border-[#2E261D] md:text-foreground md:hover:bg-[#2E261D] border-[#F3C77A] bg-[#F3C77A] text-black hover:bg-[#F3C77A]/90 md:bg-transparent md:text-foreground"
+                }`}
                 variant={selectedPDF?.volume === pdf.volume ? "default" : "outline"}
                 size="sm"
               >
@@ -121,21 +125,21 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
       </div>
 
       {selectedPDF && (
-        <Card className="mt-6 border-[#F3C77A]/30 bg-gradient-to-br from-[#16130F] to-[#2E261D]">
-          <CardHeader>
+        <Card className="mt-6 border-[#F3C77A]/30 bg-gradient-to-br from-[#16130F] to-[#2E261D] mx-4 md:mx-0">
+          <CardHeader className="px-4 md:px-6">
             <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-[#F3C77A]" />
-              <CardTitle className="text-lg text-foreground">{selectedPDF.title}</CardTitle>
+              <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-[#F3C77A]" />
+              <CardTitle className="text-base md:text-lg text-foreground">{selectedPDF.title}</CardTitle>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs md:text-sm text-muted-foreground mt-1">
               {selectedPDF.pages || 20} páginas • {(selectedPDF as any).readingTimeMinutes || (selectedPDF as any).reading_time_minutes || 30} minutos de leitura
             </p>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 md:space-y-6 px-4 md:px-6">
             {/* Seção: Como você quer estudar este volume? */}
             <div>
-              <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-[#F3C77A]" />
+              <h3 className="text-sm md:text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+                <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-[#F3C77A]" />
                 Como você quer estudar este volume?
               </h3>
 

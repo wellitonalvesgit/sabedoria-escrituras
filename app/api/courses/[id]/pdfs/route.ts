@@ -92,7 +92,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { id: courseId } = await params
     const body = await request.json()
 
-    const { volume, title, url, pages, reading_time_minutes, text_content, use_auto_conversion, cover_url } = body
+    const { volume, title, url, pages, reading_time_minutes, text_content, use_auto_conversion, cover_url, parent_volume_id } = body
 
     // SEMPRE usar supabaseAdmin para bypassar RLS
     if (!supabaseAdmin) {
@@ -133,7 +133,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         text_content: text_content || null,
         use_auto_conversion: use_auto_conversion !== false,
         display_order: nextOrder,
-        cover_url: cover_url || null
+        cover_url: cover_url || null,
+        parent_volume_id: parent_volume_id || null
       })
       .select()
       .single()

@@ -13,6 +13,7 @@ import { GoogleDriveLink } from "@/components/google-drive-link"
 import { ImageUpload } from "@/components/image-upload"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface CoursePDF {
   id: string
@@ -27,6 +28,7 @@ interface CoursePDF {
   cover_url?: string
   youtube_url?: string
   audio_url?: string
+  parent_volume_id?: string | null
 }
 
 interface VolumeModalProps {
@@ -36,9 +38,10 @@ interface VolumeModalProps {
   courseId: string
   onSave: () => Promise<void>
   mode: 'edit' | 'create'
+  availableVolumes?: CoursePDF[] // Volumes disponíveis para serem pais
 }
 
-export function VolumeModal({ open, onOpenChange, volume, courseId, onSave, mode }: VolumeModalProps) {
+export function VolumeModal({ open, onOpenChange, volume, courseId, onSave, mode, availableVolumes = [] }: VolumeModalProps) {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<Partial<CoursePDF>>({
     volume: "",
@@ -49,7 +52,8 @@ export function VolumeModal({ open, onOpenChange, volume, courseId, onSave, mode
     use_auto_conversion: true,
     cover_url: "",
     youtube_url: "",
-    audio_url: ""
+    audio_url: "",
+    parent_volume_id: null
   })
 
   useEffect(() => {
@@ -63,7 +67,8 @@ export function VolumeModal({ open, onOpenChange, volume, courseId, onSave, mode
         use_auto_conversion: volume.use_auto_conversion !== false,
         cover_url: volume.cover_url || "",
         youtube_url: volume.youtube_url || "",
-        audio_url: volume.audio_url || ""
+        audio_url: volume.audio_url || "",
+        parent_volume_id: volume.parent_volume_id || null
       })
     } else {
       setFormData({
@@ -75,7 +80,8 @@ export function VolumeModal({ open, onOpenChange, volume, courseId, onSave, mode
         use_auto_conversion: true,
         cover_url: "",
         youtube_url: "",
-        audio_url: ""
+        audio_url: "",
+        parent_volume_id: null
       })
     }
   }, [volume, mode, open])
@@ -101,7 +107,8 @@ export function VolumeModal({ open, onOpenChange, volume, courseId, onSave, mode
             use_auto_conversion: formData.use_auto_conversion,
             cover_url: formData.cover_url || null,
             youtube_url: formData.youtube_url || null,
-            audio_url: formData.audio_url || null
+            audio_url: formData.audio_url || null,
+            parent_volume_id: formData.parent_volume_id || null
           })
         })
 
@@ -128,7 +135,8 @@ export function VolumeModal({ open, onOpenChange, volume, courseId, onSave, mode
             use_auto_conversion: formData.use_auto_conversion,
             cover_url: formData.cover_url || null,
             youtube_url: formData.youtube_url || null,
-            audio_url: formData.audio_url || null
+            audio_url: formData.audio_url || null,
+            parent_volume_id: formData.parent_volume_id || null
           })
         })
 
@@ -270,6 +278,34 @@ export function VolumeModal({ open, onOpenChange, volume, courseId, onSave, mode
                       className="mt-1"
                     />
                   </div>
+                </div>
+
+                {/* Seleção de Volume Pai */}
+                <div>
+                  <Label htmlFor="parent_volume" className="text-sm font-medium">
+                    Volume Pai (Opcional)
+                  </Label>
+                  <Select
+                    value={formData.parent_volume_id || ""}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, parent_volume_id: value || null }))}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecione um volume pai (deixe vazio para volume raiz)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Nenhum (Volume Raiz)</SelectItem>
+                      {availableVolumes
+                        .filter(v => !v.parent_volume_id && (mode === 'create' || v.id !== volume?.id)) // Apenas volumes raiz e não o próprio volume
+                        .map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.volume} - {v.title}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Selecione um volume pai para criar um subvolume. Deixe vazio para criar um volume raiz.
+                  </p>
                 </div>
 
                 <div>

@@ -53,7 +53,15 @@ export function MobileDrawer({ user, currentPath = "/dashboard" }: MobileDrawerP
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-9 w-9 md:hidden"
+          onClick={(e) => {
+            e.preventDefault()
+            setIsOpen(true)
+          }}
+        >
           <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>

@@ -112,7 +112,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           display_order,
           cover_url,
           youtube_url,
-          audio_url
+          audio_url,
+          parent_volume_id
         ),
         course_categories (
           category_id,

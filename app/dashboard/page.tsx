@@ -259,14 +259,14 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/95">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-8">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+          <div className="flex h-14 md:h-16 items-center justify-between">
+            <div className="flex items-center gap-4 md:gap-8">
               <Link href="/dashboard" className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-                  <BookOpen className="h-5 w-5 text-primary-foreground" />
+                <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-xl bg-primary">
+                  <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
                 </div>
-                <span className="text-xl font-semibold tracking-tight">As Cartas de Paulo</span>
+                <span className="text-lg md:text-xl font-semibold tracking-tight hidden sm:inline">As Cartas de Paulo</span>
               </Link>
 
               <div className="hidden md:flex items-center gap-6">
@@ -321,12 +321,14 @@ export default function DashboardPage() {
               >
                 <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
               </Button>
-              <Link href="/settings">
+              <Link href="/settings" className="hidden md:block">
                 <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-primary/10 hover:text-primary">
                   <User className="h-5 w-5" />
                 </Button>
               </Link>
-              <LogoutButton user={user ? { name: user.name, email: user.email, role: user.role } : undefined} />
+              <div className="hidden md:block">
+                <LogoutButton user={user ? { name: user.name, email: user.email, role: user.role } : undefined} />
+              </div>
               <MobileDrawer
                 user={user ? { name: user.name, email: user.email, role: user.role } : undefined}
                 currentPath="/dashboard"
