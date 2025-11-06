@@ -283,29 +283,34 @@ export default function AdminSubscriptionsPage() {
         </div>
 
         {/* Subscriptions Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Assinaturas ({filteredSubscriptions.length})</CardTitle>
+        <Card className="border-2">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Assinaturas ({filteredSubscriptions.length})
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-4 font-medium">Usuário</th>
-                    <th className="text-left p-4 font-medium">Plano</th>
-                    <th className="text-left p-4 font-medium">Status</th>
-                    <th className="text-left p-4 font-medium">Valor</th>
-                    <th className="text-left p-4 font-medium">Expira em</th>
-                    <th className="text-left p-4 font-medium">Dias Restantes</th>
-                    <th className="text-left p-4 font-medium">Criado em</th>
+                  <tr className="border-b bg-muted/30">
+                    <th className="text-left px-6 py-4 font-semibold">Usuário</th>
+                    <th className="text-left px-6 py-4 font-semibold">Plano</th>
+                    <th className="text-left px-6 py-4 font-semibold">Status</th>
+                    <th className="text-left px-6 py-4 font-semibold">Valor</th>
+                    <th className="text-left px-6 py-4 font-semibold">Expira em</th>
+                    <th className="text-left px-6 py-4 font-semibold">Dias Restantes</th>
+                    <th className="text-left px-6 py-4 font-semibold">Criado em</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredSubscriptions.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center p-8 text-muted-foreground">
-                        Nenhuma assinatura encontrada
+                      <td colSpan={7} className="text-center p-12 text-muted-foreground">
+                        <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">Nenhuma assinatura encontrada</p>
+                        <p className="text-sm mt-2">Tente ajustar os filtros de busca</p>
                       </td>
                     </tr>
                   ) : (
@@ -318,29 +323,41 @@ export default function AdminSubscriptionsPage() {
                         : 'Grátis'
 
                       return (
-                        <tr key={sub.id} className="border-b hover:bg-muted/50">
-                          <td className="p-4">
+                        <tr key={sub.id} className="border-b hover:bg-muted/50 transition-colors">
+                          <td className="px-6 py-4">
                             <div>
-                              <p className="font-medium">{sub.users?.name || 'Usuário não encontrado'}</p>
+                              <p className="font-medium text-foreground">{sub.users?.name || 'Usuário não encontrado'}</p>
                               <p className="text-sm text-muted-foreground">{sub.users?.email || '-'}</p>
                             </div>
                           </td>
-                          <td className="p-4">
-                            <Badge variant="outline">{sub.subscription_plans?.display_name || 'Sem plano'}</Badge>
+                          <td className="px-6 py-4">
+                            <Badge variant="outline" className="font-medium">{sub.subscription_plans?.display_name || 'Sem plano'}</Badge>
                           </td>
-                          <td className="p-4">{getStatusBadge(sub.status)}</td>
-                          <td className="p-4">{price}</td>
-                          <td className="p-4">{formatDate(sub.current_period_end)}</td>
-                          <td className="p-4">
+                          <td className="px-6 py-4">{getStatusBadge(sub.status)}</td>
+                          <td className="px-6 py-4">
+                            <span className="font-medium">{price}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-sm">{formatDate(sub.current_period_end)}</span>
+                          </td>
+                          <td className="px-6 py-4">
                             {daysLeft > 0 ? (
-                              <span className={daysLeft <= 7 ? 'text-orange-600 font-semibold' : ''}>
+                              <Badge 
+                                variant="outline" 
+                                className={daysLeft <= 7 
+                                  ? 'bg-orange-500/10 text-orange-600 border-orange-500/20 font-semibold' 
+                                  : 'bg-green-500/10 text-green-600 border-green-500/20'
+                                }
+                              >
                                 {daysLeft} {daysLeft === 1 ? 'dia' : 'dias'}
-                              </span>
+                              </Badge>
                             ) : (
-                              <span className="text-red-600 font-semibold">Expirado</span>
+                              <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20 font-semibold">
+                                Expirado
+                              </Badge>
                             )}
                           </td>
-                          <td className="p-4 text-sm text-muted-foreground">
+                          <td className="px-6 py-4 text-sm text-muted-foreground">
                             {formatDate(sub.created_at)}
                           </td>
                         </tr>

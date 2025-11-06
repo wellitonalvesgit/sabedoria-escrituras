@@ -14,6 +14,7 @@ import { PDFUpload } from "@/components/pdf-upload"
 import { GoogleDriveLink } from "@/components/google-drive-link"
 import { ImageUpload } from "@/components/image-upload"
 import { CategorySelector } from "@/components/category-selector"
+import { VolumeModal } from "@/components/volume-modal"
 import Link from "next/link"
 
 interface CoursePDF {
@@ -56,9 +57,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
   const [editedCourse, setEditedCourse] = useState({
     title: "",
     description: "",
-    author: "",
     category: "",
-    reading_time_minutes: 0,
     pages: 0,
     cover_url: "",
     checkout_url: "",
@@ -66,19 +65,9 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
     status: "published"
   })
 
-  const [editingPDF, setEditingPDF] = useState<string | null>(null)
-  const [editingPDFData, setEditingPDFData] = useState<CoursePDF | null>(null)
-  const [newPDF, setNewPDF] = useState({
-    volume: "",
-    title: "",
-    url: "",
-    pages: 0,
-    reading_time_minutes: 0,
-    text_content: "",
-    use_auto_conversion: true
-  })
-
-  const [showTextConfig, setShowTextConfig] = useState<number | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedVolume, setSelectedVolume] = useState<CoursePDF | null>(null)
+  const [drawerMode, setDrawerMode] = useState<'edit' | 'create'>('create')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 
   useEffect(() => {
@@ -112,9 +101,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
       setEditedCourse({
         title: course.title,
         description: course.description,
-        author: course.author || "",
         category: course.category || "",
-        reading_time_minutes: course.reading_time_minutes || 0,
         pages: course.pages || 0,
         cover_url: course.cover_url || "",
         checkout_url: (course as any).checkout_url || "",
@@ -213,92 +200,16 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
     }
   }
 
-  const handleAddPDF = async () => {
-    try {
-      // Adicionar PDF via API (server-side com SERVICE_ROLE_KEY)
-      const response = await fetch(`/api/courses/${courseId}/pdfs`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include', // Incluir cookies na requisição
-        body: JSON.stringify(newPDF)
-      })
-
-      if (!response.ok) {
-        const result = await response.json()
-        throw new Error(result.error || 'Erro ao adicionar PDF')
-      }
-
-      alert("PDF adicionado com sucesso!")
-      setNewPDF({
-        volume: "",
-        title: "",
-        url: "",
-        pages: 0,
-        reading_time_minutes: 0,
-        text_content: "",
-        use_auto_conversion: true
-      })
-      await fetchCourse() // Recarregar dados
-    } catch (err) {
-      alert('Erro ao adicionar PDF: ' + (err instanceof Error ? err.message : 'Erro desconhecido'))
-    }
+  const handleOpenCreateModal = () => {
+    setSelectedVolume(null)
+    setDrawerMode('create')
+    setModalOpen(true)
   }
 
-  const handleEditPDF = (pdf: CoursePDF) => {
-    setEditingPDF(pdf.id)
-    setEditingPDFData({
-      ...pdf,
-      text_content: pdf.text_content || '',
-      use_auto_conversion: pdf.use_auto_conversion !== false,
-      youtube_url: pdf.youtube_url || '',
-      audio_url: pdf.audio_url || ''
-    })
-  }
-
-  const handleSavePDF = async () => {
-    if (!editingPDFData) return
-
-    try {
-      // Atualizar PDF via API (server-side com SERVICE_ROLE_KEY)
-      const response = await fetch(`/api/courses/${courseId}/pdfs/${editingPDF}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include', // Incluir cookies na requisição
-        body: JSON.stringify({
-          volume: editingPDFData.volume,
-          title: editingPDFData.title,
-          url: editingPDFData.url,
-          pages: editingPDFData.pages,
-          reading_time_minutes: editingPDFData.reading_time_minutes,
-          text_content: editingPDFData.text_content,
-          use_auto_conversion: editingPDFData.use_auto_conversion,
-          cover_url: editingPDFData.cover_url || null,
-          youtube_url: editingPDFData.youtube_url || null,
-          audio_url: editingPDFData.audio_url || null
-        })
-      })
-
-      if (!response.ok) {
-        const result = await response.json()
-        throw new Error(result.error || 'Erro ao salvar PDF')
-      }
-
-      alert("PDF atualizado com sucesso!")
-      setEditingPDF(null)
-      setEditingPDFData(null)
-      await fetchCourse() // Recarregar dados
-    } catch (err) {
-      alert('Erro ao atualizar PDF: ' + (err instanceof Error ? err.message : 'Erro desconhecido'))
-    }
-  }
-
-  const handleCancelEdit = () => {
-    setEditingPDF(null)
-    setEditingPDFData(null)
+  const handleOpenEditModal = (pdf: CoursePDF) => {
+    setSelectedVolume(pdf)
+    setDrawerMode('edit')
+    setModalOpen(true)
   }
 
   const handleDuplicatePDF = async (pdf: CoursePDF) => {
@@ -402,19 +313,6 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
     }
   }
 
-  const handleTextFileUpload = (file: File, pdfIndex: number | 'new') => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = e.target?.result as string
-      if (pdfIndex === 'new') {
-        setNewPDF(prev => ({ ...prev, text_content: text }))
-      } else {
-        // Aqui será implementada a edição do PDF existente quando conectado ao Supabase
-        console.log(`Texto carregado para PDF ${pdfIndex}:`, text.substring(0, 100))
-      }
-    }
-    reader.readAsText(file)
-  }
 
   const handleImageUpload = async (file: File) => {
     try {
@@ -521,26 +419,20 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Course Info */}
           <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informações do Curso</CardTitle>
+            <Card className="border-2">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Informações do Curso
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6 pt-6">
                 <div>
                   <Label htmlFor="title">Título do Curso</Label>
                   <Input
                     id="title"
                     value={editedCourse.title}
                     onChange={(e) => setEditedCourse(prev => ({ ...prev, title: e.target.value }))}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="author">Autor</Label>
-                  <Input
-                    id="author"
-                    value={editedCourse.author}
-                    onChange={(e) => setEditedCourse(prev => ({ ...prev, author: e.target.value }))}
                   />
                 </div>
 
@@ -601,35 +493,27 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="pages">Total de Páginas</Label>
-                    <Input
-                      id="pages"
-                      type="number"
-                      value={editedCourse.pages}
-                      onChange={(e) => setEditedCourse(prev => ({ ...prev, pages: parseInt(e.target.value) || 0 }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="readingTime">Tempo de Leitura (min)</Label>
-                    <Input
-                      id="readingTime"
-                      type="number"
-                      value={editedCourse.reading_time_minutes}
-                      onChange={(e) => setEditedCourse(prev => ({ ...prev, reading_time_minutes: parseInt(e.target.value) || 0 }))}
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="pages">Total de Páginas</Label>
+                  <Input
+                    id="pages"
+                    type="number"
+                    value={editedCourse.pages}
+                    onChange={(e) => setEditedCourse(prev => ({ ...prev, pages: parseInt(e.target.value) || 0 }))}
+                  />
                 </div>
               </CardContent>
             </Card>
 
             {/* Cover Upload */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Capa do Curso</CardTitle>
+            <Card className="border-2">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-primary" />
+                  Capa do Curso
+                </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <ImageUpload
                   onImageSelect={handleImageUpload}
                   currentImageUrl={editedCourse.cover_url}
@@ -638,661 +522,157 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
             </Card>
 
             {/* PDFs Management */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Gerenciar PDFs</CardTitle>
+            <Card className="border-2">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Gerenciar Volumes
+                </CardTitle>
+                <Button onClick={handleOpenCreateModal} size="sm" className="bg-primary hover:bg-primary/90">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Volume
+                </Button>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {course.course_pdfs.map((pdf, index) => (
-                    <div key={pdf.id} className={`border rounded-lg overflow-hidden transition-all ${
-                      editingPDF === pdf.id 
-                        ? 'border-primary bg-primary/5 shadow-lg' 
-                        : 'border-border hover:border-primary/50'
-                    }`}>
-                      {editingPDF === pdf.id ? (
-                        // Modo de Edição
-                        <div className="p-4 bg-card">
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-medium">Editando PDF</h4>
-                              <div className="flex gap-2">
-                                <Button size="sm" onClick={handleSavePDF}>
-                                  <Save className="h-4 w-4 mr-1" />
-                                  Salvar
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={handleCancelEdit}>
-                                  Cancelar
-                                </Button>
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <Label htmlFor={`edit-volume-${pdf.id}`}>Volume</Label>
-                                <Input
-                                  id={`edit-volume-${pdf.id}`}
-                                  value={editingPDFData?.volume || ''}
-                                  onChange={(e) => setEditingPDFData(prev => prev ? { ...prev, volume: e.target.value } : null)}
-                                />
-                              </div>
-                              
-                              <div>
-                                <Label htmlFor={`edit-title-${pdf.id}`}>Título</Label>
-                                <Input
-                                  id={`edit-title-${pdf.id}`}
-                                  value={editingPDFData?.title || ''}
-                                  onChange={(e) => setEditingPDFData(prev => prev ? { ...prev, title: e.target.value } : null)}
-                                />
-                              </div>
-                              
-                              <div>
-                                <Label htmlFor={`edit-url-${pdf.id}`}>URL do Google Drive</Label>
-                                <Input
-                                  id={`edit-url-${pdf.id}`}
-                                  value={editingPDFData?.url || ''}
-                                  onChange={(e) => setEditingPDFData(prev => prev ? { ...prev, url: e.target.value } : null)}
-                                />
-                              </div>
-                              
-                              {/* Upload de PDF para edição */}
-                              <div className="md:col-span-2">
-                                <Label>Upload de PDF ou TXT</Label>
-                                <PDFUpload
-                                  onFileSelect={(file) => {
-                                    if (file.type === 'application/pdf') {
-                                      // Simular upload para obter URL temporária local
-                                      const tempUrl = URL.createObjectURL(file)
-                                      setEditingPDFData(prev => prev ? { ...prev, url: tempUrl } : null)
-                                      alert("PDF selecionado! (URL temporária gerada. Em uma implementação real, o PDF seria enviado para um serviço de armazenamento como o Supabase Storage e a URL permanente seria salva.)")
-                                    }
-                                    // Para arquivos TXT, onTextExtract irá lidar com o conteúdo
-                                  }}
-                                  onTextExtract={(text) => {
-                                    setEditingPDFData(prev => prev ? { ...prev, text_content: text } : null)
-                                    alert("Texto extraído do arquivo para o modo Kindle.")
-                                  }}
-                                />
-                              </div>
-
-                              {/* Upload de Capa do Volume */}
-                              <div className="md:col-span-2">
-                                <Label>Capa do Volume (Opcional)</Label>
-                                <div className="flex items-start gap-4">
-                                  {editingPDFData?.cover_url && (
-                                    <div className="flex-shrink-0">
-                                      <img
-                                        src={editingPDFData.cover_url}
-                                        alt="Capa do volume"
-                                        className="w-24 h-32 object-cover rounded border"
-                                      />
-                                    </div>
-                                  )}
-                                  <div className="flex-1">
-                                    <ImageUpload
-                                      onFileSelect={async (file) => {
-                                        try {
-                                          console.log('🔄 Iniciando upload da capa do volume...')
-                                          console.log('📁 Arquivo:', file.name, file.size, file.type)
-                                          
-                                          // Upload da capa
-                                          const formData = new FormData()
-                                          formData.append('file', file)
-                                          formData.append('type', 'cover')
-                                          formData.append('courseId', courseId)
-
-                                          console.log('📤 Enviando para API de upload...')
-                                          const response = await fetch('/api/upload', {
-                                            method: 'POST',
-                                            body: formData,
-                                          })
-
-                                          const result = await response.json()
-                                          console.log('📥 Resposta da API:', result)
-
-                                          if (result.success) {
-                                            console.log('✅ Upload realizado, URL:', result.fileUrl)
-                                            
-                                            // Atualizar o estado local
-                                            setEditingPDFData(prev => prev ? { ...prev, cover_url: result.fileUrl } : null)
-                                            
-                                            // Salvar automaticamente no banco de dados
-                                            console.log('💾 Salvando capa do volume no banco de dados...')
-                                            
-                                            const saveResponse = await fetch(`/api/course-pdfs/${pdf.id}/cover`, {
-                                              method: 'PUT',
-                                              headers: {
-                                                'Content-Type': 'application/json'
-                                              },
-                                              credentials: 'include', // Incluir cookies na requisição
-                                              body: JSON.stringify({
-                                                coverUrl: result.fileUrl
-                                              })
-                                            })
-
-                                            const saveResult = await saveResponse.json()
-                                            
-                                            if (!saveResult.success) {
-                                              console.error('❌ Erro ao salvar no banco:', saveResult.error)
-                                              throw new Error('Erro ao salvar capa no banco: ' + saveResult.error)
-                                            }
-                                            
-                                            console.log('✅ Capa do volume salva no banco com sucesso!')
-                                            alert("Capa do volume atualizada com sucesso!")
-                                          } else {
-                                            throw new Error(result.error)
-                                          }
-                                        } catch (error) {
-                                          console.error('❌ Erro no upload:', error)
-                                          alert("Erro ao fazer upload da capa: " + (error as Error).message)
-                                        }
-                                      }}
-                                      currentImageUrl={editingPDFData?.cover_url}
-                                    />
-                                    {editingPDFData?.cover_url && (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="mt-2"
-                                        onClick={() => setEditingPDFData(prev => prev ? { ...prev, cover_url: undefined } : null)}
-                                      >
-                                        Remover Capa
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* URL do YouTube */}
-                              <div className="md:col-span-2">
-                                <Label htmlFor={`edit-youtube-${pdf.id}`}>URL do YouTube (Opcional)</Label>
-                                <Input
-                                  id={`edit-youtube-${pdf.id}`}
-                                  value={editingPDFData?.youtube_url || ''}
-                                  onChange={(e) => setEditingPDFData(prev => prev ? { ...prev, youtube_url: e.target.value } : null)}
-                                  placeholder="https://www.youtube.com/watch?v=..."
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Cole a URL do vídeo do YouTube relacionado a este volume
-                                </p>
-                              </div>
-
-                              {/* Upload de Áudio MP3 */}
-                              <div className="md:col-span-2">
-                                <Label>Áudio MP3 do Volume (Opcional)</Label>
-                                <div className="space-y-2">
-                                  {editingPDFData?.audio_url && (
-                                    <div className="flex items-center gap-2 p-2 bg-muted rounded">
-                                      <Volume2 className="h-4 w-4 text-primary" />
-                                      <span className="text-sm text-muted-foreground flex-1">
-                                        Áudio configurado
-                                      </span>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => window.open(editingPDFData.audio_url, '_blank')}
-                                      >
-                                        Ouvir
-                                      </Button>
-                                    </div>
-                                  )}
-                                  <div>
-                                    <input
-                                      type="file"
-                                      id={`audio-upload-${pdf.id}`}
-                                      accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg"
-                                      className="hidden"
-                                      onChange={async (e) => {
-                                        const file = e.target.files?.[0]
-                                        if (!file) return
-
-                                        // Validar tipo de arquivo
-                                        const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg']
-                                        if (!validTypes.includes(file.type)) {
-                                          alert('Por favor, selecione um arquivo de áudio válido (MP3, WAV ou OGG)')
-                                          return
-                                        }
-
-                                        // Validar tamanho (máximo 50MB)
-                                        if (file.size > 50 * 1024 * 1024) {
-                                          alert('O arquivo de áudio deve ter no máximo 50MB')
-                                          return
-                                        }
-
-                                        try {
-                                          const formData = new FormData()
-                                          formData.append('file', file)
-                                          formData.append('volumeId', pdf.id)
-                                          formData.append('courseId', courseId)
-
-                                          const response = await fetch('/api/upload/volume-audio', {
-                                            method: 'POST',
-                                            body: formData,
-                                          })
-
-                                          const result = await response.json()
-
-                                          if (!result.success) {
-                                            throw new Error(result.error)
-                                          }
-
-                                          // Atualizar o estado local
-                                          setEditingPDFData(prev => prev ? { ...prev, audio_url: result.fileUrl } : null)
-                                          alert("Áudio do volume atualizado com sucesso!")
-                                        } catch (error) {
-                                          console.error('Erro no upload:', error)
-                                          alert("Erro ao fazer upload do áudio: " + (error as Error).message)
-                                        }
-                                      }}
-                                    />
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      className="w-full"
-                                      onClick={() => {
-                                        const input = document.getElementById(`audio-upload-${pdf.id}`) as HTMLInputElement
-                                        input?.click()
-                                      }}
-                                    >
-                                      <Upload className="mr-2 h-4 w-4" />
-                                      {editingPDFData?.audio_url ? 'Trocar Áudio' : 'Enviar Áudio MP3'}
-                                    </Button>
-                                  </div>
-                                  {editingPDFData?.audio_url && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="w-full text-destructive hover:text-destructive"
-                                      onClick={() => setEditingPDFData(prev => prev ? { ...prev, audio_url: undefined } : null)}
-                                    >
-                                      Remover Áudio
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <Label htmlFor={`edit-pages-${pdf.id}`}>Páginas</Label>
-                                  <Input
-                                    id={`edit-pages-${pdf.id}`}
-                                    type="number"
-                                    value={editingPDFData?.pages || 0}
-                                    onChange={(e) => setEditingPDFData(prev => prev ? { ...prev, pages: parseInt(e.target.value) || 0 } : null)}
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor={`edit-minutes-${pdf.id}`}>Minutos</Label>
-                                  <Input
-                                    id={`edit-minutes-${pdf.id}`}
-                                    type="number"
-                                    value={editingPDFData?.reading_time_minutes || 0}
-                                    onChange={(e) => setEditingPDFData(prev => prev ? { ...prev, reading_time_minutes: parseInt(e.target.value) || 0 } : null)}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <Label htmlFor={`edit-text-${pdf.id}`}>Texto para Modo Kindle</Label>
-                              <Textarea
-                                id={`edit-text-${pdf.id}`}
-                                value={editingPDFData?.text_content || ''}
-                                onChange={(e) => setEditingPDFData(prev => prev ? { ...prev, text_content: e.target.value } : null)}
-                                rows={4}
-                                placeholder="Cole o texto extraído do PDF para o modo Kindle..."
-                              />
-                            </div>
-                            
-                            <div className="flex items-center space-x-2">
-                              <Switch
-                                id={`edit-auto-${pdf.id}`}
-                                checked={editingPDFData?.use_auto_conversion !== false}
-                                onCheckedChange={(checked) => setEditingPDFData(prev => prev ? { ...prev, use_auto_conversion: checked } : null)}
-                              />
-                              <Label htmlFor={`edit-auto-${pdf.id}`}>
-                                Usar conversão automática de PDF
-                              </Label>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        // Modo de Visualização
-                      <div className="flex items-center justify-between p-4 bg-card">
-                        <div className="flex items-center gap-3">
-                          <Badge variant="secondary">{pdf.volume}</Badge>
-                          <div>
-                            <p className="font-medium text-sm">{pdf.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                                {pdf.pages} páginas • {pdf.reading_time_minutes} min
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowTextConfig(showTextConfig === index ? null : index)}
-                            className="border-[#F3C77A] text-[#F3C77A] hover:bg-[#F3C77A] hover:text-black"
-                          >
-                            <FileText className="h-4 w-4 mr-1" />
-                            Texto Kindle
-                          </Button>
-                            
-                            <div className="flex gap-1">
+                {course.course_pdfs.length === 0 ? (
+                  <div className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground mb-4">Nenhum volume cadastrado ainda</p>
+                    <Button onClick={handleOpenCreateModal} variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Criar Primeiro Volume
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {course.course_pdfs.map((pdf, index) => (
+                      <div
+                        key={pdf.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors group"
+                      >
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Badge variant="secondary">{pdf.volume}</Badge>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Button
-                                variant="outline"
-                                size="sm"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
                                 onClick={() => handleMovePDF(pdf.id, 'up')}
                                 disabled={index === 0}
                                 title="Mover para cima"
                               >
-                                <ArrowUp className="h-4 w-4" />
+                                <ArrowUp className="h-3 w-3" />
                               </Button>
                               <Button
-                                variant="outline"
-                                size="sm"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
                                 onClick={() => handleMovePDF(pdf.id, 'down')}
                                 disabled={index === course.course_pdfs.length - 1}
                                 title="Mover para baixo"
                               >
-                                <ArrowDown className="h-4 w-4" />
+                                <ArrowDown className="h-3 w-3" />
                               </Button>
                             </div>
-                            
+                          </div>
+                          
+                          {pdf.cover_url && (
+                            <div className="flex-shrink-0">
+                              <img
+                                src={pdf.cover_url}
+                                alt={pdf.title}
+                                className="w-16 h-20 object-cover rounded border"
+                              />
+                            </div>
+                          )}
+                          
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm truncate">{pdf.title}</h4>
+                            <div className="flex items-center gap-3 mt-1">
+                              <p className="text-xs text-muted-foreground">
+                                {pdf.pages || 0} páginas • {pdf.reading_time_minutes || 0} min
+                              </p>
+                              <div className="flex items-center gap-2">
+                                {pdf.youtube_url && (
+                                  <Badge variant="outline" className="text-xs">
+                                    <Youtube className="h-3 w-3 mr-1" />
+                                    YouTube
+                                  </Badge>
+                                )}
+                                {pdf.audio_url && (
+                                  <Badge variant="outline" className="text-xs">
+                                    <Volume2 className="h-3 w-3 mr-1" />
+                                    Áudio
+                                  </Badge>
+                                )}
+                                {pdf.text_content && (
+                                  <Badge variant="outline" className="text-xs">
+                                    <FileText className="h-3 w-3 mr-1" />
+                                    Kindle
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           <Button
                             variant="outline"
                             size="sm"
-                              onClick={() => handleEditPDF(pdf)}
-                              title="Editar PDF"
+                            onClick={() => handleOpenEditModal(pdf)}
+                            title="Editar"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4 mr-1" />
+                            Editar
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                              onClick={() => handleDuplicatePDF(pdf)}
-                              title="Duplicar PDF"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeletePDF(pdf.id)}
+                            onClick={() => handleDuplicatePDF(pdf)}
+                            title="Duplicar"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeletePDF(pdf.id)}
                             className="text-destructive hover:text-destructive"
-                              title="Deletar PDF"
+                            title="Deletar"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
-                      )}
-
-                      {/* Text Configuration Panel */}
-                      {showTextConfig === index && (
-                        <div className="p-4 border-t border-border bg-muted/20">
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <Label className="text-base font-semibold">Configuração do Modo Kindle</Label>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Configure como o texto será exibido no modo de leitura Kindle
-                                </p>
-                              </div>
-                              <Badge variant={pdf.use_auto_conversion !== false ? "default" : "secondary"}>
-                                {pdf.text_content ? "Texto configurado" : "Não configurado"}
-                              </Badge>
-                            </div>
-
-                            <div className="flex items-center space-x-2 p-3 bg-background rounded-lg border border-border">
-                              <Switch
-                                id={`auto-${index}`}
-                                checked={pdf.use_auto_conversion !== false}
-                                onCheckedChange={async (checked) => {
-                                  try {
-                                    // Atualizar configuração via API (server-side com SERVICE_ROLE_KEY)
-                                    const response = await fetch(`/api/courses/${courseId}/pdfs/${pdf.id}`, {
-                                      method: 'PUT',
-                                      headers: {
-                                        'Content-Type': 'application/json'
-                                      },
-                                      credentials: 'include', // Incluir cookies na requisição
-                                      body: JSON.stringify({
-                                        volume: pdf.volume,
-                                        title: pdf.title,
-                                        url: pdf.url,
-                                        pages: pdf.pages,
-                                        reading_time_minutes: pdf.reading_time_minutes,
-                                        text_content: pdf.text_content,
-                                        use_auto_conversion: checked,
-                                        cover_url: pdf.cover_url || null
-                                      })
-                                    })
-                                    
-                                    if (!response.ok) {
-                                      throw new Error('Erro ao atualizar configuração')
-                                    }
-                                    
-                                    await fetchCourse() // Recarregar dados
-                                  } catch (err) {
-                                    alert('Erro ao atualizar configuração')
-                                  }
-                                }}
-                              />
-                              <Label htmlFor={`auto-${index}`} className="cursor-pointer">
-                                <span className="font-medium">Conversão automática de PDF</span>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  {pdf.use_auto_conversion !== false
-                                    ? "O sistema tentará extrair o texto automaticamente do PDF"
-                                    : "Use texto manual configurado abaixo"}
-                                </p>
-                              </Label>
-                            </div>
-
-                            <div>
-                              <Label htmlFor={`text-${index}`}>Texto Manual (Opcional)</Label>
-                              <Textarea
-                                id={`text-${index}`}
-                                placeholder="Cole o texto extraído do PDF ou deixe vazio para usar conversão automática..."
-                                value={pdf.text_content || ""}
-                                onChange={async (e) => {
-                                  try {
-                                    // Atualizar texto via API (server-side com SERVICE_ROLE_KEY)
-                                    const response = await fetch(`/api/courses/${courseId}/pdfs/${pdf.id}`, {
-                                      method: 'PUT',
-                                      headers: {
-                                        'Content-Type': 'application/json'
-                                      },
-                                      credentials: 'include', // Incluir cookies na requisição
-                                      body: JSON.stringify({
-                                        volume: pdf.volume,
-                                        title: pdf.title,
-                                        url: pdf.url,
-                                        pages: pdf.pages,
-                                        reading_time_minutes: pdf.reading_time_minutes,
-                                        text_content: e.target.value,
-                                        use_auto_conversion: pdf.use_auto_conversion,
-                                        cover_url: pdf.cover_url || null
-                                      })
-                                    })
-                                    
-                                    if (!response.ok) {
-                                      throw new Error('Erro ao salvar texto')
-                                    }
-                                    
-                                    await fetchCourse() // Recarregar dados
-                                  } catch (err) {
-                                    alert('Erro ao salvar texto')
-                                  }
-                                }}
-                                rows={8}
-                                className="font-mono text-sm mt-2"
-                              />
-                              <p className="text-xs text-muted-foreground mt-2">
-                                {pdf.text_content
-                                  ? `${pdf.text_content.length} caracteres configurados`
-                                  : "Nenhum texto manual configurado"}
-                              </p>
-                            </div>
-
-                            <div className="flex gap-2">
-                              <label className="flex-1">
-                                <input
-                                  type="file"
-                                  accept=".txt"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0]
-                                    if (file) handleTextFileUpload(file, index)
-                                  }}
-                                />
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="w-full"
-                                  onClick={(e) => {
-                                    const input = e.currentTarget.parentElement?.querySelector('input[type="file"]') as HTMLInputElement
-                                    input?.click()
-                                  }}
-                                >
-                                  <Upload className="mr-2 h-4 w-4" />
-                                  Importar arquivo TXT
-                                </Button>
-                              </label>
-                              <Button
-                                variant="outline"
-                                onClick={async () => {
-                                  try {
-                                    // Limpar texto via API (server-side com SERVICE_ROLE_KEY)
-                                    const response = await fetch(`/api/courses/${courseId}/pdfs/${pdf.id}`, {
-                                      method: 'PUT',
-                                      headers: {
-                                        'Content-Type': 'application/json'
-                                      },
-                                      credentials: 'include', // Incluir cookies na requisição
-                                      body: JSON.stringify({
-                                        volume: pdf.volume,
-                                        title: pdf.title,
-                                        url: pdf.url,
-                                        pages: pdf.pages,
-                                        reading_time_minutes: pdf.reading_time_minutes,
-                                        text_content: null,
-                                        use_auto_conversion: pdf.use_auto_conversion,
-                                        cover_url: pdf.cover_url || null
-                                      })
-                                    })
-                                    
-                                    if (!response.ok) {
-                                      throw new Error('Erro ao limpar texto')
-                                    }
-                                    
-                                    await fetchCourse() // Recarregar dados
-                                  } catch (err) {
-                                    alert('Erro ao limpar texto')
-                                  }
-                                }}
-                                disabled={!pdf.text_content}
-                              >
-                                Limpar Texto
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {/* Add New PDF */}
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-                    <h4 className="font-medium mb-4">Adicionar Novo PDF</h4>
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Informações Básicas */}
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="volume">Volume</Label>
-                      <Input
-                            id="volume"
-                            placeholder="ex: VOL-VII"
-                        value={newPDF.volume}
-                        onChange={(e) => setNewPDF(prev => ({ ...prev, volume: e.target.value }))}
-                      />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="title">Título do PDF</Label>
-                      <Input
-                            id="title"
-                        placeholder="Título do PDF"
-                        value={newPDF.title}
-                        onChange={(e) => setNewPDF(prev => ({ ...prev, title: e.target.value }))}
-                      />
-                    </div>
-                        
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <Label htmlFor="pages">Páginas</Label>
-                      <Input
-                              id="pages"
-                          type="number"
-                              placeholder="0"
-                          value={newPDF.pages}
-                          onChange={(e) => setNewPDF(prev => ({ ...prev, pages: parseInt(e.target.value) || 0 }))}
-                        />
-                          </div>
-                          <div>
-                            <Label htmlFor="minutes">Minutos</Label>
-                        <Input
-                              id="minutes"
-                          type="number"
-                              placeholder="0"
-                              value={newPDF.reading_time_minutes}
-                              onChange={(e) => setNewPDF(prev => ({ ...prev, reading_time_minutes: parseInt(e.target.value) || 0 }))}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Upload e Link */}
-                      <div className="space-y-4">
-                        <GoogleDriveLink
-                          value={newPDF.url}
-                          onChange={(url) => setNewPDF(prev => ({ ...prev, url }))}
-                        />
-                        
-                        <PDFUpload
-                          onFileSelect={(file) => {
-                            console.log('Arquivo selecionado:', file.name)
-                            // Aqui você pode implementar o upload do arquivo
-                          }}
-                          onTextExtract={(text) => {
-                            setNewPDF(prev => ({ ...prev, text_content: text }))
-                          }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-end mt-6">
-                    <Button onClick={handleAddPDF} size="sm">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Adicionar PDF
-                    </Button>
-                    </div>
+                    ))}
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
+
+            {/* Volume Modal */}
+            <VolumeModal
+              open={modalOpen}
+              onOpenChange={setModalOpen}
+              volume={selectedVolume}
+              courseId={courseId}
+              onSave={fetchCourse}
+              mode={drawerMode}
+            />
 
 
           </div>
 
           {/* Course Preview */}
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Preview do Curso</CardTitle>
+            <Card className="border-2 sticky top-24">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-primary" />
+                  Preview do Curso
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -1309,7 +689,6 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                   </div>
                   <div>
                     <h3 className="font-semibold">{editedCourse.title}</h3>
-                    <p className="text-sm text-muted-foreground">{editedCourse.author}</p>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                       {editedCourse.description}
                     </p>
@@ -1317,15 +696,17 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                   <div className="flex items-center justify-between text-sm">
                     <span>{course.course_pdfs.length} volumes</span>
                     <span>{editedCourse.pages} páginas</span>
-                    <span>{editedCourse.reading_time_minutes} min</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Estatísticas</CardTitle>
+            <Card className="border-2">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Estatísticas
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
@@ -1335,10 +716,6 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Páginas totais:</span>
                   <Badge variant="secondary">{editedCourse.pages}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Tempo de leitura:</span>
-                  <Badge variant="secondary">{editedCourse.reading_time_minutes} min</Badge>
                 </div>
               </CardContent>
             </Card>

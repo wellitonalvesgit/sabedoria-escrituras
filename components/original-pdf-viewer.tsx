@@ -24,6 +24,7 @@ export const OriginalPDFViewer = ({ pdfUrl, courseId, pdfId, onSessionUpdate }: 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const intervalRef = useRef<number>()
 
   useEffect(() => {
@@ -40,6 +41,24 @@ export const OriginalPDFViewer = ({ pdfUrl, courseId, pdfId, onSessionUpdate }: 
       onSessionUpdate?.(duration, currentPage)
     }
   }, [startTime, currentPage, onSessionUpdate])
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange)
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange)
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
+    }
+  }, [])
 
   const handleZoomIn = () => {
     setZoom(prev => Math.min(prev + 25, 300))
@@ -62,8 +81,34 @@ export const OriginalPDFViewer = ({ pdfUrl, courseId, pdfId, onSessionUpdate }: 
     document.body.removeChild(link)
   }
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen)
+  const toggleFullscreen = async () => {
+    if (!containerRef.current) return
+
+    try {
+      if (!document.fullscreenElement) {
+        if (containerRef.current.requestFullscreen) {
+          await containerRef.current.requestFullscreen()
+        } else if ((containerRef.current as any).webkitRequestFullscreen) {
+          await (containerRef.current as any).webkitRequestFullscreen()
+        } else if ((containerRef.current as any).mozRequestFullScreen) {
+          await (containerRef.current as any).mozRequestFullScreen()
+        } else if ((containerRef.current as any).msRequestFullscreen) {
+          await (containerRef.current as any).msRequestFullscreen()
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen()
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen()
+        } else if ((document as any).mozCancelFullScreen) {
+          await (document as any).mozCancelFullScreen()
+        } else if ((document as any).msExitFullscreen) {
+          await (document as any).msExitFullscreen()
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao entrar/sair do modo tela cheia:', err)
+    }
   }
 
   const nextPage = () => {
@@ -149,7 +194,10 @@ export const OriginalPDFViewer = ({ pdfUrl, courseId, pdfId, onSessionUpdate }: 
       </div>
 
       {/* Visualizador de PDF */}
-      <div className={`relative mx-auto w-full ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : 'max-w-6xl'}`}>
+      <div 
+        ref={containerRef}
+        className={`relative mx-auto w-full ${isFullscreen ? 'h-screen' : 'max-w-6xl'}`}
+      >
         {isLoading && (
           <div className="flex items-center justify-center min-h-[600px]">
             <div className="text-center space-y-4">
@@ -173,7 +221,7 @@ export const OriginalPDFViewer = ({ pdfUrl, courseId, pdfId, onSessionUpdate }: 
           <iframe
             ref={iframeRef}
             src={`${previewUrl}#page=${currentPage}&toolbar=1&navpanes=1&scrollbar=1&zoom=${zoom}`}
-            className="w-full h-[800px]"
+            className={`w-full ${isFullscreen ? 'h-screen' : 'h-[800px]'}`}
             onLoad={() => {
               console.log("PDF carregado com sucesso:", previewUrl)
               setIsLoading(false)

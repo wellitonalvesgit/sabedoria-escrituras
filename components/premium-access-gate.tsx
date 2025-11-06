@@ -235,8 +235,7 @@ export function PremiumAccessGate({ courseId, course, children }: PremiumAccessG
                   'Novos cursos adicionados mensalmente',
                   'Sistema de marcação e resumos (tipo Kindle)',
                   'Sistema de gamificação e pontos',
-                  'Certificados de conclusão',
-                  'Suporte prioritário'
+                  'Certificados de conclusão'
                 ].map((benefit, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm">
                     <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -247,33 +246,34 @@ export function PremiumAccessGate({ courseId, course, children }: PremiumAccessG
             </div>
           )}
 
-          {/* Período de Teste */}
-          {!isArsenalEspiritual && (
-            <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-5 w-5 text-primary" />
-                <h4 className="font-semibold">Teste Grátis por 30 Dias</h4>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Experimente todos os recursos premium sem compromisso. Cancele quando quiser!
-              </p>
-            </div>
-          )}
 
           {/* Preço e Botões */}
           {!isArsenalEspiritual && (
             <div className="text-center space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">A partir de</p>
-                <p className="text-3xl font-bold">R$ 29,90<span className="text-lg font-normal text-muted-foreground">/mês</span></p>
-                <p className="text-xs text-muted-foreground mt-1">ou R$ 297/ano (economize 17%)</p>
+                <p className="text-3xl font-bold">R$ 19,97</p>
+                <p className="text-sm text-muted-foreground mt-1">Pagamento único • Acesso vitalício</p>
               </div>
+
+              {/* Mensagem especial para usuários com plano básico tentando acessar categoria bonus */}
+              {accessResult?.reason === 'upgrade_required' && (
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg text-left">
+                  <p className="text-sm font-semibold text-blue-600 mb-2">
+                    💡 Faça upgrade para Premium e tenha acesso:
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+                    <li>• Acesso a <strong>todos os cursos da categoria Bônus</strong></li>
+                    <li>• Acesso <strong>vitalício</strong> a todos os cursos premium</li>
+                    <li>• Novos cursos adicionados mensalmente</li>
+                  </ul>
+                </div>
+              )}
 
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link href="/pricing" className="flex-1">
                   <Button size="lg" className="w-full">
                     <Crown className="mr-2 h-5 w-5" />
-                    Iniciar Teste Grátis
+                    Fazer Upgrade para Premium
                   </Button>
                 </Link>
                 <Link href="/dashboard" className="flex-1">
@@ -286,11 +286,11 @@ export function PremiumAccessGate({ courseId, course, children }: PremiumAccessG
           )}
 
           {/* Footer */}
-          <p className="text-xs text-center text-muted-foreground">
-            {isArsenalEspiritual
-              ? 'Pagamento seguro via Korvex • Acesso vitalício após confirmação'
-              : 'Sem taxas ocultas • Cancele a qualquer momento • Suporte em português'}
-          </p>
+          {isArsenalEspiritual && (
+            <p className="text-xs text-center text-muted-foreground">
+              Pagamento seguro via Korvex • Acesso vitalício após confirmação
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

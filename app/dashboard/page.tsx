@@ -128,11 +128,39 @@ export default function DashboardPage() {
       }
       const data = await response.json()
 
+      // Buscar compras individuais do usuário se estiver logado
+      let userPurchases: string[] = []
+      if (user?.id && sessionValid) {
+        try {
+          const purchasesResponse = await fetch('/api/user/purchases', {
+            credentials: 'include'
+          })
+          if (purchasesResponse.ok) {
+            const purchasesData = await purchasesResponse.json()
+            userPurchases = (purchasesData.purchases || []).map((p: any) => p.course_id)
+          }
+        } catch (err) {
+          console.error('Erro ao buscar compras do usuário:', err)
+        }
+      }
+
       // Mostrar TODOS os cursos, mas marcar quais têm acesso
       const allCoursesWithAccess = (data.courses || []).map((course: Course) => {
-        // Verificar se o usuário tem acesso ao curso
-        const hasAccess = user && sessionValid && hasAccessToCourse(course.id)
+        // Verificar se é curso da categoria arsenal-espiritual
+        const categorySlug = course.course_categories?.[0]?.categories?.slug
+        const isArsenalEspiritual = categorySlug === 'arsenal-espiritual'
 
+        // Se for arsenal-espiritual, APENAS verificar se o usuário comprou o curso
+        if (isArsenalEspiritual) {
+          const hasPurchased = userPurchases.includes(course.id)
+          return {
+            ...course,
+            userHasAccess: hasPurchased // Só liberado se comprou
+          }
+        }
+
+        // Para outros cursos, usar a verificação padrão
+        const hasAccess = user && sessionValid && hasAccessToCourse(course.id)
         return {
           ...course,
           userHasAccess: hasAccess
@@ -205,12 +233,6 @@ export default function DashboardPage() {
 
   // Categorias que devem ser exibidas como carrossel
   const carouselCategories = categories.filter(cat => cat.display_as_carousel)
-
-  // Cursos que não estão em nenhuma categoria com carrossel
-  const standaloneCourses = courses.filter(course =>
-    !course.category_id ||
-    !carouselCategories.some(cat => cat.id === course.category_id)
-  )
 
   if (loading || userLoading) {
     return (
@@ -495,37 +517,6 @@ export default function DashboardPage() {
                 )}
               </div>
             ))}
-
-            {/* Cursos sem categoria */}
-            {standaloneCourses.length > 0 && (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-2xl font-bold tracking-tight text-foreground">
-                    Outros Cursos
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {standaloneCourses.length} {standaloneCourses.length === 1 ? 'curso disponível' : 'cursos disponíveis'}
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {standaloneCourses.map((course) => (
-                    <CourseCard
-                      key={course.id}
-                      course={{
-                        id: course.id,
-                        slug: course.slug,
-                        title: course.title,
-                        description: course.description,
-                        readingTimeMinutes: course.reading_time_minutes || 0,
-                        coverUrl: course.cover_url,
-                        tags: course.tags,
-                        userHasAccess: course.userHasAccess
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

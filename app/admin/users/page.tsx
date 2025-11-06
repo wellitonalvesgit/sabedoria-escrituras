@@ -21,8 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import Link from "next/link"
-import { AddUserDrawer } from "@/components/add-user-drawer"
-import { AddUserDrawerFixed } from "@/components/add-user-drawer-fixed"
+import { AddUserModal } from "@/components/add-user-modal"
 
 interface SubscriptionPlan {
   id: string
@@ -225,21 +224,48 @@ export default function AdminUsersPage() {
 
   const getSubscriptionBadge = (user: User) => {
     const subscription = user.subscriptions?.[0]
+    const now = new Date()
 
+    // Se não tem subscription, verificar access_expires_at do usuário
     if (!subscription) {
+      if (user.access_expires_at) {
+        const expiresAt = new Date(user.access_expires_at)
+        const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        
+        if (daysLeft > 0) {
+          // Acesso vitalício (999999 dias ou data muito futura)
+          if (daysLeft > 36500) {
+            return (
+              <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/20">
+                ♾️ Vitalício
+              </Badge>
+            )
+          }
+          return (
+            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+              📅 {daysLeft} dia{daysLeft !== 1 ? 's' : ''} restante{daysLeft !== 1 ? 's' : ''}
+            </Badge>
+          )
+        } else {
+          return (
+            <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
+              ⚠️ Acesso Expirado
+            </Badge>
+          )
+        }
+      }
       return <Badge variant="outline" className="bg-gray-500/10 text-gray-500 border-gray-500/20">Sem Plano</Badge>
     }
 
     switch (subscription.status) {
       case 'trial':
         const trialEnds = new Date(subscription.trial_ends_at!)
-        const now = new Date()
-        const daysLeft = Math.ceil((trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        const trialDaysLeft = Math.ceil((trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
-        if (daysLeft > 0) {
+        if (trialDaysLeft > 0) {
           return (
             <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
-              🆓 Trial - {daysLeft} dia{daysLeft !== 1 ? 's' : ''}
+              🆓 Trial - {trialDaysLeft} dia{trialDaysLeft !== 1 ? 's' : ''}
             </Badge>
           )
         } else {
@@ -251,6 +277,39 @@ export default function AdminUsersPage() {
         }
 
       case 'active':
+        // Se current_period_end está null, usar access_expires_at do usuário
+        const periodEnd = subscription.current_period_end 
+          ? new Date(subscription.current_period_end) 
+          : (user.access_expires_at ? new Date(user.access_expires_at) : null)
+        
+        if (periodEnd && periodEnd > now) {
+          const daysLeft = Math.ceil((periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          // Premium vitalício
+          if (daysLeft > 36500) {
+            return (
+              <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                💎 Premium Vitalício
+              </Badge>
+            )
+          }
+          return (
+            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+              💎 Premium - {daysLeft} dia{daysLeft !== 1 ? 's' : ''}
+            </Badge>
+          )
+        }
+        // Se não tem período válido, verificar access_expires_at
+        if (user.access_expires_at) {
+          const expiresAt = new Date(user.access_expires_at)
+          if (expiresAt > now) {
+            const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+            return (
+              <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                💎 Premium - {daysLeft} dia{daysLeft !== 1 ? 's' : ''}
+              </Badge>
+            )
+          }
+        }
         return (
           <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
             💎 Premium
@@ -265,10 +324,10 @@ export default function AdminUsersPage() {
         )
 
       case 'canceled':
-        const periodEnd = new Date(subscription.current_period_end)
+        const canceledPeriodEnd = new Date(subscription.current_period_end)
         return (
           <Badge variant="outline" className="bg-gray-500/10 text-gray-600 border-gray-500/20">
-            ❌ Cancelado - {periodEnd.toLocaleDateString('pt-BR')}
+            ❌ Cancelado - {canceledPeriodEnd.toLocaleDateString('pt-BR')}
           </Badge>
         )
 
@@ -428,28 +487,40 @@ export default function AdminUsersPage() {
         </Card>
 
         {/* Users Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Usuários ({filteredUsers.length})</CardTitle>
+        <Card className="border-2">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Usuários ({filteredUsers.length})
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="border-b border-border">
-                  <tr className="text-sm text-muted-foreground">
-                    <th className="px-6 py-3 text-left font-medium">Usuário</th>
-                    <th className="px-6 py-3 text-left font-medium">Role</th>
-                    <th className="px-6 py-3 text-left font-medium">Status</th>
-                    <th className="px-6 py-3 text-left font-medium">Plano</th>
-                    <th className="px-6 py-3 text-left font-medium">Cursos</th>
-                    <th className="px-6 py-3 text-left font-medium">Pontos</th>
-                    <th className="px-6 py-3 text-left font-medium">Cadastro</th>
-                    <th className="px-6 py-3 text-right font-medium">Ações</th>
+                <thead className="border-b border-border bg-muted/30">
+                  <tr className="text-sm">
+                    <th className="px-6 py-4 text-left font-semibold">Usuário</th>
+                    <th className="px-6 py-4 text-left font-semibold">Role</th>
+                    <th className="px-6 py-4 text-left font-semibold">Status</th>
+                    <th className="px-6 py-4 text-left font-semibold">Plano/Acesso</th>
+                    <th className="px-6 py-4 text-left font-semibold">Cursos</th>
+                    <th className="px-6 py-4 text-left font-semibold">Pontos</th>
+                    <th className="px-6 py-4 text-left font-semibold">Cadastro</th>
+                    <th className="px-6 py-4 text-right font-semibold">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className="border-b border-border hover:bg-muted/50 transition-colors">
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center p-12 text-muted-foreground">
+                        <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">Nenhum usuário encontrado</p>
+                        <p className="text-sm mt-2">Tente ajustar os filtros de busca</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <tr key={user.id} className="border-b border-border hover:bg-muted/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10 bg-primary/10">
@@ -509,7 +580,8 @@ export default function AdminUsersPage() {
                         </DropdownMenu>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -517,8 +589,8 @@ export default function AdminUsersPage() {
         </Card>
       </div>
 
-      {/* Add User Drawer - Versão Corrigida */}
-      <AddUserDrawerFixed
+      {/* Add User Modal */}
+      <AddUserModal
         open={addUserDrawerOpen}
         onOpenChange={setAddUserDrawerOpen}
         onUserAdded={fetchUsers}

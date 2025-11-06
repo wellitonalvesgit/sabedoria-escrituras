@@ -406,27 +406,49 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="access_days">Dias de Acesso</Label>
-                <Input
-                  id="access_days"
-                  type="number"
-                  min="1"
-                  max="3650"
-                  value={editedUser.access_days}
-                  onChange={(e) => setEditedUser(prev => ({ ...prev, access_days: parseInt(e.target.value) || 30 }))}
-                />
+              <div className="p-4 bg-muted rounded-lg border border-border">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Informações de Acesso
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Cadastrado em:</span>
+                    <span className="font-medium">{new Date(user.created_at).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Expira em:</span>
+                    <span className="font-medium">
+                      {user.access_expires_at 
+                        ? new Date(user.access_expires_at).toLocaleDateString('pt-BR') 
+                        : 'Vitalício'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Dias restantes:</span>
+                    <Badge 
+                      variant={user.access_expires_at ? "secondary" : "default"}
+                      className={
+                        user.access_expires_at 
+                          ? (Math.ceil((new Date(user.access_expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) > 0
+                              ? "bg-green-500/10 text-green-600 border-green-500/20"
+                              : "bg-red-500/10 text-red-600 border-red-500/20")
+                          : "bg-purple-500/10 text-purple-600 border-purple-500/20"
+                      }
+                    >
+                      {user.access_expires_at 
+                        ? (() => {
+                            const daysLeft = Math.ceil((new Date(user.access_expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                            return daysLeft > 0 ? `${daysLeft} dia${daysLeft !== 1 ? 's' : ''}` : 'Expirado'
+                          })()
+                        : '∞ Vitalício'}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t">
                 <p className="text-xs text-muted-foreground">
-                  Os dias são calculados conforme o plano automaticamente
+                    <strong>Nota:</strong> Os dias de acesso são calculados automaticamente conforme o plano (Básico: 2 meses / Premium: Vitalício) ou compras individuais de cursos.
                 </p>
-              </div>
-
-              <div className="p-4 bg-muted rounded-lg">
-                <h4 className="font-semibold mb-2">Informações de Acesso</h4>
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <p><strong>Cadastrado em:</strong> {new Date(user.created_at).toLocaleDateString('pt-BR')}</p>
-                  <p><strong>Expira em:</strong> {user.access_expires_at ? new Date(user.access_expires_at).toLocaleDateString('pt-BR') : 'Não definido'}</p>
-                  <p><strong>Dias restantes:</strong> {user.access_expires_at ? Math.ceil((new Date(user.access_expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 'N/A'}</p>
                 </div>
               </div>
 

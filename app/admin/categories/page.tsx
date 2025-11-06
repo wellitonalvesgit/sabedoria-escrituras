@@ -302,7 +302,7 @@ export default function AdminCategoriesPage() {
 
       {/* Dialog de Criar/Editar */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingCategory ? "Editar Categoria" : "Nova Categoria"}
