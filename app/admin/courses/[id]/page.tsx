@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { use } from "react"
-import { ArrowLeft, Save, Plus, Trash2, Edit, Eye, FileText, Upload, Download, Loader2, Copy, ArrowUp, ArrowDown, Gift, Youtube, Volume2 } from "lucide-react"
+import { ArrowLeft, Save, Plus, Trash2, Edit, Eye, FileText, Upload, Download, Loader2, Copy, ArrowUp, ArrowDown, Gift, Youtube, Volume2, GripVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -70,6 +70,10 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
   const [selectedVolume, setSelectedVolume] = useState<CoursePDF | null>(null)
   const [drawerMode, setDrawerMode] = useState<'edit' | 'create'>('create')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  
+  // Estados para drag and drop
+  const [draggedVolumeId, setDraggedVolumeId] = useState<string | null>(null)
+  const [dragOverVolumeId, setDragOverVolumeId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchCourse()
@@ -314,6 +318,142 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
     }
   }
 
+  // Função para atualizar parent_volume_id (transformar em subvolume ou volume raiz)
+  const handleUpdateParentVolume = async (volumeId: string, newParentId: string | null) => {
+    try {
+      const volume = course.course_pdfs.find(p => p.id === volumeId)
+      if (!volume) return
+
+      // Verificar se não está tentando tornar um volume pai de si mesmo
+      if (newParentId === volumeId) {
+        alert('Um volume não pode ser subvolume de si mesmo!')
+        return
+      }
+
+      // Verificar se não está criando uma referência circular
+      if (newParentId) {
+        let currentParentId = newParentId
+        while (currentParentId) {
+          if (currentParentId === volumeId) {
+            alert('Não é possível criar uma referência circular!')
+            return
+          }
+          const parent = course.course_pdfs.find(p => p.id === currentParentId)
+          currentParentId = parent?.parent_volume_id || null
+        }
+      }
+
+      const response = await fetch(`/api/courses/${courseId}/pdfs/${volumeId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          volume: volume.volume,
+          title: volume.title,
+          url: volume.url,
+          pages: volume.pages,
+          reading_time_minutes: volume.reading_time_minutes,
+          text_content: volume.text_content,
+          use_auto_conversion: volume.use_auto_conversion,
+          cover_url: volume.cover_url,
+          display_order: volume.display_order,
+          parent_volume_id: newParentId
+        })
+      })
+
+      if (!response.ok) {
+        const result = await response.json()
+        throw new Error(result.error || 'Erro ao atualizar volume')
+      }
+
+      await fetchCourse() // Recarregar dados
+    } catch (err) {
+      alert('Erro ao atualizar volume: ' + (err instanceof Error ? err.message : 'Erro desconhecido'))
+    }
+  }
+
+  // Handlers de drag and drop
+  const handleDragStart = (e: React.DragEvent, volumeId: string) => {
+    setDraggedVolumeId(volumeId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', volumeId)
+  }
+
+  const handleDragOver = (e: React.DragEvent, volumeId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'move'
+    
+    // Não permitir arrastar sobre si mesmo
+    if (draggedVolumeId && draggedVolumeId !== volumeId) {
+      setDragOverVolumeId(volumeId)
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOverVolumeId(null)
+  }
+
+  const handleDrop = async (e: React.DragEvent, targetVolumeId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!draggedVolumeId || draggedVolumeId === targetVolumeId) {
+      setDraggedVolumeId(null)
+      setDragOverVolumeId(null)
+      return
+    }
+
+    const draggedVolume = course.course_pdfs.find(p => p.id === draggedVolumeId)
+    const targetVolume = course.course_pdfs.find(p => p.id === targetVolumeId)
+
+    if (!draggedVolume || !targetVolume) {
+      setDraggedVolumeId(null)
+      setDragOverVolumeId(null)
+      return
+    }
+
+    // Se o volume arrastado já é subvolume do volume alvo, não fazer nada
+    if (draggedVolume.parent_volume_id === targetVolumeId) {
+      setDraggedVolumeId(null)
+      setDragOverVolumeId(null)
+      return
+    }
+
+    // Transformar o volume arrastado em subvolume do volume alvo
+    await handleUpdateParentVolume(draggedVolumeId, targetVolumeId)
+    
+    setDraggedVolumeId(null)
+    setDragOverVolumeId(null)
+  }
+
+  const handleDropOnRoot = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!draggedVolumeId) return
+
+    const draggedVolume = course.course_pdfs.find(p => p.id === draggedVolumeId)
+    if (!draggedVolume) return
+
+    // Se o volume já é raiz, não fazer nada
+    if (!draggedVolume.parent_volume_id) {
+      setDraggedVolumeId(null)
+      setDragOverVolumeId(null)
+      return
+    }
+
+    // Transformar o volume em volume raiz (remover parent_volume_id)
+    await handleUpdateParentVolume(draggedVolumeId, null)
+    
+    setDraggedVolumeId(null)
+    setDragOverVolumeId(null)
+  }
+
 
   const handleImageUpload = async (file: File) => {
     try {
@@ -545,7 +685,17 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div 
+                    className="space-y-2"
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }}
+                    onDrop={handleDropOnRoot}
+                  >
+                    <div className="mb-3 p-2 text-xs text-muted-foreground bg-muted/30 rounded border-dashed border text-center">
+                      💡 Arraste um volume para dentro de outro para transformá-lo em subvolume. Arraste para esta área para transformar em volume raiz.
+                    </div>
                     {(() => {
                       // Organizar volumes em hierarquia
                       const rootVolumes = course.course_pdfs.filter(p => !p.parent_volume_id)
@@ -555,16 +705,32 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                       const renderVolume = (pdf: CoursePDF, level: number = 0) => {
                         const subvolumes = getSubvolumes(pdf.id)
                         const index = course.course_pdfs.findIndex(p => p.id === pdf.id)
+                        const isDragging = draggedVolumeId === pdf.id
+                        const isDragOver = dragOverVolumeId === pdf.id
                         
                         return (
                           <div key={pdf.id}>
                             <div
-                              className={`flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors group ${
+                              draggable={true}
+                              onDragStart={(e) => handleDragStart(e, pdf.id)}
+                              onDragOver={(e) => handleDragOver(e, pdf.id)}
+                              onDragLeave={handleDragLeave}
+                              onDrop={(e) => handleDrop(e, pdf.id)}
+                              onDragEnd={() => {
+                                setDraggedVolumeId(null)
+                                setDragOverVolumeId(null)
+                              }}
+                              className={`flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-all group cursor-move ${
                                 level > 0 ? 'ml-6 border-l-2 border-primary/30' : ''
+                              } ${
+                                isDragging ? 'opacity-50 scale-95' : ''
+                              } ${
+                                isDragOver ? 'ring-2 ring-primary border-primary bg-primary/10 scale-105' : ''
                               }`}
                             >
                               <div className="flex items-center gap-4 flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-shrink-0">
+                                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
                                   {level > 0 && (
                                     <span className="text-primary text-xs">└─</span>
                                   )}
