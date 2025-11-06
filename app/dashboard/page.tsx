@@ -463,18 +463,13 @@ export default function DashboardPage() {
               <div key={category.id} className="space-y-4">
                 {/* Cabeçalho da Categoria - apenas para categorias sem carrossel */}
                 {!category.display_as_carousel && (
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-2xl font-bold tracking-tight text-foreground">
-                        {category.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {category.courses.length} {category.courses.length === 1 ? 'curso' : 'cursos'}
-                      </p>
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {category.slug}
-                    </Badge>
+                  <div>
+                    <h3 className="text-2xl font-bold tracking-tight text-foreground">
+                      {category.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {category.courses.length} {category.courses.length === 1 ? 'curso' : 'cursos'}
+                    </p>
                   </div>
                 )}
 
