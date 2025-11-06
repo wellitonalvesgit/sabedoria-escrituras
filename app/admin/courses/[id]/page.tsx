@@ -634,14 +634,14 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="pages">Total de Páginas</Label>
-                  <Input
-                    id="pages"
-                    type="number"
-                    value={editedCourse.pages}
-                    onChange={(e) => setEditedCourse(prev => ({ ...prev, pages: parseInt(e.target.value) || 0 }))}
-                  />
+                  <div>
+                    <Label htmlFor="pages">Total de Páginas</Label>
+                    <Input
+                      id="pages"
+                      type="number"
+                      value={editedCourse.pages}
+                      onChange={(e) => setEditedCourse(prev => ({ ...prev, pages: parseInt(e.target.value) || 0 }))}
+                    />
                 </div>
               </CardContent>
             </Card>
@@ -682,8 +682,8 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                     <Button onClick={handleOpenCreateModal} variant="outline">
                       <Plus className="h-4 w-4 mr-2" />
                       Criar Primeiro Volume
-                    </Button>
-                  </div>
+                                </Button>
+                              </div>
                 ) : (
                   <div 
                     className="space-y-2"
@@ -693,156 +693,205 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
                     }}
                     onDrop={handleDropOnRoot}
                   >
-                    <div className="mb-3 p-2 text-xs text-muted-foreground bg-muted/30 rounded border-dashed border text-center">
-                      💡 Arraste um volume para dentro de outro para transformá-lo em subvolume. Arraste para esta área para transformar em volume raiz.
-                    </div>
                     {(() => {
-                      // Organizar volumes em hierarquia
-                      const rootVolumes = course.course_pdfs.filter(p => !p.parent_volume_id)
+                      // Organizar volumes em hierarquia, ordenados por display_order
+                      const sortedPDFs = [...course.course_pdfs].sort((a, b) => a.display_order - b.display_order)
+                      const rootVolumes = sortedPDFs.filter(p => !p.parent_volume_id)
+                      const allSubvolumes = sortedPDFs.filter(p => p.parent_volume_id)
                       const getSubvolumes = (parentId: string) => 
-                        course.course_pdfs.filter(p => p.parent_volume_id === parentId)
+                        sortedPDFs.filter(p => p.parent_volume_id === parentId)
                       
-                      const renderVolume = (pdf: CoursePDF, level: number = 0) => {
-                        const subvolumes = getSubvolumes(pdf.id)
-                        const index = course.course_pdfs.findIndex(p => p.id === pdf.id)
-                        const isDragging = draggedVolumeId === pdf.id
-                        const isDragOver = dragOverVolumeId === pdf.id
-                        
-                        return (
-                          <div key={pdf.id}>
-                            <div
-                              draggable={true}
-                              onDragStart={(e) => handleDragStart(e, pdf.id)}
-                              onDragOver={(e) => handleDragOver(e, pdf.id)}
-                              onDragLeave={handleDragLeave}
-                              onDrop={(e) => handleDrop(e, pdf.id)}
-                              onDragEnd={() => {
-                                setDraggedVolumeId(null)
-                                setDragOverVolumeId(null)
-                              }}
-                              className={`flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-all group cursor-move ${
-                                level > 0 ? 'ml-6 border-l-2 border-primary/30' : ''
-                              } ${
-                                isDragging ? 'opacity-50 scale-95' : ''
-                              } ${
-                                isDragOver ? 'ring-2 ring-primary border-primary bg-primary/10 scale-105' : ''
-                              }`}
-                            >
-                              <div className="flex items-center gap-4 flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
-                                  {level > 0 && (
-                                    <span className="text-primary text-xs">└─</span>
-                                  )}
-                                  <Badge variant={level > 0 ? "outline" : "secondary"}>
-                                    {pdf.volume}
-                                  </Badge>
-                                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      onClick={() => handleMovePDF(pdf.id, 'up')}
-                                      disabled={index === 0}
-                                      title="Mover para cima"
-                                    >
-                                      <ArrowUp className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      onClick={() => handleMovePDF(pdf.id, 'down')}
-                                      disabled={index === course.course_pdfs.length - 1}
-                                      title="Mover para baixo"
-                                    >
-                                      <ArrowDown className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-                                
-                                {pdf.cover_url && (
-                                  <div className="flex-shrink-0">
-                                    <img
-                                      src={pdf.cover_url}
-                                      alt={pdf.title}
-                                      className="w-16 h-20 object-cover rounded border"
-                                    />
-                                  </div>
-                                )}
-                                
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-medium text-sm truncate">{pdf.title}</h4>
-                                  <div className="flex items-center gap-3 mt-1">
-                                    <p className="text-xs text-muted-foreground">
-                                      {pdf.pages || 0} páginas • {pdf.reading_time_minutes || 0} min
-                                    </p>
-                                    <div className="flex items-center gap-2">
-                                      {pdf.youtube_url && (
-                                        <Badge variant="outline" className="text-xs">
-                                          <Youtube className="h-3 w-3 mr-1" />
-                                          YouTube
-                                        </Badge>
-                                      )}
-                                      {pdf.audio_url && (
-                                        <Badge variant="outline" className="text-xs">
-                                          <Volume2 className="h-3 w-3 mr-1" />
-                                          Áudio
-                                        </Badge>
-                                      )}
-                                      {pdf.text_content && (
-                                        <Badge variant="outline" className="text-xs">
-                                          <FileText className="h-3 w-3 mr-1" />
-                                          Kindle
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
+                      // Estatísticas
+                      const totalVolumes = rootVolumes.length
+                      const totalSubvolumes = allSubvolumes.length
+                      
+                      return (
+                        <>
+                          {/* Resumo e Dica */}
+                          <div className="mb-4 space-y-2">
+                            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border border-primary/20">
+                              <div className="flex items-center gap-4 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <FileText className="h-4 w-4 text-primary" />
+                                  <span className="font-medium">Volumes Raiz:</span>
+                                  <Badge variant="secondary">{totalVolumes}</Badge>
                               </div>
-                              
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleOpenEditModal(pdf)}
-                                  title="Editar"
-                                >
-                                  <Edit className="h-4 w-4 mr-1" />
-                                  Editar
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDuplicatePDF(pdf)}
-                                  title="Duplicar"
-                                >
-                                  <Copy className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDeletePDF(pdf.id)}
-                                  className="text-destructive hover:text-destructive"
-                                  title="Deletar"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {totalSubvolumes > 0 && (
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="h-4 w-4 text-primary/70" />
+                                    <span className="font-medium text-muted-foreground">Subvolumes:</span>
+                                    <Badge variant="outline">{totalSubvolumes}</Badge>
+                                    </div>
+                                    )}
+                                  </div>
+                                </div>
+                            <div className="p-2 text-xs text-muted-foreground bg-muted/30 rounded border-dashed border text-center">
+                              💡 Arraste um volume para dentro de outro para transformá-lo em subvolume. Arraste para esta área para transformar em volume raiz.
                               </div>
                             </div>
-                            {/* Renderizar subvolumes */}
-                            {subvolumes.length > 0 && (
-                              <div className="ml-4 mt-2 space-y-2">
-                                {subvolumes.map(sub => renderVolume(sub, level + 1))}
+                            
+                          {(() => {
+                            const renderVolume = (pdf: CoursePDF, level: number = 0) => {
+                              const subvolumes = getSubvolumes(pdf.id)
+                              const index = sortedPDFs.findIndex(p => p.id === pdf.id)
+                              const isDragging = draggedVolumeId === pdf.id
+                              const isDragOver = dragOverVolumeId === pdf.id
+                              
+                              return (
+                                <div key={pdf.id}>
+                                  <div
+                                    draggable={true}
+                                    onDragStart={(e) => handleDragStart(e, pdf.id)}
+                                    onDragOver={(e) => handleDragOver(e, pdf.id)}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={(e) => handleDrop(e, pdf.id)}
+                                    onDragEnd={() => {
+                                      setDraggedVolumeId(null)
+                                      setDragOverVolumeId(null)
+                                    }}
+                                    className={`flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-all group cursor-move ${
+                                      level > 0 ? 'border-l-4 border-primary/40 bg-primary/5' : 'border-2'
+                                    } ${
+                                      isDragging ? 'opacity-50 scale-95' : ''
+                                    } ${
+                                      isDragOver ? 'ring-2 ring-primary border-primary bg-primary/10 scale-105' : ''
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
+                                        {level > 0 && (
+                                          <span className="text-primary text-xs font-bold">└─</span>
+                                        )}
+                                        <Badge variant={level > 0 ? "outline" : "secondary"} className={level > 0 ? "border-primary/50 text-primary" : ""}>
+                                          {pdf.volume}
+                                        </Badge>
+                                        {level > 0 && (
+                                          <span className="text-xs text-muted-foreground">Subvolume</span>
+                                        )}
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7"
+                                onClick={() => handleMovePDF(pdf.id, 'up')}
+                                disabled={index === 0}
+                                title="Mover para cima"
+                              >
+                                            <ArrowUp className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7"
+                                onClick={() => handleMovePDF(pdf.id, 'down')}
+                                disabled={index === course.course_pdfs.length - 1}
+                                title="Mover para baixo"
+                              >
+                                            <ArrowDown className="h-3 w-3" />
+                              </Button>
+                                        </div>
+                            </div>
+                            
+                                      {pdf.cover_url && (
+                                        <div className="flex-shrink-0">
+                                          <img
+                                            src={pdf.cover_url}
+                                            alt={pdf.title}
+                                            className="w-16 h-20 object-cover rounded border"
+                                          />
+                                        </div>
+                                      )}
+                                      
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="font-medium text-sm truncate">{pdf.title}</h4>
+                                        <div className="flex items-center gap-3 mt-1">
+                                          <p className="text-xs text-muted-foreground">
+                                            {pdf.pages || 0} páginas • {pdf.reading_time_minutes || 0} min
+                                          </p>
+                                          <div className="flex items-center gap-2">
+                                            {pdf.youtube_url && (
+                                              <Badge variant="outline" className="text-xs">
+                                                <Youtube className="h-3 w-3 mr-1" />
+                                                YouTube
+                                              </Badge>
+                                            )}
+                                            {pdf.audio_url && (
+                                              <Badge variant="outline" className="text-xs">
+                                                <Volume2 className="h-3 w-3 mr-1" />
+                                                Áudio
+                                              </Badge>
+                                            )}
+                                            {pdf.text_content && (
+                                              <Badge variant="outline" className="text-xs">
+                                                <FileText className="h-3 w-3 mr-1" />
+                                                Kindle
+                                              </Badge>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                                        onClick={() => handleOpenEditModal(pdf)}
+                                        title="Editar"
+                          >
+                                        <Edit className="h-4 w-4 mr-1" />
+                                        Editar
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                              onClick={() => handleDuplicatePDF(pdf)}
+                                        title="Duplicar"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeletePDF(pdf.id)}
+                            className="text-destructive hover:text-destructive"
+                                        title="Deletar"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                                  {/* Renderizar subvolumes */}
+                                  {subvolumes.length > 0 && (
+                                    <div className={`ml-6 mt-2 space-y-2 border-l-2 border-primary/20 pl-4 ${level > 0 ? 'ml-8' : ''}`}>
+                                      <div className="text-xs text-muted-foreground mb-1 font-medium">
+                                        Subvolumes ({subvolumes.length})
                               </div>
-                            )}
-                          </div>
-                        )
-                      }
-                      
-                      return rootVolumes.map(vol => renderVolume(vol))
+                                      {subvolumes.map(sub => renderVolume(sub, level + 1))}
+                            </div>
+                                  )}
+                                </div>
+                              )
+                            }
+                            
+                            return (
+                              <div className="space-y-3">
+                                {rootVolumes.length > 0 ? (
+                                  rootVolumes.map(vol => renderVolume(vol))
+                                ) : (
+                                  <div className="text-center py-8 text-muted-foreground">
+                                    <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                                    <p>Nenhum volume raiz encontrado</p>
+                        </div>
+                      )}
+                    </div>
+                            )
+                          })()}
+                        </>
+                      )
                     })()}
-                  </div>
+                        </div>
                 )}
               </CardContent>
             </Card>
@@ -852,7 +901,7 @@ export default function AdminEditCoursePage({ params }: { params: Promise<{ id: 
           open={modalOpen}
           onOpenChange={setModalOpen}
           volume={selectedVolume}
-          courseId={courseId}
+                      courseId={courseId}
           onSave={fetchCourse}
           mode={drawerMode}
           availableVolumes={course?.course_pdfs || []}

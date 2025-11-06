@@ -286,14 +286,14 @@ export function VolumeModal({ open, onOpenChange, volume, courseId, onSave, mode
                     Volume Pai (Opcional)
                   </Label>
                   <Select
-                    value={formData.parent_volume_id || ""}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, parent_volume_id: value || null }))}
+                    value={formData.parent_volume_id || "none"}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, parent_volume_id: value === "none" ? null : value }))}
                   >
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Selecione um volume pai (deixe vazio para volume raiz)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum (Volume Raiz)</SelectItem>
+                      <SelectItem value="none">Nenhum (Volume Raiz)</SelectItem>
                       {availableVolumes
                         .filter(v => !v.parent_volume_id && (mode === 'create' || v.id !== volume?.id)) // Apenas volumes raiz e não o próprio volume
                         .map((v) => (
