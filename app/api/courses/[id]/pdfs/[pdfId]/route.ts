@@ -111,8 +111,8 @@ export async function PUT(
       text_content: text_content || null,
       use_auto_conversion: use_auto_conversion !== false,
       cover_url: cover_url || null,
-      youtube_url: youtube_url ?? undefined,
-      audio_url: audio_url ?? undefined,
+      youtube_url: youtube_url && youtube_url.trim() !== '' ? youtube_url : null,
+      audio_url: audio_url && audio_url.trim() !== '' ? audio_url : null,
       parent_volume_id: parent_volume_id || null
     }
 
