@@ -2,8 +2,6 @@
 
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { useState } from "react"
-import { UpgradeModal } from "./upgrade-modal"
 
 interface CourseSummary {
   id: string
@@ -50,13 +48,14 @@ export const CourseCard = ({ course, index }: CourseCardProps) => {
   }
 
   return (
-    <motion.article
-      className="group relative overflow-hidden rounded-3xl border border-[#2A241C] bg-[#12100D] p-6 transition-colors duration-300 hover:border-[#F3C77A]"
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.6, delay: index * 0.05 }}
-    >
+    <Link href={`/course/${course.slug}`}>
+      <motion.article
+        className="group relative overflow-hidden rounded-3xl border border-[#2A241C] bg-[#12100D] p-6 transition-colors duration-300 hover:border-[#F3C77A] cursor-pointer"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.6, delay: index * 0.05 }}
+      >
       {/* Tags e Indicador de Acesso */}
       <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
         {/* Indicador de Acesso */}
@@ -117,20 +116,24 @@ export const CourseCard = ({ course, index }: CourseCardProps) => {
       <p className="mt-6 text-sm text-[#B3A690]">{course.description}</p>
       
       {/* Botão de acesso baseado na permissão */}
-      {course.userHasAccess ? (
-        <Link
-          href={`/course/${course.slug}`}
-          className="mt-6 inline-flex items-center gap-2 rounded-full border border-[#3A3126] px-5 py-3 text-sm font-medium text-[#F3C77A] transition-colors duration-300 hover:bg-[#F3C77A]/10"
-        >
-          Abrir curso
-          <span className="text-lg">→</span>
-        </Link>
-      ) : (
-        <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-red-600/50 px-5 py-3 text-sm font-medium text-red-400 bg-red-600/10">
-          🔒 Acesso restrito
-          <span className="text-lg">🚫</span>
-        </div>
-      )}
-    </motion.article>
+      <div className={`mt-6 inline-flex items-center gap-2 rounded-full border px-5 py-3 text-sm font-medium transition-colors duration-300 w-full justify-center ${
+        course.userHasAccess 
+          ? 'border-[#3A3126] text-[#F3C77A] hover:bg-[#F3C77A]/10' 
+          : 'border-red-600/50 text-red-400 bg-red-600/10'
+      }`}>
+        {course.userHasAccess ? (
+          <>
+            Abrir curso
+            <span className="text-lg">→</span>
+          </>
+        ) : (
+          <>
+            🔒 Ver detalhes do curso
+            <span className="text-lg">→</span>
+          </>
+        )}
+      </div>
+      </motion.article>
+    </Link>
   )
 }
