@@ -30,26 +30,29 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
     }
   }, [selectedPDF])
 
-  return (
-    <div className="space-y-6 px-4 md:px-0">
-      <div className="text-center">
-        <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">Conteúdo do Curso</h2>
-        <p className="text-sm md:text-base text-muted-foreground">Selecione um volume para começar sua leitura</p>
-      </div>
+  // Organizar volumes em hierarquia
+  const rootVolumes = pdfs.filter((pdf: any) => !pdf.parent_volume_id)
+  const getSubvolumes = (parentId: string) => 
+    pdfs.filter((pdf: any) => (pdf as any).parent_volume_id === parentId)
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {pdfs.map((pdf, index) => (
-          <Card
-            key={pdf.volume}
-            className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105 overflow-hidden ${
-              selectedPDF?.volume === pdf.volume
-                ? "ring-2 ring-[#F3C77A] bg-[#F3C77A]/5 border-[#F3C77A]"
-                : "hover:border-[#F3C77A]/50"
-            }`}
-            onMouseEnter={() => setHoveredVolume(pdf.volume)}
-            onMouseLeave={() => setHoveredVolume(null)}
-            onClick={() => onSelectPDF(pdf)}
-          >
+  const renderVolume = (pdf: any, level: number = 0) => {
+    const volumeId = (pdf as any).id || (pdf as any).volume_id || pdf.volume
+    const subvolumes = getSubvolumes(volumeId)
+    
+    return (
+      <div key={volumeId} className={level > 0 ? "mt-2" : ""}>
+        <Card
+          className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105 overflow-hidden ${
+            level > 0 ? 'ml-6 border-l-2 border-[#F3C77A]/30' : ''
+          } ${
+            selectedPDF?.volume === pdf.volume
+              ? "ring-2 ring-[#F3C77A] bg-[#F3C77A]/5 border-[#F3C77A]"
+              : "hover:border-[#F3C77A]/50"
+          }`}
+          onMouseEnter={() => setHoveredVolume(pdf.volume)}
+          onMouseLeave={() => setHoveredVolume(null)}
+          onClick={() => onSelectPDF(pdf)}
+        >
             {/* Capa do Volume */}
             <div className="relative aspect-[3/4] w-full overflow-hidden bg-gradient-to-br from-[#2E261D] to-[#16130F]">
               {pdf.cover_url ? (
@@ -121,7 +124,26 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
               </Button>
             </CardContent>
           </Card>
-        ))}
+        </div>
+        {/* Renderizar subvolumes */}
+        {subvolumes.length > 0 && (
+          <div className="ml-4 mt-2 space-y-2">
+            {subvolumes.map((sub: any) => renderVolume(sub, level + 1))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6 px-4 md:px-0">
+      <div className="text-center">
+        <h2 className="text-xl md:text-2xl font-bold text-foreground mb-2">Conteúdo do Curso</h2>
+        <p className="text-sm md:text-base text-muted-foreground">Selecione um volume para começar sua leitura</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {rootVolumes.map((vol: any) => renderVolume(vol))}
       </div>
 
       {selectedPDF && (
