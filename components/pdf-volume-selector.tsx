@@ -124,8 +124,6 @@ export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeS
               </Button>
             </CardContent>
           </Card>
-        </div>
-        {/* Renderizar subvolumes */}
         {subvolumes.length > 0 && (
           <div className="ml-4 mt-2 space-y-2">
             {subvolumes.map((sub: any) => renderVolume(sub, level + 1))}
