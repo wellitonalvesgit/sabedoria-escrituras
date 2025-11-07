@@ -158,14 +158,15 @@ export function VolumeModal({ open, onOpenChange, volume, courseId, onSave, mode
 
   const handleImageUpload = async (file: File) => {
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('type', 'cover')
-      formData.append('courseId', courseId)
+      // ✅ FIX: Usar o endpoint correto para capa de VOLUME (não de curso)
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
+      uploadFormData.append('volumeId', volume?.id || 'new')
+      uploadFormData.append('courseId', courseId)
 
-      const response = await fetch('/api/upload', {
+      const response = await fetch('/api/upload/volume-cover', {
         method: 'POST',
-        body: formData,
+        body: uploadFormData,
       })
 
       const result = await response.json()
@@ -175,9 +176,9 @@ export function VolumeModal({ open, onOpenChange, volume, courseId, onSave, mode
       }
 
       setFormData(prev => ({ ...prev, cover_url: result.fileUrl }))
-      alert("Capa atualizada com sucesso!")
+      alert("Capa do volume atualizada com sucesso!")
     } catch (err) {
-      alert('Erro ao fazer upload da capa: ' + (err as Error).message)
+      alert('Erro ao fazer upload da capa do volume: ' + (err as Error).message)
     }
   }
 
