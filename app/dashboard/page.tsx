@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { BookOpen, Search, User, Menu, Loader2, Shield, Clock, Filter, X, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -80,15 +80,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!userLoading) {
-      // Carregar cursos e categorias em paralelo para melhor performance
-      Promise.all([fetchCourses(), fetchCategories()])
+      // ✅ OTIMIZAÇÃO FASE 2: Uma única chamada ao invés de 3
+      fetchDashboardData()
     }
   }, [userLoading])
 
   // sessionValid é gerenciado automaticamente pelo useCurrentUser
 
-  // Aplicar filtros
-  useEffect(() => {
+  // ✅ OTIMIZAÇÃO FASE 2: useMemo para filtros (evita re-computação)
+  const filteredCourses = useMemo(() => {
     let filtered = allCourses
 
     // Filtro por categorias
@@ -96,7 +96,7 @@ export default function DashboardPage() {
       filtered = filtered.filter(course => {
         // Verificar se o curso tem alguma das categorias selecionadas usando course_categories
         if (course.course_categories && course.course_categories.length > 0) {
-          return course.course_categories.some(cc => 
+          return course.course_categories.some(cc =>
             selectedCategories.includes(cc.category_id)
           )
         }
@@ -108,43 +108,39 @@ export default function DashboardPage() {
     // Filtro por termo de busca
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(course => 
+      filtered = filtered.filter(course =>
         course.title.toLowerCase().includes(term) ||
         course.description.toLowerCase().includes(term) ||
         course.author?.toLowerCase().includes(term)
       )
     }
 
-    setCourses(filtered)
+    return filtered
   }, [allCourses, selectedCategories, searchTerm])
 
-  const fetchCourses = async () => {
+  // Atualizar courses quando filtros mudarem
+  useEffect(() => {
+    setCourses(filteredCourses)
+  }, [filteredCourses])
+
+  // ✅ OTIMIZAÇÃO FASE 2: Endpoint unificado (1 chamada ao invés de 3)
+  const fetchDashboardData = async () => {
     try {
       setLoading(true)
 
-      const response = await fetch('/api/courses')
+      const response = await fetch('/api/dashboard-data', {
+        credentials: 'include'
+      })
+
       if (!response.ok) {
-        throw new Error('Erro ao carregar cursos')
+        throw new Error('Erro ao carregar dados do dashboard')
       }
+
       const data = await response.json()
 
-      // Buscar compras individuais do usuário se estiver logado
-      let userPurchases: string[] = []
-      if (user?.id && sessionValid) {
-        try {
-          const purchasesResponse = await fetch('/api/user/purchases', {
-            credentials: 'include'
-          })
-          if (purchasesResponse.ok) {
-            const purchasesData = await purchasesResponse.json()
-            userPurchases = (purchasesData.purchases || []).map((p: any) => p.course_id)
-          }
-        } catch (err) {
-          console.error('Erro ao buscar compras do usuário:', err)
-        }
-      }
+      // Processar cursos com informação de acesso
+      const userPurchases: string[] = (data.purchases || []).map((p: any) => p.course_id)
 
-      // Mostrar TODOS os cursos, mas marcar quais têm acesso
       const allCoursesWithAccess = (data.courses || []).map((course: Course) => {
         // Verificar se é curso da categoria arsenal-espiritual
         const categorySlug = course.course_categories?.[0]?.categories?.slug
@@ -155,7 +151,7 @@ export default function DashboardPage() {
           const hasPurchased = userPurchases.includes(course.id)
           return {
             ...course,
-            userHasAccess: hasPurchased // Só liberado se comprou
+            userHasAccess: hasPurchased
           }
         }
 
@@ -169,6 +165,7 @@ export default function DashboardPage() {
 
       setAllCourses(allCoursesWithAccess)
       setCourses(allCoursesWithAccess)
+      setCategories(data.categories || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
     } finally {
@@ -176,28 +173,12 @@ export default function DashboardPage() {
     }
   }
 
-  const fetchCategories = async () => {
-    try {
-      // Buscar categorias via API
-      const response = await fetch('/api/categories')
-
-      if (!response.ok) {
-        throw new Error('Erro ao carregar categorias')
-      }
-
-      const data = await response.json()
-      setCategories(data.categories || [])
-    } catch (err) {
-      console.error('Erro ao carregar categorias:', err)
-    }
-  }
-
   const handleRefreshPermissions = async () => {
     try {
       setRefreshing(true)
       await refreshUserData()
-      // Recarregar os cursos para atualizar o status de acesso
-      await fetchCourses()
+      // Recarregar os dados para atualizar o status de acesso
+      await fetchDashboardData()
     } catch (err) {
       console.error('Erro ao atualizar permissões:', err)
     } finally {
@@ -456,7 +437,7 @@ export default function DashboardPage() {
                 : "Os cursos estão sendo carregados ou não há conteúdo disponível no momento."
               }
             </p>
-            <Button onClick={fetchCourses}>Tentar novamente</Button>
+            <Button onClick={fetchDashboardData}>Tentar novamente</Button>
           </div>
         ) : (
           <div className="space-y-12">

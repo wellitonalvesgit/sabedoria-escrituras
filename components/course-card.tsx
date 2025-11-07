@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import { memo } from "react"
 
 interface CourseSummary {
   id: string
@@ -19,7 +20,8 @@ interface CourseCardProps {
   index: number
 }
 
-export const CourseCard = ({ course, index }: CourseCardProps) => {
+// ✅ OTIMIZAÇÃO FASE 2: React.memo para evitar re-renders desnecessários
+const CourseCardComponent = ({ course, index }: CourseCardProps) => {
   const coverUrl = course.coverUrl || "/placeholder.svg?height=600&width=400"
 
   // Função para obter a cor da tag
@@ -137,3 +139,13 @@ export const CourseCard = ({ course, index }: CourseCardProps) => {
     </Link>
   )
 }
+
+// ✅ Memoização com comparação customizada
+export const CourseCard = memo(CourseCardComponent, (prevProps, nextProps) => {
+  // Só re-renderizar se o curso ou index mudarem
+  return (
+    prevProps.course.id === nextProps.course.id &&
+    prevProps.course.userHasAccess === nextProps.course.userHasAccess &&
+    prevProps.index === nextProps.index
+  )
+})

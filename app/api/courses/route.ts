@@ -28,7 +28,8 @@ export async function GET(request: NextRequest) {
       throw new Error('Supabase client not configured')
     }
 
-    // Buscar cursos com seus PDFs e categorias
+    // ✅ OTIMIZAÇÃO FASE 2: Removido text_content para reduzir payload em 70-80%
+    // text_content pode ter centenas de KB por curso e não é necessário na listagem
     let query = client
       .from('courses')
       .select(`
@@ -51,12 +52,12 @@ export async function GET(request: NextRequest) {
           url,
           pages,
           reading_time_minutes,
-          text_content,
           use_auto_conversion,
           display_order,
           cover_url,
           youtube_url,
-          audio_url
+          audio_url,
+          parent_volume_id
         ),
         course_categories (
           category_id,
