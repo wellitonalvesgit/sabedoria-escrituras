@@ -47,7 +47,7 @@ const CourseCardComponent = ({ course, index }: CourseCardProps) => {
   }
 
   return (
-    <Link href={`/course/${course.slug}`}>
+    <Link href={`/course/${course.slug}`} prefetch={index < 6}>
       <article
         className="group relative overflow-hidden rounded-3xl border border-[#2A241C] bg-[#12100D] p-6 transition-colors duration-300 hover:border-[#F3C77A] cursor-pointer animate-fade-in-up"
         style={{ animationDelay: `${index * 50}ms` }}

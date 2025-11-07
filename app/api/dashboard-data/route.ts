@@ -4,6 +4,10 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { SUPABASE_CONFIG } from '@/lib/supabase-config'
 
+// ✅ OTIMIZAÇÃO FASE 3: Configurar como rota dinâmica (usa cookies)
+export const dynamic = 'force-dynamic' // Necessário pois usa autenticação
+export const revalidate = 0 // Não cachear pois depende do usuário
+
 /**
  * ✅ OTIMIZAÇÃO FASE 2: Endpoint unificado para o dashboard
  *
@@ -134,11 +138,14 @@ export async function GET(request: NextRequest) {
       dashboardCache = { data: responseData, timestamp: Date.now() }
     }
 
+    // ✅ OTIMIZAÇÃO FASE 3: Headers otimizados com compressão
     return NextResponse.json(responseData, {
       headers: {
         'Cache-Control': user
           ? 'private, no-cache'
           : 'public, s-maxage=180, stale-while-revalidate=300',
+        'Content-Type': 'application/json; charset=utf-8',
+        // Vercel automaticamente comprime com gzip/brotli se response > 1KB
       }
     })
 

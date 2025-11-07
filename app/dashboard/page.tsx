@@ -16,6 +16,7 @@ import { CourseStats } from "@/components/course-stats"
 import { CategorySelector } from "@/components/category-selector"
 import { CategoryCarousel } from "@/components/category-carousel"
 import { useCurrentUser } from "@/hooks/use-current-user"
+import { DashboardSkeleton } from "@/components/course-card-skeleton"
 
 interface CoursePDF {
   id: string
@@ -78,6 +79,10 @@ export default function DashboardPage() {
   const [refreshing, setRefreshing] = useState(false)
   const { user, loading: userLoading, sessionValid, hasAccessToCourse, isAccessExpired, refreshUserData } = useCurrentUser()
 
+  // ✅ OTIMIZAÇÃO FASE 3: Paginação
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(12) // 12 cursos por página
+
   useEffect(() => {
     if (!userLoading) {
       // ✅ OTIMIZAÇÃO FASE 2: Uma única chamada ao invés de 3
@@ -118,10 +123,26 @@ export default function DashboardPage() {
     return filtered
   }, [allCourses, selectedCategories, searchTerm])
 
-  // Atualizar courses quando filtros mudarem
+  // ✅ OTIMIZAÇÃO FASE 3: Paginação - calcular cursos da página atual
+  const paginatedCourses = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return filteredCourses.slice(startIndex, endIndex)
+  }, [filteredCourses, currentPage, itemsPerPage])
+
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredCourses.length / itemsPerPage)
+  }, [filteredCourses.length, itemsPerPage])
+
+  // Atualizar courses quando paginação mudar
   useEffect(() => {
-    setCourses(filteredCourses)
-  }, [filteredCourses])
+    setCourses(paginatedCourses)
+  }, [paginatedCourses])
+
+  // Reset para página 1 quando filtros mudarem
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedCategories, searchTerm])
 
   // ✅ OTIMIZAÇÃO FASE 2: Endpoint unificado (1 chamada ao invés de 3)
   const fetchDashboardData = async () => {
@@ -217,10 +238,23 @@ export default function DashboardPage() {
 
   if (loading || userLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Carregando cursos...</span>
+      <div className="min-h-screen bg-background">
+        <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/95">
+          <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+            <div className="flex h-14 md:h-16 items-center justify-between">
+              <div className="flex items-center gap-4 md:gap-8">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-xl bg-primary">
+                    <BookOpen className="h-4 w-4 md:h-5 md:w-5 text-primary-foreground" />
+                  </div>
+                  <span className="text-lg md:text-xl font-semibold tracking-tight hidden sm:inline">As Cartas de Paulo</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </nav>
+        <div className="mx-auto max-w-7xl px-6 pt-24 pb-8 lg:px-8">
+          <DashboardSkeleton />
         </div>
       </div>
     )
@@ -422,25 +456,32 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {courses.length === 0 ? (
+        {filteredCourses.length === 0 ? (
           <div className="text-center py-12">
             <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              {user?.allowed_courses?.length
+              {searchTerm || selectedCategories.length > 0
+                ? "Nenhum curso encontrado"
+                : user?.allowed_courses?.length
                 ? "Nenhum curso disponível para seu acesso"
                 : "Nenhum curso disponível"
               }
             </h3>
             <p className="text-muted-foreground mb-4">
-              {user?.allowed_courses?.length
+              {searchTerm || selectedCategories.length > 0
+                ? "Tente ajustar os filtros para encontrar o que procura."
+                : user?.allowed_courses?.length
                 ? "Você não tem acesso aos cursos disponíveis ou não há conteúdo liberado para seu perfil."
                 : "Os cursos estão sendo carregados ou não há conteúdo disponível no momento."
               }
             </p>
-            <Button onClick={fetchDashboardData}>Tentar novamente</Button>
+            {!(searchTerm || selectedCategories.length > 0) && (
+              <Button onClick={fetchDashboardData}>Tentar novamente</Button>
+            )}
           </div>
         ) : (
-          <div className="space-y-12">
+          <>
+            <div className="space-y-12">
             {/* Mostrar TODAS as categorias organizadas */}
             {categoriesWithCourses.map((category) => (
               <div key={category.id} className="space-y-4">
@@ -495,7 +536,62 @@ export default function DashboardPage() {
                 )}
               </div>
             ))}
-          </div>
+            </div>
+
+            {/* ✅ OTIMIZAÇÃO FASE 3: Controles de Paginação */}
+            {totalPages > 1 && (
+              <div className="mt-12 flex flex-col items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Anterior
+                  </Button>
+
+                  <div className="flex items-center gap-2">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum
+                      if (totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i
+                      } else {
+                        pageNum = currentPage - 2 + i
+                      }
+
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className="min-w-[40px]"
+                        >
+                          {pageNum}
+                        </Button>
+                      )
+                    })}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+
+                <p className="text-sm text-muted-foreground">
+                  Mostrando {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredCourses.length)} de {filteredCourses.length} cursos
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
