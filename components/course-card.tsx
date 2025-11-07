@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { motion } from "framer-motion"
+import Image from "next/image"
 
 interface CourseSummary {
   id: string
@@ -21,9 +21,6 @@ interface CourseCardProps {
 
 export const CourseCard = ({ course, index }: CourseCardProps) => {
   const coverUrl = course.coverUrl || "/placeholder.svg?height=600&width=400"
-  
-  // Debug: log para verificar se a URL está chegando
-  console.log('CourseCard - course:', course.title, 'coverUrl:', course.coverUrl)
 
   // Função para obter a cor da tag
   const getTagColor = (tag: string) => {
@@ -49,12 +46,9 @@ export const CourseCard = ({ course, index }: CourseCardProps) => {
 
   return (
     <Link href={`/course/${course.slug}`}>
-      <motion.article
-        className="group relative overflow-hidden rounded-3xl border border-[#2A241C] bg-[#12100D] p-6 transition-colors duration-300 hover:border-[#F3C77A] cursor-pointer"
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.6, delay: index * 0.05 }}
+      <article
+        className="group relative overflow-hidden rounded-3xl border border-[#2A241C] bg-[#12100D] p-6 transition-colors duration-300 hover:border-[#F3C77A] cursor-pointer animate-fade-in-up"
+        style={{ animationDelay: `${index * 50}ms` }}
       >
       {/* Tags e Indicador de Acesso */}
       <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
@@ -88,10 +82,16 @@ export const CourseCard = ({ course, index }: CourseCardProps) => {
 
       <div className="relative overflow-hidden rounded-2xl">
         {course.coverUrl ? (
-          <div
-            className="aspect-[4/5] w-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-            style={{ backgroundImage: `url(${coverUrl})` }}
-          />
+          <div className="relative aspect-[4/5] w-full overflow-hidden">
+            <Image
+              src={coverUrl}
+              alt={course.title}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
+              loading="lazy"
+            />
+          </div>
         ) : (
           <div className="aspect-[4/5] w-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
             <div className="text-center text-primary/60">
@@ -133,7 +133,7 @@ export const CourseCard = ({ course, index }: CourseCardProps) => {
           </>
         )}
       </div>
-      </motion.article>
+      </article>
     </Link>
   )
 }

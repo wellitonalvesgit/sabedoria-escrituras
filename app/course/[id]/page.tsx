@@ -8,8 +8,6 @@ import { MobileDrawer } from "@/components/mobile-drawer"
 import Link from "next/link"
 import { PDFVolumeSelector } from "@/components/pdf-volume-selector"
 import { ViewModeSelector } from "@/components/view-mode-selector"
-import { OriginalPDFViewer } from "@/components/original-pdf-viewer"
-import { DigitalMagazineViewer } from "@/components/digital-magazine-viewer"
 import { useGamification } from "@/contexts/gamification-context"
 import { PremiumAccessGate } from "@/components/premium-access-gate"
 import { CongratulationsModal } from "@/components/congratulations-modal"
@@ -17,6 +15,38 @@ import { useCongratulations } from "@/hooks/use-congratulations"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { useState, use, useEffect } from "react"
 import { CoursePDF } from "@/lib/courses-data"
+import dynamic from "next/dynamic"
+
+// ✅ Lazy loading dos componentes pesados (200KB+ cada)
+const OriginalPDFViewer = dynamic(
+  () => import("@/components/original-pdf-viewer").then(mod => ({ default: mod.OriginalPDFViewer })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          <span>Carregando visualizador...</span>
+        </div>
+      </div>
+    ),
+    ssr: false
+  }
+)
+
+const DigitalMagazineViewer = dynamic(
+  () => import("@/components/digital-magazine-viewer").then(mod => ({ default: mod.DigitalMagazineViewer })),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          <span>Carregando leitor...</span>
+        </div>
+      </div>
+    ),
+    ssr: false
+  }
+)
 
 interface Course {
   id: string
@@ -83,18 +113,6 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       
       if (response.ok) {
         const data = await response.json()
-        console.log('📚 Dados do curso recebidos:', data.course)
-        console.log('📄 PDFs do curso:', data.course?.course_pdfs)
-        // Verificar se os PDFs têm youtube_url e audio_url
-        if (data.course?.course_pdfs) {
-          data.course.course_pdfs.forEach((pdf: any, index: number) => {
-            console.log(`📋 PDF ${index + 1} (${pdf.volume}):`, {
-              youtube_url: pdf.youtube_url,
-              audio_url: pdf.audio_url,
-              title: pdf.title
-            })
-          })
-        }
         setCourse(data.course)
       }
     } catch (error) {

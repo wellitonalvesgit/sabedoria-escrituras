@@ -18,18 +18,6 @@ interface PDFVolumeSelectorProps {
 export const PDFVolumeSelector = ({ pdfs, onSelectPDF, selectedPDF }: PDFVolumeSelectorProps) => {
   const [hoveredVolume, setHoveredVolume] = useState<string | null>(null)
 
-  // Debug: verificar dados recebidos
-  useEffect(() => {
-    if (selectedPDF) {
-      console.log('🎯 PDF selecionado:', {
-        volume: selectedPDF.volume,
-        title: selectedPDF.title,
-        youtube_url: (selectedPDF as any).youtube_url,
-        audio_url: (selectedPDF as any).audio_url
-      })
-    }
-  }, [selectedPDF])
-
   // Organizar volumes em hierarquia
   const rootVolumes = pdfs.filter((pdf: any) => !pdf.parent_volume_id)
   const getSubvolumes = (parentId: string) => 
