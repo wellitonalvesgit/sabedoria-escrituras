@@ -25,7 +25,7 @@ Isso causa inconsistências na autenticação porque:
    SMTP Host: smtp.resend.com
    SMTP Port: 587
    SMTP User: resend
-   SMTP Password: re_BfCFPuAB_CKMsfpzJqTSwkWuQ18quM5PY
+   SMTP Password: re_your_resend_api_key_here
    SMTP Sender Name: Sabedoria das Escrituras
    SMTP Admin Email: noreply@paulocartas.com.br
    ```

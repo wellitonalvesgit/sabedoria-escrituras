@@ -6,22 +6,25 @@ Adicione estas variáveis ao seu arquivo `.env` na raiz do projeto:
 
 ```env
 # Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=https://aqvqpkmjdtzeoclndwhj.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwOTI2ODYsImV4cCI6MjA3NjY2ODY4Nn0.ZStT6hrlRhT3bigKWc3i6An_lL09R_t5gdZ4WIyyYyY
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdnFwa21qZHR6ZW9jbG5kd2hqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTA5MjY4NiwiZXhwIjoyMDc2NjY4Njg2fQ.0sBklMOxA7TsCiCP8_8oxjumxK43jj8PRia1LE_Mybs
+# IMPORTANTE: Obtenha suas chaves no painel do Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
 
 # Resend API Configuration
-RESEND_API_KEY=re_BfCFPuAB_CKMsfpzJqTSwkWuQ18quM5PY
+# IMPORTANTE: Obtenha sua chave em https://resend.com
+RESEND_API_KEY=re_your_resend_api_key_here
 
 # Claude API Configuration (Opcional)
 # Obtenha sua chave em: https://console.anthropic.com/
-ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ANTHROPIC_API_KEY=sk-ant-your_anthropic_key_here
 
 # Korvex Payment Gateway Configuration
 # Gateway de pagamento para infoprodutores
-KORVEX_PUBLIC_KEY=oseias01fab_3fsgxpo0jjk6iccb
-KORVEX_PRIVATE_KEY=inyug04lxkve178wrd7nbps81ndnep4rb7q0esasvi2vjvp8dduyny4cuv26chf2
-   KORVEX_API_URL=https://app.korvex.com.br/api/v1
+# IMPORTANTE: Obtenha suas chaves no painel da Korvex
+KORVEX_PUBLIC_KEY=your_korvex_public_key_here
+KORVEX_PRIVATE_KEY=your_korvex_private_key_here
+KORVEX_API_URL=https://app.korvex.com.br/api/v1
 KORVEX_SANDBOX=true
 
 # Asaas Payment Gateway Configuration (Alternativa)
@@ -38,10 +41,12 @@ NEXT_PUBLIC_EMAIL_DOMAIN=paulocartas.com.br
 
 ## Instruções
 
-1. **Copie o conteúdo acima** para seu arquivo `.env`
-2. **Salve o arquivo** na raiz do projeto
-3. **Reinicie o servidor** com `npm run dev`
-4. **Teste as funcionalidades** de login
+1. **Substitua os placeholders** pelas suas chaves reais
+2. **Copie para o arquivo `.env`** na raiz do projeto
+3. **Salve o arquivo**
+4. **NUNCA commit o arquivo `.env`** (já está no .gitignore)
+5. **Reinicie o servidor** com `npm run dev`
+6. **Teste as funcionalidades** de login
 
 ## Verificação
 
@@ -123,13 +128,13 @@ O projeto agora suporta integração com o gateway de pagamento Korvex, ideal pa
 
 ### Configuração
 
-1. **Adicione as chaves ao `.env`:**
+1. **Obtenha suas chaves no painel da Korvex** e adicione ao `.env`:
    ```env
-   KORVEX_PUBLIC_KEY=oseias01fab_3fsgxpo0jjk6iccb
-   KORVEX_PRIVATE_KEY=inyug04lxkve178wrd7nbps81ndnep4rb7q0esasvi2vjvp8dduyny4cuv26chf2
+   KORVEX_PUBLIC_KEY=your_public_key_here
+   KORVEX_PRIVATE_KEY=your_private_key_here
    KORVEX_API_URL=https://app.korvex.com.br/api/v1
    KORVEX_SANDBOX=true
-   KORVEX_WEBHOOK_TOKEN=token_gerado_no_painel_korvex
+   KORVEX_WEBHOOK_TOKEN=your_webhook_token_here
    ```
 
 2. **Execute a migração do banco de dados:**

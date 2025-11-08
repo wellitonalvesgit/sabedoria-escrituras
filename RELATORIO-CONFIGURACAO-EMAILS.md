@@ -29,7 +29,7 @@
 
 **Arquivo `.env.local`:**
 ```env
-RESEND_API_KEY=re_BfCFPuAB_CKMsfpzJqTSwkWuQ18quM5PY
+RESEND_API_KEY=re_your_resend_api_key_here
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 

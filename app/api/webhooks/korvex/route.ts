@@ -508,6 +508,86 @@ async function handleTransactionRefunded(
   console.log('✅ Transação estornada')
 }
 
+/**
+ * Gera senha provisória aleatória
+ */
+function generateTemporaryPassword(): string {
+  const length = 12
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*'
+  let password = ''
+  for (let i = 0; i < length; i++) {
+    password += charset.charAt(Math.floor(Math.random() * charset.length))
+  }
+  return password
+}
+
+/**
+ * Cria usuário automaticamente se não existir
+ */
+async function createUserIfNeeded(
+  supabase: any,
+  email: string,
+  name: string
+): Promise<{ userId: string; temporaryPassword: string | null; isNew: boolean }> {
+  // Verificar se usuário já existe
+  const { data: existingUser } = await supabase
+    .from('users')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle()
+
+  if (existingUser) {
+    console.log('ℹ️ Usuário já existe:', email)
+    return { userId: existingUser.id, temporaryPassword: null, isNew: false }
+  }
+
+  // Criar novo usuário
+  const temporaryPassword = generateTemporaryPassword()
+
+  console.log('👤 Criando novo usuário:', email)
+
+  // Criar usuário no Supabase Auth
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email: email,
+    password: temporaryPassword,
+    email_confirm: true, // Auto-confirmar email
+    user_metadata: {
+      name: name
+    }
+  })
+
+  if (authError) {
+    console.error('❌ Erro ao criar usuário no Auth:', authError)
+    throw new Error('Erro ao criar usuário')
+  }
+
+  console.log('✅ Usuário criado no Auth:', authData.user.id)
+
+  // Criar registro na tabela users
+  const { error: userError } = await supabase
+    .from('users')
+    .insert({
+      id: authData.user.id,
+      email: email,
+      name: name,
+      role: 'student',
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+
+  if (userError) {
+    console.error('❌ Erro ao criar usuário na tabela users:', userError)
+    // Tentar deletar usuário do Auth se falhar
+    await supabase.auth.admin.deleteUser(authData.user.id)
+    throw new Error('Erro ao criar usuário')
+  }
+
+  console.log('✅ Usuário criado na tabela users:', authData.user.id)
+
+  return { userId: authData.user.id, temporaryPassword, isNew: true }
+}
+
 async function handleCoursePurchasePaid(
   supabase: any,
   existingPurchase: any,
@@ -516,6 +596,50 @@ async function handleCoursePurchasePaid(
   const transaction = payload.transaction
 
   if (transaction.status === 'COMPLETED') {
+    // Verificar se precisa criar usuário
+    const metadata = existingPurchase.metadata as any
+    let userId = existingPurchase.user_id
+    let temporaryPassword: string | null = null
+    let isNewUser = false
+
+    // Se não tem user_id, precisa criar usuário
+    if (!userId && metadata?.requiresUserCreation) {
+      const clientEmail = metadata.clientEmail || payload.client.email
+      const clientName = metadata.clientName || payload.client.name
+
+      console.log('🔄 Compra sem usuário. Criando usuário automaticamente...')
+
+      try {
+        const userResult = await createUserIfNeeded(supabase, clientEmail, clientName)
+        userId = userResult.userId
+        temporaryPassword = userResult.temporaryPassword
+        isNewUser = userResult.isNew
+
+        // Atualizar compra com user_id
+        await supabase
+          .from('user_course_purchases')
+          .update({ user_id: userId })
+          .eq('id', existingPurchase.id)
+
+        console.log('✅ Usuário associado à compra:', userId)
+      } catch (error) {
+        console.error('❌ Erro ao criar usuário:', error)
+        // Continuar mesmo se falhar, mas marcar compra como failed
+        await supabase
+          .from('user_course_purchases')
+          .update({
+            payment_status: 'failed',
+            updated_at: new Date().toISOString(),
+            metadata: {
+              ...metadata,
+              error: 'Falha ao criar usuário'
+            }
+          })
+          .eq('id', existingPurchase.id)
+        return
+      }
+    }
+
     // Atualizar compra do curso para completed
     await supabase
       .from('user_course_purchases')
@@ -527,13 +651,13 @@ async function handleCoursePurchasePaid(
       .eq('id', existingPurchase.id)
 
     console.log('✅ Compra do curso confirmada:', existingPurchase.course_id)
-    console.log('✅ Usuário agora tem acesso ao curso:', existingPurchase.user_id)
+    console.log('✅ Usuário agora tem acesso ao curso:', userId)
 
     // Buscar dados do usuário e curso para enviar email
     const { data: userData } = await supabase
       .from('users')
       .select('name, email')
-      .eq('id', existingPurchase.user_id)
+      .eq('id', userId)
       .single()
 
     const { data: courseData } = await supabase
@@ -543,19 +667,36 @@ async function handleCoursePurchasePaid(
       .single()
 
     if (userData && courseData) {
-      // Enviar email de confirmação via Resend
+      // Enviar email via Resend
       try {
-        const { generateCoursePurchaseEmailTemplate } = await import('@/lib/email-templates')
         const { sendEmailResend } = await import('@/lib/email-resend')
 
-        const emailTemplate = generateCoursePurchaseEmailTemplate(
-          userData.name,
-          courseData.title,
-          Number(existingPurchase.amount || courseData.price || 0),
-          transaction.payedAt || new Date().toISOString()
-        )
+        let emailTemplate
 
-        console.log('📧 Preparando envio de email via Resend para:', userData.email)
+        // Se é usuário novo, enviar email com credenciais
+        if (isNewUser && temporaryPassword) {
+          const { generateNewUserCourseEmailTemplate } = await import('@/lib/email-templates')
+          emailTemplate = generateNewUserCourseEmailTemplate(
+            userData.name,
+            userData.email,
+            temporaryPassword,
+            courseData.title,
+            Number(existingPurchase.amount || courseData.price || 0),
+            transaction.payedAt || new Date().toISOString()
+          )
+          console.log('📧 Enviando email de boas-vindas com credenciais para:', userData.email)
+        } else {
+          // Se já tinha conta, enviar email de confirmação de compra
+          const { generateCoursePurchaseEmailTemplate } = await import('@/lib/email-templates')
+          emailTemplate = generateCoursePurchaseEmailTemplate(
+            userData.name,
+            courseData.title,
+            Number(existingPurchase.amount || courseData.price || 0),
+            transaction.payedAt || new Date().toISOString()
+          )
+          console.log('📧 Enviando email de confirmação de compra para:', userData.email)
+        }
+
         const emailSent = await sendEmailResend({
           to: userData.email,
           subject: emailTemplate.subject,
@@ -564,12 +705,12 @@ async function handleCoursePurchasePaid(
         })
 
         if (emailSent) {
-          console.log('✅ Email de confirmação enviado com sucesso via Resend para:', userData.email)
+          console.log('✅ Email enviado com sucesso via Resend para:', userData.email)
         } else {
-          console.error('❌ Falha ao enviar email de confirmação via Resend')
+          console.error('❌ Falha ao enviar email via Resend')
         }
       } catch (error) {
-        console.error('❌ Erro ao enviar email de confirmação via Resend:', error)
+        console.error('❌ Erro ao enviar email via Resend:', error)
       }
     }
   } else if (transaction.status === 'FAILED') {
